@@ -15,7 +15,7 @@ def run(args):
     relays, relay_count = get_relays(args)
 
     # generate key material and fingerprints for these relays
-    logging.info("Generating Tor key material now using {} processes, this may take awhile...".format(args.nprocesses))
+    logging.info("Generating Tor key material now, this may take awhile...")
     authorities, relays = generate_tor_keys(args, relays)
 
     logging.info("Generating Tor configuration files")
