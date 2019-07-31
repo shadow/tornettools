@@ -10,6 +10,9 @@ SHADOW_INSTALL_PREFIX="~/.shadow"
 SHADOW_HOSTS_PATH="hosts"
 SHADOW_CONFIG_FILENAME="shadow.config.xml"
 
+SHADOW_XML_HOST_KEY="host"
+SHADOW_XML_PROCESS_KEY="process"
+
 RESOLV_FILENAME="shadowresolv.conf"
 BW_AUTHORITY_NAME="bwauthority"
 
@@ -20,10 +23,34 @@ TORRC_NONEXITRELAY_FILENAME="tor.nonexitrelay.torrc"
 TORRC_MARKOVCLIENT_FILENAME="tor.markovclient.torrc"
 TORRC_PERFCLIENT_FILENAME="tor.perfclient.torrc"
 
-DIRAUTH_GEOCODES=["US", "DE", "NL", "FR", "SE"]
-DEFAULT_TOR_ARGS = "--Address {0} --Nickname {0} --DataDirectory "+SHADOW_DATA_PATH+"/"+SHADOW_HOSTS_PATH+"/{0} --GeoIPFile "+SHADOW_INSTALL_PREFIX+"/share/geoip --defaults-torrc "+CONFIG_DIRPATH+"/"+TORRC_COMMON_FILENAME+" -f {1}"
+TOR_SOCKS_PORT=9050
+TOR_CONTROL_PORT=9051
+TOR_OR_PORT=9001
+TOR_DIR_PORT=8080
+
+# country codes where we can place directory authority tor hosts
+DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
+
+TOR_ARGS_FMT = "--Address {0} --Nickname {0} --DataDirectory "+SHADOW_DATA_PATH+"/"+SHADOW_HOSTS_PATH+"/{0} --GeoIPFile "+SHADOW_INSTALL_PREFIX+"/share/geoip --defaults-torrc "+CONFIG_DIRPATH+"/"+TORRC_COMMON_FILENAME+" -f {1}"
 
 # this number of data equals 1 GBit
 BW_1GBIT_BYTES = int(round(1000*1000*1000/8))
 BW_1GBIT_KIB = int(round(BW_1GBIT_BYTES/1024))
 BW_RATE_MIN = 102400
+
+# country codes where we can place onionperf client hosts
+ONIONPERF_COUNTRY_CODES = ['HK', 'NL', 'AB', 'US']
+TGEN_CLIENT_MIN_COUNT=100
+TGEN_SERVER_MIN_COUNT=10
+PRIVCOUNT_PERIODS_PER_DAY=144.0
+TGEN_SERVER_PORT=80
+
+TGENRC_SERVER_FILENAME="tgen-server.tgenrc.graphml"
+TGENRC_PERFCLIENT_FILENAME="tgen-perf.tgenrc.graphml"
+TGENRC_MARKOVCLIENT_DIRNAME="tgen-markov"
+TGENRC_MARKOVCLIENT_FILENAME_FMT="{}.tgenrc.graphml"
+TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
+
+TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
+TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
+TMODEL_TOPOLOGY_FILENAME="atlas.201801.shadow113.graphml.xml"

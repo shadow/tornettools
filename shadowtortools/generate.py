@@ -2,6 +2,8 @@ import sys
 import os
 import json
 import logging
+import shutil
+import shlex
 
 from lxml import etree
 
@@ -21,10 +23,35 @@ def run(args):
     logging.info("Generating Tor configuration files")
     generate_tor_config(args, authorities, relays)
 
-    logging.info("Constructing Shadow config XML file")
-    generate_shadow_config(args, authorities, relays)
+    logging.info("Generating Clients")
+    tgen_clients, perf_clients = get_clients(args)
 
-def generate_shadow_config(args, authorities, relays):
+    logging.info("Generating Servers")
+    tgen_servers = get_servers(args, len(tgen_clients))
+
+    logging.info("Generating TGen configuration files")
+    generate_tgen_config(args, tgen_clients, tgen_servers)
+
+    logging.info("Constructing Shadow config XML file")
+    __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients)
+
+    # only copy the atlas file if the user did not tell us where it has the atlas stored
+    if args.atlas_path is None:
+        logging.info("Copying atlas topology file (use the '-a/--atlas' option to disable)")
+        topology_src_path = "{}/data/shadow/network/{}.xz".format(args.tmodel_git_path, TMODEL_TOPOLOGY_FILENAME)
+        topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME)
+        __copy_and_extract_file(topology_src_path, topology_dst_path)
+
+def __copy_and_extract_file(src, dst):
+    shutil.copy2(src, dst)
+
+    xz_cmd = "xz -d {}".format(dst)
+    retcode = subprocess.call(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if retcode != 0:
+        logging.critical("Error extracting file {} using command {}".format(dst, cmd))
+    assert retcode == 0
+
+def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the XML for the shadow.config.xml file
     root = etree.Element("shadow")
     root.set("bootstraptime", "300") # disable bandwidth limits and packet loss for first 5 minutes
@@ -33,7 +60,10 @@ def generate_shadow_config(args, authorities, relays):
     root.set("environment", "OPENSSL_ia32cap=~0x200000200000000;EVENT_NOSELECT=1;EVENT_NOPOLL=1;EVENT_NOKQUEUE=1;EVENT_NODEVPOLL=1;EVENT_NOEVPORT=1;EVENT_NOWIN32=1")
 
     topology = etree.SubElement(root, "topology")
-    topology.set("path", "{}/share/atlas.201801.shadow113.graphml.xml".format(SHADOW_INSTALL_PREFIX))
+    if args.atlas_path is None:
+        topology.set("path", "{}/{}".format(CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME))
+    else:
+        topology.set("path", "{}".format(args.atlas_path))
 
     plugin = etree.SubElement(root, "plugin")
     plugin.set("id", "tor")
@@ -52,23 +82,85 @@ def generate_shadow_config(args, authorities, relays):
     plugin.set("path", "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX))
 
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
-        add_xml_relay(root, authority, is_authority=True)
+        __add_xml_tor_relay(root, authority, is_authority=True)
 
     for pos in ['ge', 'e', 'g', 'm']:
         # use reverse to sort each class from fastest to slowest when assigning the id counter
         for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-            add_xml_relay(root, relay, is_authority=False)
+            __add_xml_tor_relay(root, relay, is_authority=False)
+
+    for server in tgen_servers:
+        __add_xml_server(root, server)
+
+    for client in perf_clients:
+        __add_xml_perfclient(root, client)
+
+    for client in tgen_clients:
+        __add_xml_markovclient(root, client)
 
     xml_str = etree.tostring(root, pretty_print=True, xml_declaration=False)
     with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'wb') as configfile:
         configfile.write(xml_str)
 
-def add_xml_relay(root, relay, is_authority=False):
+def __add_xml_server(root, server):
+    # this should be a relative path
+    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_SERVER_FILENAME)
+
+    e = etree.SubElement(root, SHADOW_XML_HOST_KEY)
+    e.set("id", server['name'])
+    e.set("countrycodehint", server['country_code'])
+    e.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
+    e.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+
+    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
+    a.set("plugin", "tgen")
+    # tgen starts at the end of shadow's "bootstrap" phase
+    a.set("starttime", "300")
+    a.set("arguments", tgenrc)
+
+def __add_xml_perfclient(root, client):
+    # these should be relative paths
+    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_PERFCLIENT_FILENAME)
+    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_PERFCLIENT_FILENAME)
+    __add_xml_tgen_client(root, client['name'], client['country_code'], torrc, tgenrc)
+
+def __add_xml_markovclient(root, client):
+    # these should be relative paths
+    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_MARKOVCLIENT_FILENAME)
+    tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(client['name'])
+    tgenrc = "{}/{}/{}".format(CONFIG_DIRPATH, TGENRC_MARKOVCLIENT_DIRNAME, tgenrc_filename)
+    __add_xml_tgen_client(root, client['name'], client['country_code'], torrc, tgenrc)
+
+def __add_xml_tgen_client(root, name, country, torrc, tgenrc):
+    e = etree.SubElement(root, SHADOW_XML_HOST_KEY)
+    e.set("id", name)
+    e.set("countrycodehint", country)
+    e.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
+    e.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+
+    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
+    a.set("plugin", "tor")
+    a.set("preload", "tor-preload")
+    a.set("starttime", "240")
+    a.set("arguments", TOR_ARGS_FMT.format(name, torrc))
+
+    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
+    a.set("plugin", "torctl")
+    a.set("starttime", "241")
+    a.set("arguments", "localhost {} BW".format(TOR_CONTROL_PORT))
+
+    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
+    a.set("plugin", "tgen")
+    # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
+    a.set("starttime", "300")
+    a.set("arguments", tgenrc)
+
+def __add_xml_tor_relay(root, relay, is_authority=False):
     # prepare items for the host element
     kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
 
     # add the host element and attributes
-    host = etree.SubElement(root, "host")
+    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
     host.set("id", relay['nickname'])
     host.set("iphint", relay['address'])
     host.set("countrycodehint", relay['country_code'])
@@ -92,22 +184,22 @@ def add_xml_relay(root, relay, is_authority=False):
         starttime = 5
         torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_NONEXITRELAY_FILENAME)
 
-    tor_args = DEFAULT_TOR_ARGS.format(relay['nickname'], torrc)
+    tor_args = TOR_ARGS_FMT.format(relay['nickname'], torrc)
     if not is_authority:
         # Tor enforces a min rate for relays
         rate = max(BW_RATE_MIN, relay['bandwidth_rate'])
         burst = max(BW_RATE_MIN, relay['bandwidth_burst'])
         tor_args += " --BandwidthRate {} --BandwidthBurst {}".format(rate, burst)
 
-    process = etree.SubElement(host, "process")
+    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
 
     process.set("plugin", "tor")
     process.set("preload", "tor-preload")
     process.set("starttime", "{}".format(starttime))
     process.set("arguments", "{}".format(tor_args))
 
-    process = etree.SubElement(host, "process")
+    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
 
     process.set("plugin", "torctl")
     process.set("starttime", "{}".format(starttime+1))
-    process.set("arguments", "localhost 9051 BW")
+    process.set("arguments", "localhost {} BW".format(TOR_CONTROL_PORT))

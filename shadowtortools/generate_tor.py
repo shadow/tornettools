@@ -12,7 +12,7 @@ from numpy.random import choice
 
 from shadowtortools.generate_defaults import *
 
-def generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
+def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
     with open(pwpath, 'r') as pwin:
         retcode = subprocess.call(shlex.split(cmd), stdin=pwin, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -33,13 +33,13 @@ def generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
 
     return v3ident
 
-def generate_fingerprint(subproc_args):
+def __generate_fingerprint(subproc_args):
     torexe, datadir, nickname, torrc = subproc_args
     listfp_cmd = "{} --list-fingerprint --DataDirectory {} --Nickname {} -f {}".format(torexe, datadir, nickname, torrc)
     retcode = subprocess.call(shlex.split(listfp_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return [listfp_cmd, retcode]
 
-def read_fingerprint(datadir):
+def __read_fingerprint(datadir):
     with open("{0}/fingerprint".format(datadir), 'r') as f:
         shadowtor_fp = f.readline().strip().split()[1]
     return shadowtor_fp
@@ -65,7 +65,7 @@ def generate_tor_keys(args, relays):
     work = []
 
     # handle authorities, we need at least 3 to produce valid consensus
-    n_authorities = max(3, round(10.0 * args.scale))
+    n_authorities = max(3, round(10.0 * args.network_scale))
     for i in range(n_authorities):
         nickname = "4uthority{}".format(i+1)
         datadir = "{}/{}".format(hosts_prefix, nickname)
@@ -89,11 +89,11 @@ def generate_tor_keys(args, relays):
     if num_processes > 1:
         # generate keys in parallel
         with Pool(processes=num_processes) as pool:
-            results = pool.map(generate_fingerprint, work)
+            results = pool.map(__generate_fingerprint, work)
     else:
         # generate keys synchronously
         for subproc_args in work:
-            results.append(generate_fingerprint(subproc_args))
+            results.append(__generate_fingerprint(subproc_args))
 
     # make sure they all succeeded
     logging.info("Generated fingerprints and keys for {} Tor nodes ({} authorities and {} relays)".format(len(results), n_authorities, n_relays))
@@ -108,20 +108,20 @@ def generate_tor_keys(args, relays):
         for fp in relays[pos]:
             nickname = relays[pos][fp]["nickname"]
             datadir = "{}/{}".format(hosts_prefix, nickname)
-            relays[pos][fp]["shadowtor_fingerprint"] = read_fingerprint(datadir)
+            relays[pos][fp]["shadowtor_fingerprint"] = __read_fingerprint(datadir)
 
     authorities = {}
     for i in range(n_authorities):
         nickname = "4uthority{}".format(i+1)
         datadir = "{}/{}".format(hosts_prefix, nickname)
-        fp = read_fingerprint(datadir)
+        fp = __read_fingerprint(datadir)
         authorities[fp] = {
             "nickname": nickname,
             "shadowtor_fingerprint": fp,
-            "v3identity": generate_authority_keys(args.torgencertexe, datadir, keygen_torrc, keygen_pw),
+            "v3identity": __generate_authority_keys(args.torgencertexe, datadir, keygen_torrc, keygen_pw),
             "bandwidth_capacity": BW_1GBIT_BYTES,
             "address": "100.0.0.{0}".format(i+1),
-            "country_code": choice(DIRAUTH_GEOCODES),
+            "country_code": choice(DIRAUTH_COUNTRY_CODES),
         }
 
     if os.path.exists(keygen_torrc):
@@ -137,20 +137,20 @@ def generate_tor_config(args, authorities, relays):
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
 
-    generate_resolv_file(args, abs_conf_path)
-    generate_tor_v3bw_file(args, authorities, relays)
-    generate_torrc_common(abs_conf_path, authorities)
-    generate_torrc_authority(abs_conf_path, relays)
-    generate_torrc_exit(abs_conf_path)
-    generate_torrc_nonexit(abs_conf_path)
-    generate_torrc_markovclient(abs_conf_path)
-    generate_torrc_perfclient(abs_conf_path)
+    __generate_resolv_file(args, abs_conf_path)
+    __generate_tor_v3bw_file(args, authorities, relays)
+    __generate_torrc_common(abs_conf_path, authorities)
+    __generate_torrc_authority(abs_conf_path, relays)
+    __generate_torrc_exit(abs_conf_path)
+    __generate_torrc_nonexit(abs_conf_path)
+    __generate_torrc_markovclient(abs_conf_path)
+    __generate_torrc_perfclient(abs_conf_path)
 
-def generate_resolv_file(args, conf_path):
+def __generate_resolv_file(args, conf_path):
     with open("{}/{}".format(conf_path, RESOLV_FILENAME), "w") as resolvfile:
         resolvfile.write("nameserver 127.0.0.1\n")
 
-def generate_tor_v3bw_file(args, authorities, relays):
+def __generate_tor_v3bw_file(args, authorities, relays):
     bwauth_dir = "{}/{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH, BW_AUTHORITY_NAME)
     if not os.path.exists(bwauth_dir):
         os.makedirs(bwauth_dir)
@@ -185,7 +185,7 @@ def generate_tor_v3bw_file(args, authorities, relays):
     v3bw_path = "{}/v3bw".format(bwauth_dir)
     os.symlink("v3bw.init.consensus", v3bw_path)
 
-def generate_torrc_common(conf_path, authorities):
+def __generate_torrc_common(conf_path, authorities):
     auth_names = []
 
     torrc_file = open("{}/{}".format(conf_path, TORRC_COMMON_FILENAME), 'w')
@@ -197,7 +197,7 @@ def generate_torrc_common(conf_path, authorities):
         shadowtor_fp = authority['shadowtor_fingerprint']
         fp_with_spaces = " ".join(shadowtor_fp[i:i+4] for i in range(0, len(shadowtor_fp), 4))
 
-        line = 'DirServer {} v3ident={} orport=9111 {}:9112 {}'.format(nickname, v3id, address, fp_with_spaces)
+        line = 'DirServer {} v3ident={} orport={} {}:{} {}'.format(nickname, v3id, TOR_OR_PORT, address, TOR_DIR_PORT, fp_with_spaces)
         torrc_file.write('{}\n'.format(line))
 
         auth_names.append(nickname)
@@ -227,11 +227,11 @@ def generate_torrc_common(conf_path, authorities):
     torrc_file.write('DoSCircuitCreationEnabled 0\n')
     torrc_file.write('DoSConnectionEnabled 0\n')
     torrc_file.write('DoSRefuseSingleHopClientRendezvous 0\n')
-    torrc_file.write('ControlPort 9051\n')
+    torrc_file.write('ControlPort {}\n'.format(TOR_CONTROL_PORT))
 
     torrc_file.close()
 
-def generate_torrc_authority(conf_path, relays):
+def __generate_torrc_authority(conf_path, relays):
     shadowtor_fps_g = [relays['g'][fp]['shadowtor_fingerprint'] for fp in relays['g']]
     shadowtor_fps_e = [relays['e'][fp]['shadowtor_fingerprint'] for fp in relays['e']]
     shadowtor_fps_ge = [relays['ge'][fp]['shadowtor_fingerprint'] for fp in relays['ge']]
@@ -241,8 +241,8 @@ def generate_torrc_authority(conf_path, relays):
 
     torrc_file = open("{}/{}".format(conf_path, TORRC_AUTHORITY_FILENAME), 'w')
 
-    torrc_file.write('ORPort 9111\n')
-    torrc_file.write('DirPort 9112\n')
+    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('Log info stdout\n')
     torrc_file.write('ExitPolicy "reject *:*"\n')
@@ -258,48 +258,46 @@ def generate_torrc_authority(conf_path, relays):
 
     torrc_file.close()
 
-def generate_torrc_exit(conf_path):
+def __generate_torrc_exit(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_EXITRELAY_FILENAME), 'w')
 
     torrc_file.write('#Log info stdout\n')
-    torrc_file.write('ORPort 9111\n')
-    torrc_file.write('DirPort 9112\n')
+    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "accept *:*"\n')
 
     torrc_file.close()
 
-def generate_torrc_nonexit(conf_path):
+def __generate_torrc_nonexit(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_NONEXITRELAY_FILENAME), 'w')
 
     torrc_file.write('#Log info stdout\n')
-    torrc_file.write('ORPort 9111\n')
-    torrc_file.write('DirPort 9112\n')
+    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "reject *:*"\n')
 
     torrc_file.close()
 
-def generate_torrc_markovclient(conf_path):
+def __generate_torrc_markovclient(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_MARKOVCLIENT_FILENAME), 'w')
 
     torrc_file.write('ClientOnly 1\n')
     torrc_file.write('ORPort 0\n')
     torrc_file.write('DirPort 0\n')
-    torrc_file.write('SocksPort 9000\n')
-    torrc_file.write('SocksListenAddress 127.0.0.1\n')
+    torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
 
     torrc_file.close()
 
-def generate_torrc_perfclient(conf_path):
+def __generate_torrc_perfclient(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_PERFCLIENT_FILENAME), 'w')
 
     torrc_file.write('ClientOnly 1\n')
     torrc_file.write('ORPort 0\n')
     torrc_file.write('DirPort 0\n')
-    torrc_file.write('SocksPort 9000\n')
-    torrc_file.write('SocksListenAddress 127.0.0.1\n')
+    torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
     torrc_file.write('MaxCircuitDirtiness 10 seconds\n')
 
@@ -315,7 +313,7 @@ def get_relays(args):
     # sample relays: take all relays that appeared in the input data, and select
     # a number that follows the median number of relays that are seen in a consensus.
     # this gives us the relays that would represent a full 100% Tor network
-    sampled_relays, sampled_weights = sample_relays(relays, stats['med_count_total'])
+    sampled_relays, sampled_weights = __sample_relays(relays, stats['med_count_total'])
 
     # log some info
     n_relays = len(sampled_relays['all'])
@@ -332,11 +330,11 @@ def get_relays(args):
     }
 
     # Now that we have a "full" Tor network, scale it down to the requested scale.
-    n_relays_scaled = round(n_relays * args.scale)
-    chosen_relays, divergence = choose_relays(n_relays_scaled, sampled_relays, sampled_weights, pos_ratios)
+    n_relays_scaled = round(n_relays * args.network_scale)
+    chosen_relays, divergence = __choose_relays(n_relays_scaled, sampled_relays, sampled_weights, pos_ratios)
 
     relay_count = len(chosen_relays['g']) + len(chosen_relays['e']) + len(chosen_relays['ge']) + len(chosen_relays['m'])
-    logging.info("Chose {} of {} relays using scale factor {}".format(relay_count, n_relays, args.scale))
+    logging.info("Chose {} of {} relays using scale factor {}".format(relay_count, n_relays, args.network_scale))
 
     # name the chosen relays
     relay_ctr = 1
@@ -349,7 +347,7 @@ def get_relays(args):
 
     return chosen_relays, relay_count
 
-def sample_relays(relays, sample_size):
+def __sample_relays(relays, sample_size):
     # we need to make sure the relay ordering matches, so create a list of prints
     all_fingerprints = list(relays.keys())
 
@@ -399,7 +397,7 @@ def sample_relays(relays, sample_size):
 
     return sampled_relays, sampled_weights
 
-def choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
+def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     # sort the relays by bandwidth weight
     # returns (key, value) relay items, i.e., (fingerprint, relay_data_dict)
     g_items_sorted = sorted(sampled_relays['g'].items(), key=lambda kv: kv[1]['weight'])
