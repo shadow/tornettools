@@ -73,89 +73,88 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
     plugin.set("id", "tor-preload")
     plugin.set("path", "{}/lib/libshadow-preload-tor.so".format(SHADOW_INSTALL_PREFIX))
 
-    plugin = etree.SubElement(root, "plugin")
-    plugin.set("id", "torctl")
-    plugin.set("path", "{}/lib/libshadow-plugin-torctl.so".format(SHADOW_INSTALL_PREFIX))
+    if args.events_csv is not None or args.do_trace:
+        plugin = etree.SubElement(root, "plugin")
+        plugin.set("id", "oniontrace")
+        plugin.set("path", "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX))
 
     plugin = etree.SubElement(root, "plugin")
     plugin.set("id", "tgen")
     plugin.set("path", "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX))
 
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
-        __add_xml_tor_relay(root, authority, is_authority=True)
+        __add_xml_tor_relay(args, root, authority, is_authority=True)
 
     for pos in ['ge', 'e', 'g', 'm']:
         # use reverse to sort each class from fastest to slowest when assigning the id counter
         for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-            __add_xml_tor_relay(root, relay, is_authority=False)
+            __add_xml_tor_relay(args, root, relay, is_authority=False)
 
     for server in tgen_servers:
-        __add_xml_server(root, server)
+        __add_xml_server(args, root, server)
 
     for client in perf_clients:
-        __add_xml_perfclient(root, client)
+        __add_xml_perfclient(args, root, client)
 
     for client in tgen_clients:
-        __add_xml_markovclient(root, client)
+        __add_xml_markovclient(args, root, client)
 
     xml_str = etree.tostring(root, pretty_print=True, xml_declaration=False)
     with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'wb') as configfile:
         configfile.write(xml_str)
 
-def __add_xml_server(root, server):
+def __add_xml_server(args, root, server):
     # this should be a relative path
     tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_SERVER_FILENAME)
 
-    e = etree.SubElement(root, SHADOW_XML_HOST_KEY)
-    e.set("id", server['name'])
-    e.set("countrycodehint", server['country_code'])
-    e.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
-    e.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
+    host.set("id", server['name'])
+    host.set("countrycodehint", server['country_code'])
+    host.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
+    host.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
 
-    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
-    a.set("plugin", "tgen")
+    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+    process.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase
-    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    a.set("arguments", tgenrc)
+    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
+    process.set("arguments", tgenrc)
 
-def __add_xml_perfclient(root, client):
+def __add_xml_perfclient(args, root, client):
     # these should be relative paths
     torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_PERFCLIENT_FILENAME)
     tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_PERFCLIENT_FILENAME)
-    __add_xml_tgen_client(root, client['name'], client['country_code'], torrc, tgenrc)
+    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
 
-def __add_xml_markovclient(root, client):
+def __add_xml_markovclient(args, root, client):
     # these should be relative paths
     torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_MARKOVCLIENT_FILENAME)
     tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(client['name'])
     tgenrc = "{}/{}/{}".format(CONFIG_DIRPATH, TGENRC_MARKOVCLIENT_DIRNAME, tgenrc_filename)
-    __add_xml_tgen_client(root, client['name'], client['country_code'], torrc, tgenrc)
+    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
 
-def __add_xml_tgen_client(root, name, country, torrc, tgenrc):
-    e = etree.SubElement(root, SHADOW_XML_HOST_KEY)
-    e.set("id", name)
-    e.set("countrycodehint", country)
-    e.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
-    e.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
+    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
+    host.set("id", name)
+    host.set("countrycodehint", country)
+    host.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
+    host.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
 
-    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
-    a.set("plugin", "tor")
-    a.set("preload", "tor-preload")
-    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
-    a.set("arguments", TOR_ARGS_FMT.format(name, torrc))
+    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+    process.set("plugin", "tor")
+    process.set("preload", "tor-preload")
+    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
+    process.set("arguments", TOR_ARGS_FMT.format(name, torrc))
 
-    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
-    a.set("plugin", "torctl")
-    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60+1))
-    a.set("arguments", "localhost {} BW".format(TOR_CONTROL_PORT))
+    oniontrace_start_time = BOOTSTRAP_LENGTH_SECONDS-60+1
+    __add_xml_oniontrace(args, host, oniontrace_start_time, name)
 
-    a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
-    a.set("plugin", "tgen")
+    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+    process.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
-    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    a.set("arguments", tgenrc)
+    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
+    process.set("arguments", tgenrc)
 
-def __add_xml_tor_relay(root, relay, is_authority=False):
+def __add_xml_tor_relay(args, root, relay, is_authority=False):
     # prepare items for the host element
     kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
 
@@ -198,8 +197,21 @@ def __add_xml_tor_relay(root, relay, is_authority=False):
     process.set("starttime", "{}".format(starttime))
     process.set("arguments", "{}".format(tor_args))
 
-    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+    oniontrace_start_time = starttime+1
+    __add_xml_oniontrace(args, host, oniontrace_start_time, relay['nickname'])
 
-    process.set("plugin", "torctl")
-    process.set("starttime", "{}".format(starttime+1))
-    process.set("arguments", "localhost {} BW".format(TOR_CONTROL_PORT))
+def __add_xml_oniontrace(args, parent_elm, start_time, name):
+    if args.events_csv is not None:
+        process = etree.SubElement(parent_elm, SHADOW_XML_PROCESS_KEY)
+        process.set("plugin", "oniontrace")
+        process.set("starttime", "{}".format(start_time))
+        process.set("arguments", "Mode=log TorControlPort={} LogLevel=info Events={}".format(TOR_CONTROL_PORT, args.events_csv))
+
+    if args.do_trace:
+        start_time = max(start_time, BOOTSTRAP_LENGTH_SECONDS)
+        process = etree.SubElement(parent_elm, SHADOW_XML_PROCESS_KEY)
+        process.set("plugin", "oniontrace")
+        process.set("starttime", "{}".format(start_time))
+        run_time = SIMULATION_LENGTH_SECONDS-start_time
+        tracefile_path = "{}/{}/{}/oniontrace.csv".format(SHADOW_DATA_PATH, SHADOW_HOSTS_PATH, name)
+        process.set("arguments", "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile={}".format(TOR_CONTROL_PORT, run_time, tracefile_path))

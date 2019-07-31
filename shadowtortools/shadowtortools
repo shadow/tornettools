@@ -183,6 +183,19 @@ def main():
         action="store", dest="atlas_path",
         default=None)
 
+    generate_parser.add_argument('-e', '--events',
+        help="""Run oniontrace on each Tor node to log the given Tor control events (should be
+            specified as a CSV string) throughout the simulation. Set to 'None' to disable.""",
+        metavar="CSV", type=str,
+        action="store", dest="events_csv",
+        default="BW")
+
+    generate_parser.add_argument('-r', '--record',
+        help="""Run oniontrace on each Tor node to record circuit building and stream assignment
+            info throughout the simulation.""",
+        action="store_true", dest="do_trace",
+        default=False)
+
     generate_parser.add_argument('--tor',
         help="""Path to a compiled 'tor' executable, used to generate relay fingerprints.""",
         metavar="PATH", type=type_str_path_in,
@@ -207,6 +220,8 @@ def stage(args):
     stage.run(args)
 
 def generate(args):
+    if args.events_csv.lower() == "none":
+        args.events_csv = None
     from shadowtortools import generate
     generate.run(args)
 
