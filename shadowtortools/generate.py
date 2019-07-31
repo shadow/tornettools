@@ -54,8 +54,8 @@ def __copy_and_extract_file(src, dst):
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the XML for the shadow.config.xml file
     root = etree.Element("shadow")
-    root.set("bootstraptime", "300") # disable bandwidth limits and packet loss for first 5 minutes
-    root.set("stoptime", "3600") # stop after 1 hour of simulated time
+    root.set("bootstraptime", "{}".format(BOOTSTRAP_LENGTH_SECONDS)) # disable bandwidth limits and packet loss for first 5 minutes
+    root.set("stoptime", "{}".format(SIMULATION_LENGTH_SECONDS)) # stop after 1 hour of simulated time
     root.set("preload", "{}/lib/libshadow-interpose.so".format(SHADOW_INSTALL_PREFIX))
     root.set("environment", "OPENSSL_ia32cap=~0x200000200000000;EVENT_NOSELECT=1;EVENT_NOPOLL=1;EVENT_NOKQUEUE=1;EVENT_NODEVPOLL=1;EVENT_NOEVPORT=1;EVENT_NOWIN32=1")
 
@@ -115,7 +115,7 @@ def __add_xml_server(root, server):
     a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
     a.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase
-    a.set("starttime", "300")
+    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
     a.set("arguments", tgenrc)
 
 def __add_xml_perfclient(root, client):
@@ -141,18 +141,18 @@ def __add_xml_tgen_client(root, name, country, torrc, tgenrc):
     a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
     a.set("plugin", "tor")
     a.set("preload", "tor-preload")
-    a.set("starttime", "240")
+    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
     a.set("arguments", TOR_ARGS_FMT.format(name, torrc))
 
     a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
     a.set("plugin", "torctl")
-    a.set("starttime", "241")
+    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60+1))
     a.set("arguments", "localhost {} BW".format(TOR_CONTROL_PORT))
 
     a = etree.SubElement(e, SHADOW_XML_PROCESS_KEY)
     a.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
-    a.set("starttime", "300")
+    a.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
     a.set("arguments", tgenrc)
 
 def __add_xml_tor_relay(root, relay, is_authority=False):

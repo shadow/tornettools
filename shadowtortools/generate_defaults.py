@@ -3,6 +3,9 @@ POS_FLAG_THRESH=0.90
 # a relay must have been running longer than this to be considered
 RUN_FREQ_THRESH=0.01
 
+BOOTSTRAP_LENGTH_SECONDS=300
+SIMULATION_LENGTH_SECONDS=3600
+
 SHADOW_DATA_PATH="shadow.data"
 SHADOW_TEMPLATE_PATH="{}.template".format(SHADOW_DATA_PATH)
 CONFIG_DIRPATH="conf"
