@@ -280,15 +280,23 @@ def get_clients(args):
     with open(tally_path, 'r') as tally_file:
         measurement2 = json.load(tally_file)
 
-    n_total, n_active, n_inactive = __get_client_counts(measurement1, measurement1_scale, args.network_scale)
+    # exit circuit count taken from measurement 3 in the tmodel ccs2018 paper
+    measurement3_scale = 0.0213
+    tally_path = '{}/data/privcount/measurement3/privcount.tallies.1515796790-1515883190.json'.format(args.tmodel_git_path)
+    with open(tally_path, 'r') as tally_file:
+        measurement3 = json.load(tally_file)
 
-    logging.info("Privcount measurements scaled to {} Tor clients, {} active and {} inactive".format(n_total, n_active, n_inactive))
+    n_total_clients, n_active_clients, n_inactive_clients = __get_client_counts(measurement1, measurement1_scale, args.network_scale)
+    logging.info("Privcount measurements scaled to {} Tor clients, {} active and {} inactive".format(n_total_clients, n_active_clients, n_inactive_clients))
 
-    tgen_clients, total_circuits_10_mins = __get_tgen_clients(args, n_active, measurement2)
+    n_total_circs, n_active_circs, n_inactive_circs = __get_exit_circuit_counts(measurement3, measurement3_scale, args.network_scale)
+    logging.info("Privcount measurements scaled to {} exit circuits, {} active and {} inactive".format(n_total_circs, n_active_circs, n_inactive_circs))
 
-    logging.info("We will use {} TGen clients to emulate {} Tor clients and create {} circuits every 10 minutes in aggregate".format(len(tgen_clients), n_active, total_circuits_10_mins))
+    tgen_clients, total_circuits_10_mins = __get_tgen_clients(args, n_active_clients, n_active_circs, measurement2)
 
-    perf_clients = __get_perf_clients(args, n_active)
+    logging.info("We will use {} TGen clients to emulate {} Tor clients and create {} circuits every 10 minutes in aggregate".format(len(tgen_clients), n_active_clients, total_circuits_10_mins))
+
+    perf_clients = __get_perf_clients(args, n_active_clients)
 
     logging.info("We will use {} perf nodes to benchmark Tor performance".format(len(perf_clients)))
 
@@ -318,7 +326,7 @@ def __load_user_data(args):
 
     return country_codes, country_probs
 
-def __get_tgen_clients(args, n_clients, measurement2):
+def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
     # we need a set of TGen clients generating Tor client load
     tgen_clients = []
     n_clients_per_tgen = round(1.0 / args.client_scale)
@@ -332,13 +340,24 @@ def __get_tgen_clients(args, n_clients, measurement2):
     # each client will be placed in a country
     country_codes, country_probs = __load_user_data(args)
 
+    n_circuits_per_tgen = n_circuits / n_tgen
+
+    quarter_circuits = n_circuits_per_tgen * 0.75
+    n_circs_low = n_circuits_per_tgen-quarter_circuits
+    n_circs_high = n_circuits_per_tgen+quarter_circuits
+
     total_circuits_10_mins = 0
     for i in range(n_tgen):
         # where to place the tgen process
         chosen_country_code = choice(country_codes, p=country_probs)
 
         # how many total circuits should the tgen process create
-        num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_clients_per_tgen)
+        # note - sampling the circuit-per-client distribution turns out to be inaccurate, likely
+        #        because there was a DoS attack on Tor during the measurement which caused entry
+        #        relays to see ~10 times as many circuits as exit relays. So instead we use the
+        #        more accurate total circuit counts from exits.
+        #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_clients_per_tgen)
+        num_circs_every_10_minutes = int(round(uniform(n_circs_low, n_circs_high)))
         total_circuits_10_mins += num_circs_every_10_minutes
 
         # convert circuit count into a rate for the exponential distribution
@@ -372,6 +391,21 @@ def __get_client_counts(measurement, privcount_scale, shadowtor_scale):
 
     return total_scaled, active_scaled, inactive_scaled
 
+def __get_exit_circuit_counts(measurement, privcount_scale, shadowtor_scale):
+    # extract the counts from the tally file data
+    total_count = measurement['ExitCircuitCount']['bins'][0][2]
+    active_count = measurement['ExitActiveCircuitCount']['bins'][0][2]
+    inactive_count = measurement['ExitInactiveCircuitCount']['bins'][0][2]
+
+    # we need to convert the counts at the privcount scale, to counts at our shadowtor scale
+    scale_factor = shadowtor_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
+
+    total_scaled = int(round(total_count * scale_factor))
+    active_scaled = int(round(active_count * scale_factor))
+    inactive_scaled = int(round(inactive_count * scale_factor))
+
+    return total_scaled, active_scaled, inactive_scaled
+
 def __sample_active_circuits_per_n_clients(measurement, n_clients):
     # return the num of circuits we expect n_clients would create in 10 minutes
     # 10 minutes is the period over which privcount counts the circ-per-client histogram
@@ -379,6 +413,7 @@ def __sample_active_circuits_per_n_clients(measurement, n_clients):
     for i in range(n_clients):
         count += __sample_active_circuits_per_client(measurement)
     # exits saw ~1/10 of the circs entries see, possibly related to DoS on tor during measurement
+    # note - this is hand-wavy magic
     return int(round(count/10.0))
 
 def __sample_active_circuits_per_client(measurement):
@@ -401,7 +436,10 @@ def __sample_bins(bins):
     # now choose uniformly from all values represented by the bin
     low, high = bins[bin_index_choice][0], bins[bin_index_choice][1]
     if high == float('inf'):
-        high = low * 5.0
+        # we cannot reasonably expect the distribution to extend to infinity,
+        # so intead use a multiple of the low end of the bin to represent
+        # the high end of the infinity bin
+        high = low * 8.0
     value = int(round(uniform(low, high)))
 
     return value
