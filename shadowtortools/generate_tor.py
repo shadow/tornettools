@@ -405,11 +405,11 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     ge_items_sorted = sorted(sampled_relays['ge'].items(), key=lambda kv: kv[1]['weight'])
     m_items_sorted = sorted(sampled_relays['m'].items(), key=lambda kv: kv[1]['weight'])
 
-    # split into k bins
-    g_bins = array_split(g_items_sorted, round(n_relays*pos_ratios['g']))
-    e_bins = array_split(e_items_sorted, round(n_relays*pos_ratios['e']))
-    ge_bins = array_split(ge_items_sorted, round(n_relays*pos_ratios['ge']))
-    m_bins = array_split(m_items_sorted, round(n_relays*pos_ratios['m']))
+    # split into k bins, and we need at least 1 bin (i.e., 1 relay of each type)
+    g_bins = array_split(g_items_sorted, max(1, round(n_relays*pos_ratios['g'])))
+    e_bins = array_split(e_items_sorted, max(1, round(n_relays*pos_ratios['e'])))
+    ge_bins = array_split(ge_items_sorted, max(1, round(n_relays*pos_ratios['ge'])))
+    m_bins = array_split(m_items_sorted, max(1, round(n_relays*pos_ratios['m'])))
 
     # get the index of the median relay in each bin
     g_bin_indices = [len(bin)//2 for bin in g_bins]
