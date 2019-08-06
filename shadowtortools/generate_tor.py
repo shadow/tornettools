@@ -288,6 +288,11 @@ def __generate_torrc_markovclient(conf_path):
     torrc_file.write('DirPort 0\n')
     torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
+    torrc_file.write('SocksTimeout 120\n') # we didnt get a circuit for the socks request
+    torrc_file.write('CircuitStreamTimeout 15\n') # we didnt finish the BEGIN/CONNECTED handshake
+    torrc_file.write('LearnCircuitBuildTimeout 0\n')
+    torrc_file.write('CircuitBuildTimeout 30\n')
+    torrc_file.write('MaxClientCircuitsPending 1024\n')
 
     torrc_file.close()
 
