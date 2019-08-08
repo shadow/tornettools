@@ -41,7 +41,7 @@ def run(args):
                     #if start < begintime or (endtime > 0 and start > endtime): continue
                     if int(d["DIDTIMEOUT"]) == 1: continue
 
-                    name = d['HOSTNAMELOCAL']
+                    name = "perfclient-{}".format(d['HOSTNAMELOCAL'])
                     db['data'].setdefault(name, {"measurement_ip": "unknown", "tgen": {"stream_summary" :{"errors":{}, "time_to_first_byte_recv":{}, "time_to_first_byte_send":{}, "time_to_last_byte_recv":{}, "time_to_last_byte_send":{}}}})
 
                     totalbytes = int(d["READBYTES"])
