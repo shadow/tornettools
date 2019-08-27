@@ -9,6 +9,7 @@ from multiprocessing import Pool, cpu_count
 
 from numpy import array_split
 from numpy.random import choice
+import pdb
 
 from shadowtortools.generate_defaults import *
 
@@ -160,11 +161,7 @@ def __generate_tor_v3bw_file(args, authorities, relays):
         v3bwfile.write("946684801\n")
 
         # first get the minimum weight across all relays
-        min_weight = 1.0
-        for pos in ['ge', 'e', 'g', 'm']:
-            sorted_relay_items = sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'])
-            (fp, relay) = sorted_relay_items[0]
-            min_weight = min(min_weight, relay['weight'])
+        min_weight = __get_min(relays)
 
         for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
             # authorities are weighted minimially for regular circuits
@@ -421,14 +418,29 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     e_bin_indices = [len(bin)//2 for bin in e_bins]
     ge_bin_indices = [len(bin)//2 for bin in ge_bins]
     m_bin_indices = [len(bin)//2 for bin in m_bins]
-
+    
+    #compute bandwidth-weights
+    min_weight = __get_min(sampled_relays)
+    
+    g_consweight_samp = sampled_weights['g']/min_weight
+    e_consweight_samp = sampled_weights['e']/min_weight
+    ge_consweight_samp = sampled_weights['ge']/min_weight
+    m_consweight_samp = sampled_weights['m']/min_weight
+    T =\
+    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp 
+    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
+    __recompute_bwweights(g_consweight_samp, m_consweight_samp,
+                          e_consweight_samp, ge_consweight_samp, T)
+    
+    logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wmg, Wme, Wmd))
     while True:
         # get the fingerprint of the median relay in each bin
         g_fingerprints = [g_bins[i][g_bin_indices[i]][0] for i in range(len(g_bins))]
         e_fingerprints = [e_bins[i][e_bin_indices[i]][0] for i in range(len(e_bins))]
         ge_fingerprints = [ge_bins[i][ge_bin_indices[i]][0] for i in range(len(ge_bins))]
         m_fingerprints = [m_bins[i][m_bin_indices[i]][0] for i in range(len(m_bins))]
-
         # add up the weights
         g_weight = sum([sampled_relays['g'][fp]['weight'] for fp in g_fingerprints])
         e_weight = sum([sampled_relays['e'][fp]['weight'] for fp in e_fingerprints])
@@ -449,6 +461,7 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
         divergence_m = (m_frac-sampled_weights['m'])
 
         max_divergence = max([abs(divergence_ge), abs(divergence_e), abs(divergence_g), abs(divergence_m)])
+        
 
         # At this point, we could go through the lists of indices to tweak them
         # in order to reduce the divergence between relay classes. But I haven't
@@ -485,7 +498,26 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
         for fp in chosen_relays[pos]:
             chosen_relays[pos][fp]['weight'] /= total_weight_before
             total_weight_after += chosen_relays[pos][fp]['weight']
+    
+    g_weight = sum([chosen_relays['g'][fp]['weight'] for fp in g_fingerprints])
+    e_weight = sum([chosen_relays['e'][fp]['weight'] for fp in e_fingerprints])
+    ge_weight = sum([chosen_relays['ge'][fp]['weight'] for fp in ge_fingerprints])
+    m_weight = sum([chosen_relays['m'][fp]['weight'] for fp in m_fingerprints])
 
+    min_weight = __get_min(chosen_relays)
+
+    g_consweight = g_weight/min_weight
+    e_consweight = e_weight/min_weight
+    ge_consweight = ge_weight/min_weight
+    m_consweight = m_weight/min_weight 
+    T = g_consweight+e_consweight+ge_consweight+m_consweight
+
+    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
+    __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
+    
+    logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(n_relays))
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wmg, Wme, Wmd))
     assert round(total_weight_after) == 1.0
 
     return chosen_relays, max_divergence
@@ -522,6 +554,14 @@ def __choose_relays_old(n_relays, sampled_relays, sampled_weights, pos_ratios):
 
     return chosen_relays, max_divergence
 
+def __get_min(relays):
+    min_weight = 1.0
+    for pos in ['ge', 'e', 'g', 'm']:
+        sorted_relay_items = sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'])
+        (fp, relay) = sorted_relay_items[0]
+        min_weight = min(min_weight, relay['weight'])
+    return min_weight
+
 # currently unused, but kept around for posterity
 def __choose_best_fit(relays, k):
     """
@@ -547,3 +587,184 @@ def __choose_best_fit(relays, k):
     chosen_weight = sum([relay['weight'] for relay in chosen_relays.values()])
 
     return chosen_relays, chosen_weight
+
+
+class Enum(tuple): __getattr__ = tuple.index
+
+bww_errors = Enum(("NO_ERROR","SUMG_ERROR", "SUME_ERROR",
+            "SUMD_ERROR","BALANCE_MID_ERROR", "BALANCE_EG_ERROR",
+            "RANGE_ERROR"))
+
+
+def __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd, Wee, Wed,
+        weightscale, G, M, E, D, T, margin, do_balance):
+    """Verify that our weights satify the formulas from dir-spec.txt"""
+
+    def check_eq(a, b, margin):
+        return (a - b) <= margin if (a - b) >= 0 else (b - a) <= margin
+    def check_range(a, b, c, d, e, f, g, mx):
+        return (a >= 0 and a <= mx and b >= 0 and b <= mx and\
+                c >= 0 and c <= mx and d >= 0 and d <= mx and\
+                e >= 0 and e <= mx and f >= 0 and f <= mx and\
+                g >= 0 and g <= mx)
+
+        # Wed + Wmd + Wgd == weightscale
+    if (not check_eq(Wed+Wmd+Wgd, weightscale, margin)):
+        return bww_errors.SUMD_ERROR
+    # Wmg + Wgg == weightscale
+    if (not check_eq(Wmg+Wgg, weightscale, margin)):
+        return bww_errors.SUMG_ERROR
+    # Wme + Wee == 1
+    if (not check_eq(Wme+Wee, weightscale, margin)):
+        return bww_errors.SUME_ERROR
+    # Verify weights within range 0 -> weightscale
+    if (not check_range(Wgg, Wgd, Wmg, Wme, Wmd, Wed, Wee, weightscale)):
+        return bww_errors.RANGE_ERROR
+    if (do_balance):
+        #Wgg*G + Wgd*D == Wee*E + Wed*D
+        if (not check_eq(Wgg*G+Wgd*D, Wee*E+Wed*D, (margin*T)/3)):
+            return bww_errors.BALANCE_EG_ERROR
+        #Wgg*G+Wgd*D == M*weightscale + Wmd*D + Wme * E + Wmg*G
+        if (not check_eq(Wgg*G+Wgd*D, M*weightscale+Wmd*D+Wme*E+Wmg*G,
+            (margin*T)/3)):
+            return bww_errors.BALANCE_MID_ERROR
+
+    return bww_errors.NO_ERROR
+
+
+def __recompute_bwweights(G, M, E, D, T):
+    """Detects in which network case load we are according to section 3.8.3
+    of dir-spec.txt from Tor' specifications and recompute bandwidth weights
+    """
+    weightscale = 10000
+    if (3*E >= T and 3*G >= T):
+        #Case 1: Neither are scarce
+        casename = "Case 1 (Wgd=Wmd=Wed)"
+        Wgd = Wed = Wmd = weightscale/3
+        Wee = (weightscale*(E+G+M))/(3*E)
+        Wme = weightscale - Wee
+        Wmg = (weightscale*(2*G-E-M))/(3*G)
+        Wgg = weightscale - Wmg
+
+        check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd, Wee, Wed,
+                weightscale, G, M, E, D, T, 10, True)
+        if (check != bww_errors.NO_ERROR):
+            raise ValueError(\
+                    'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+                    Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
+                        Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+    elif (3*E < T and 3*G < T):
+        #Case 2: Both Guards and Exits are scarce
+        #Balance D between E and G, depending upon D capacity and
+        #scarcity
+        R = min(E, G)
+        S = max(E, G)
+        if (R+D < S):
+            #subcase a
+            Wgg = Wee = weightscale
+            Wmg = Wme = Wmd = 0
+            if (E < G):
+                casename = "Case 2a (E scarce)"
+                Wed = weightscale
+                Wgd = 0
+            else: 
+                # E >= G
+                casename = "Case 2a (G scarce)"
+                Wed = 0
+                Wgd = weightscale
+
+        else:
+            #subcase b R+D >= S
+            casename = "Case 2b1 (Wgg=weightscale, Wmd=Wgd)"
+            Wee = (weightscale*(E-G+M))/E
+            Wed = (weightscale*(D-2*E+4*G-2*M))/(3*D)
+            Wme = (weightscale*(G-M))/E
+            Wmg = 0
+            Wgg = weightscale
+            Wmd = Wgd = (weightscale-Wed)/2
+
+            check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd,
+                    Wee, Wed, weightscale, G, M, E, D, T, 10, True)
+            if (check != bww_errors.NO_ERROR):
+                casename = 'Case 2b2 (Wgg=weightscale, Wee=weightscale)'
+                Wgg = Wee = weightscale
+                Wed = (weightscale*(D-2*E+G+M))/(3*D)
+                Wmd = (weightscale*(D-2*M+G+E))/(3*D)
+                Wme = Wmg = 0
+                if (Wmd < 0):
+                    #Too much bandwidth at middle position
+                    casename = 'case 2b3 (Wmd=0)'
+                    Wmd = 0
+                Wgd = weightscale - Wed - Wmd
+
+                check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd,
+                        Wee, Wed, weightscale, G, M, E, D, T, 10, True)
+            if (check != bww_errors.NO_ERROR and check !=\
+                        bww_errors.BALANCE_MID_ERROR):
+                raise ValueError(\
+                        'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+                        Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
+                            Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+    else: # if (E < T/3 or G < T/3)
+        #Case 3: Guard or Exit is scarce
+        S = min(E, G)
+
+        if (not (3*E < T or  3*G < T) or not (3*G >= T or 3*E >= T)):
+            raise ValueError(\
+                    'ERROR: Bandwidths have inconsistent values \
+                    G={0}, M={1}, E={2}, D={3}, T={4}'.format(G,M,E,D,T))
+
+        if (3*(S+D) < T):
+                #subcasea: S+D < T/3
+            if (G < E):
+                casename = 'Case 3a (G scarce)'
+                Wgg = Wgd = weightscale
+                Wmd = Wed = Wmg = 0
+
+                if (E < M): Wme = 0
+                else: Wme = (weightscale*(E-M))/(2*E)
+                Wee = weightscale - Wme
+            else:
+                # G >= E
+                casename = "Case 3a (E scarce)"
+                Wee = Wed = weightscale
+                Wmd = Wgd = Wme = 0
+                if (G < M): Wmg = 0
+                else: Wmg = (weightscale*(G-M))/(2*G)
+                Wgg = weightscale - Wmg
+        else:
+            #subcase S+D >= T/3
+            if (G < E):
+                casename = 'Case 3bg (G scarce, Wgg=weightscale, Wmd == Wed'
+                Wgg = weightscale
+                Wgd = (weightscale*(D-2*G+E+M))/(3*D)
+                Wmg = 0
+                Wee = (weightscale*(E+M))/(2*E)
+                Wme = weightscale - Wee
+                Wmd = Wed = (weightscale-Wgd)/2
+
+                check = __check_weights_errors(Wgg, Wgd, Wmg, Wme,
+                        Wmd, Wee, Wed, weightscale, G, M, E, D, T, 10,
+                        True)
+            else:
+                # G >= E
+                casename = 'Case 3be (E scarce, Wee=weightscale, Wmd == Wgd'
+                Wee = weightscale
+                Wed = (weightscale*(D-2*E+G+M))/(3*D)
+                Wme = 0
+                Wgg = (weightscale*(G+M))/(2*G)
+                Wmg = weightscale - Wgg
+                Wmd = Wgd = (weightscale-Wed)/2
+
+                check = __check_weights_errors(Wgg, Wgd, Wmg, Wme,
+                        Wmd, Wee, Wed,  weightscale, G, M, E, D, T, 10,
+                        True)
+
+            if (check):
+                raise ValueError(\
+                        'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+                        Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
+                            Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+
+    return (casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd)
+
