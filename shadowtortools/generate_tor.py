@@ -352,6 +352,13 @@ def get_relays(args):
 def __sample_relays(relays, sample_size):
     # we need to make sure the relay ordering matches, so create a list of prints
     all_fingerprints = list(relays.keys())
+    
+    #FIXME - FR
+    ### the Following picking strategy could put some weird bias -- E.g.,
+    # young guards have high uptime but do not appear for a long time as a
+    # guard within the consensuses => They're likely to get picked and put
+    # within the sampled_relays['m'] dict
+    #
 
     # pick relays weighted by their run frequency (uptime)
     # if it was not running long enough or has no bandwidth, it won't get selected
@@ -433,8 +440,8 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
                           e_consweight_samp, ge_consweight_samp, T)
     
     logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
-    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wmg={}, Wme={}, Wmd={}"
-                 .format(casename, Wgg, Wgd, Wee, Wmg, Wme, Wmd))
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
     while True:
         # get the fingerprint of the median relay in each bin
         g_fingerprints = [g_bins[i][g_bin_indices[i]][0] for i in range(len(g_bins))]
@@ -516,8 +523,8 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
     
     logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(n_relays))
-    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wmg={}, Wme={}, Wmd={}"
-                 .format(casename, Wgg, Wgd, Wee, Wmg, Wme, Wmd))
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
     assert round(total_weight_after) == 1.0
 
     return chosen_relays, max_divergence
