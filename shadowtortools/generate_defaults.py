@@ -1,5 +1,3 @@
-# the fraction of consensuses a relay needs a position flag to be counted for that position
-POS_FLAG_THRESH=0.90
 # a relay must have been running longer than this to be considered
 RUN_FREQ_THRESH=0.01
 

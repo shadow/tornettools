@@ -8,8 +8,7 @@ import shutil
 from multiprocessing import Pool, cpu_count
 
 from numpy import array_split
-from numpy.random import choice
-import pdb
+from numpy.random import choice, uniform
 
 from shadowtortools.generate_defaults import *
 
@@ -372,7 +371,11 @@ def __sample_relays(relays, sample_size):
     # normalize
     run_freqs_normed = [freq/sum(run_freqs) for freq in run_freqs]
     sampled_fingerprints = list(choice(all_fingerprints, p=run_freqs_normed, replace=False, size=sample_size))
-
+    
+    min_weight_sampled = 1.0
+    for fp in sampled_fingerprints:
+        if min_weight_sampled > relays[fp]['weight']:
+            min_weight_sampled = relays[fp]['weight']
     # track the results
     sampled_relays = {'all':{}, 'g':{}, 'e':{}, 'ge':{}, 'm':{}}
     sampled_weights = {'all':0, 'g':0, 'e':0, 'ge':0, 'm':0}
@@ -382,21 +385,23 @@ def __sample_relays(relays, sample_size):
         # track list of all relays
         sampled_relays['all'][fp] = relay
         sampled_weights['all'] += weight
+        
+        has_guard_f = True if relays[fp]['weight']/min_weight_sampled >= 2000 and uniform() <= relays[fp]['guard_frequency'] else False
+        has_exit_f = True if uniform() <= relays[fp]['exit_frequency'] else False
 
         # track relays by position too
-        if relays[fp]['guard_frequency'] >= POS_FLAG_THRESH and relays[fp]['exit_frequency'] >= POS_FLAG_THRESH:
+        if has_guard_f and has_exit_f:
             sampled_relays['ge'][fp] = relay
             sampled_weights['ge'] += weight
-        elif relays[fp]['exit_frequency'] >= POS_FLAG_THRESH:
+        elif has_exit_f:
             sampled_relays['e'][fp] = relay
             sampled_weights['e'] += weight
-        elif relays[fp]['guard_frequency'] >= POS_FLAG_THRESH:
+        elif has_guard_f:
             sampled_relays['g'][fp] = relay
             sampled_weights['g'] += weight
         else:
             sampled_relays['m'][fp] = relay
             sampled_weights['m'] += weight
-
     # normalize the weights
     sampled_weights['g'] /= sampled_weights['all']
     sampled_weights['e'] /= sampled_weights['all']
