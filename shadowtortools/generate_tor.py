@@ -351,14 +351,6 @@ def get_relays(args):
 def __sample_relays(relays, sample_size):
     # we need to make sure the relay ordering matches, so create a list of prints
     all_fingerprints = list(relays.keys())
-    
-    #FIXME - FR
-    ### the Following picking strategy could put some weird bias -- E.g.,
-    # young guards have high uptime but do not appear for a long time as a
-    # guard within the consensuses => They're likely to get picked and put
-    # within the sampled_relays['m'] dict
-    #
-
     # pick relays weighted by their run frequency (uptime)
     # if it was not running long enough or has no bandwidth, it won't get selected
     run_freqs = []
@@ -372,10 +364,7 @@ def __sample_relays(relays, sample_size):
     run_freqs_normed = [freq/sum(run_freqs) for freq in run_freqs]
     sampled_fingerprints = list(choice(all_fingerprints, p=run_freqs_normed, replace=False, size=sample_size))
     
-    min_weight_sampled = 1.0
-    for fp in sampled_fingerprints:
-        if min_weight_sampled > relays[fp]['weight']:
-            min_weight_sampled = relays[fp]['weight']
+    min_weight_sampled = min([relays[fp]['weight'] for fp in sampled_fingerprints])
     # track the results
     sampled_relays = {'all':{}, 'g':{}, 'e':{}, 'ge':{}, 'm':{}}
     sampled_weights = {'all':0, 'g':0, 'e':0, 'ge':0, 'm':0}
@@ -385,8 +374,11 @@ def __sample_relays(relays, sample_size):
         # track list of all relays
         sampled_relays['all'][fp] = relay
         sampled_weights['all'] += weight
-        
-        has_guard_f = True if relays[fp]['weight']/min_weight_sampled >= 2000 and uniform() <= relays[fp]['guard_frequency'] else False
+        #Makes the flag assignment probabilistic w.r.t. relays' observed flag
+        #frequency. Relays receiving the guard flag must at least have
+        #TOR_GUARD_MIN_CONSBW
+        has_guard_f = True if int(round(relays[fp]['weight']/min_weight_sampled))>= TOR_GUARD_MIN_CONSBW\
+                              and uniform() <= relays[fp]['guard_frequency'] else False
         has_exit_f = True if uniform() <= relays[fp]['exit_frequency'] else False
 
         # track relays by position too
@@ -431,22 +423,8 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     ge_bin_indices = [len(bin)//2 for bin in ge_bins]
     m_bin_indices = [len(bin)//2 for bin in m_bins]
     
-    #compute bandwidth-weights
-    min_weight = __get_min(sampled_relays)
-    
-    g_consweight_samp = sampled_weights['g']/min_weight
-    e_consweight_samp = sampled_weights['e']/min_weight
-    ge_consweight_samp = sampled_weights['ge']/min_weight
-    m_consweight_samp = sampled_weights['m']/min_weight
-    T =\
-    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp 
-    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
-    __recompute_bwweights(g_consweight_samp, m_consweight_samp,
-                          e_consweight_samp, ge_consweight_samp, T)
-    
-    logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
-    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
-                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
+    __log_bwweights_sampled_network(sampled_relays, sampled_weights)
+
     while True:
         # get the fingerprint of the median relay in each bin
         g_fingerprints = [g_bins[i][g_bin_indices[i]][0] for i in range(len(g_bins))]
@@ -510,26 +488,9 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
         for fp in chosen_relays[pos]:
             chosen_relays[pos][fp]['weight'] /= total_weight_before
             total_weight_after += chosen_relays[pos][fp]['weight']
-    
-    g_weight = sum([chosen_relays['g'][fp]['weight'] for fp in g_fingerprints])
-    e_weight = sum([chosen_relays['e'][fp]['weight'] for fp in e_fingerprints])
-    ge_weight = sum([chosen_relays['ge'][fp]['weight'] for fp in ge_fingerprints])
-    m_weight = sum([chosen_relays['m'][fp]['weight'] for fp in m_fingerprints])
 
-    min_weight = __get_min(chosen_relays)
+    __log_bwweights_chosen_network(chosen_relays)
 
-    g_consweight = g_weight/min_weight
-    e_consweight = e_weight/min_weight
-    ge_consweight = ge_weight/min_weight
-    m_consweight = m_weight/min_weight 
-    T = g_consweight+e_consweight+ge_consweight+m_consweight
-
-    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
-    __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
-    
-    logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(n_relays))
-    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
-                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
     assert round(total_weight_after) == 1.0
 
     return chosen_relays, max_divergence
@@ -780,3 +741,43 @@ def __recompute_bwweights(G, M, E, D, T):
 
     return (casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd)
 
+def __log_bwweights_chosen_network(chosen_relays):
+    
+    g_weight = sum([chosen_relays['g'][fp]['weight'] for fp in chosen_relays['g']])
+    e_weight = sum([chosen_relays['e'][fp]['weight'] for fp in chosen_relays['e']])
+    ge_weight = sum([chosen_relays['ge'][fp]['weight'] for fp in chosen_relays['ge']])
+    m_weight = sum([chosen_relays['m'][fp]['weight'] for fp in chosen_relays['m']])
+
+    min_weight = __get_min(chosen_relays)
+
+    g_consweight = g_weight/min_weight
+    e_consweight = e_weight/min_weight
+    ge_consweight = ge_weight/min_weight
+    m_consweight = m_weight/min_weight 
+    T = g_consweight+e_consweight+ge_consweight+m_consweight
+
+    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
+    __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
+    
+    logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(
+        len(chosen_relays['g'])+len(chosen_relays['e'])+len(chosen_relays['ge'])+len(chosen_relays['m'])))
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
+
+def __log_bwweights_sampled_network(sampled_relays, sampled_weights):
+    #compute bandwidth-weights
+    min_weight = __get_min(sampled_relays)
+    
+    g_consweight_samp = sampled_weights['g']/min_weight
+    e_consweight_samp = sampled_weights['e']/min_weight
+    ge_consweight_samp = sampled_weights['ge']/min_weight
+    m_consweight_samp = sampled_weights['m']/min_weight
+    T =\
+    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp 
+    casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
+    __recompute_bwweights(g_consweight_samp, m_consweight_samp,
+                          e_consweight_samp, ge_consweight_samp, T)
+    
+    logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
+    logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
+                 .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
