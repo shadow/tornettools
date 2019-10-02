@@ -212,6 +212,6 @@ def __add_xml_oniontrace(args, parent_elm, start_time, name):
         process = etree.SubElement(parent_elm, SHADOW_XML_PROCESS_KEY)
         process.set("plugin", "oniontrace")
         process.set("starttime", "{}".format(start_time))
-        run_time = SIMULATION_LENGTH_SECONDS-start_time
+        run_time = SIMULATION_LENGTH_SECONDS-start_time-1
         tracefile_path = "{}/{}/{}/oniontrace.csv".format(SHADOW_DATA_PATH, SHADOW_HOSTS_PATH, name)
         process.set("arguments", "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile={}".format(TOR_CONTROL_PORT, run_time, tracefile_path))
