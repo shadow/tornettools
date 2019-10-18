@@ -89,7 +89,7 @@ def main():
         type=type_str_path_in)
 
     stage_parser.add_argument("user_stats_path",
-        help="Path to a Tor user stats file",
+        help="Path to a Tor user stats file (https://metrics.torproject.org/userstats-relay-country.csv)",
         type=type_str_path_in)
 
     stage_parser.add_argument('-p', '--prefix',
