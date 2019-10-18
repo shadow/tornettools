@@ -328,9 +328,19 @@ def combine_parsed_consensus_results(results):
 def parse_serverdesc(path):
     relay = next(parse_file(path, document_handler='DOCUMENT', descriptor_type='server-descriptor 1.0', validate=False))
 
+    if relay == None:
+        return None
+
+    if relay.observed_bandwidth is None:
+        return None
+
     advertised_bw = relay.observed_bandwidth
-    if relay.average_bandwidth < advertised_bw: advertised_bw = relay.average_bandwidth
-    if relay.burst_bandwidth < advertised_bw: advertised_bw = relay.burst_bandwidth
+
+    avg_bw = relay.average_bandwidth
+    bst_bw = relay.burst_bandwidth
+
+    if avg_bw != None and avg_bw < advertised_bw: advertised_bw = avg_bw
+    if bst_bw != None and bst_bw < advertised_bw: advertised_bw = bst_bw
 
     result = {
         'type': 'serverdesc',
@@ -338,8 +348,8 @@ def parse_serverdesc(path):
         'fprint': relay.fingerprint,
         'address': relay.address,
         'bw_obs': relay.observed_bandwidth,
-        'bw_rate': relay.average_bandwidth,
-        'bw_burst': relay.burst_bandwidth,
+        'bw_rate': avg_bw if avg_bw != None else 0,
+        'bw_burst': bst_bw if bst_bw != None else 0,
         'bw_adv': advertised_bw,
     }
 
