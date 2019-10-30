@@ -97,8 +97,8 @@ def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
 
     proxy = "localhost:{}".format(TOR_SOCKS_PORT)
 
-    # use a stallout of 600 seconds, since that is the max delay allowed by the tgen markov model
-    G.add_node("start", loglevel=tgen_client['log_level'], time=startup_delay, socksproxy=proxy, peers=peers, stallout="600 seconds", timeout="0 seconds")
+    # use a absolute timeout of 10 minutes (idle streams stallout after 2 minutes)
+    G.add_node("start", loglevel=tgen_client['log_level'], time=startup_delay, socksproxy=proxy, peers=peers, stallout="2 minutes", timeout="10 minutes")
     G.add_node("traffic", socksauthseed=socksauthseed, flowmodelpath=flowmodel_relpath, streammodelpath=streammodelpath, packetmodelpath=packetmodelpath, packetmodelmode="path", markovmodelseed=markovmodelseed)
 
     # we loop generating traffic until the experiment ends
