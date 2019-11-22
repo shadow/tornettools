@@ -207,6 +207,7 @@ def __generate_torrc_common(conf_path, authorities):
     torrc_file.write('Log notice stdout\n')
     torrc_file.write('SafeLogging 0\n')
     torrc_file.write('LogTimeGranularity 1\n')
+    torrc_file.write('HeartbeatPeriod 1\n')
     torrc_file.write('ContactInfo https://github.com/shadow/shadow-plugin-tor/issues\n')
     torrc_file.write('DisableDebuggerAttachment 0\n')
     torrc_file.write('CellStatistics 0\n')
@@ -285,10 +286,8 @@ def __generate_torrc_markovclient(conf_path):
     torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
     torrc_file.write('SocksTimeout 120\n') # we didnt get a circuit for the socks request
-    torrc_file.write('CircuitStreamTimeout 15\n') # we didnt finish the BEGIN/CONNECTED handshake
-    torrc_file.write('LearnCircuitBuildTimeout 0\n')
-    torrc_file.write('CircuitBuildTimeout 30\n')
-    torrc_file.write('MaxClientCircuitsPending 1024\n')
+    torrc_file.write('CircuitStreamTimeout 120\n') # we didnt finish the BEGIN/CONNECTED handshake
+    torrc_file.write('MaxClientCircuitsPending 1024\n') # markov clients build lots of circuits
 
     torrc_file.close()
 
@@ -363,7 +362,7 @@ def __sample_relays(relays, sample_size):
     # normalize
     run_freqs_normed = [freq/sum(run_freqs) for freq in run_freqs]
     sampled_fingerprints = list(choice(all_fingerprints, p=run_freqs_normed, replace=False, size=sample_size))
-    
+
     min_weight_sampled = min([relays[fp]['weight'] for fp in sampled_fingerprints])
     # track the results
     sampled_relays = {'all':{}, 'g':{}, 'e':{}, 'ge':{}, 'm':{}}
@@ -422,7 +421,7 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     e_bin_indices = [len(bin)//2 for bin in e_bins]
     ge_bin_indices = [len(bin)//2 for bin in ge_bins]
     m_bin_indices = [len(bin)//2 for bin in m_bins]
-    
+
     __log_bwweights_sampled_network(sampled_relays, sampled_weights)
 
     while True:
@@ -451,7 +450,7 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
         divergence_m = (m_frac-sampled_weights['m'])
 
         max_divergence = max([abs(divergence_ge), abs(divergence_e), abs(divergence_g), abs(divergence_m)])
-        
+
 
         # At this point, we could go through the lists of indices to tweak them
         # in order to reduce the divergence between relay classes. But I haven't
@@ -640,7 +639,7 @@ def __recompute_bwweights(G, M, E, D, T):
                 casename = "Case 2a (E scarce)"
                 Wed = weightscale
                 Wgd = 0
-            else: 
+            else:
                 # E >= G
                 casename = "Case 2a (G scarce)"
                 Wed = 0
@@ -742,7 +741,7 @@ def __recompute_bwweights(G, M, E, D, T):
     return (casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd)
 
 def __log_bwweights_chosen_network(chosen_relays):
-    
+
     g_weight = sum([chosen_relays['g'][fp]['weight'] for fp in chosen_relays['g']])
     e_weight = sum([chosen_relays['e'][fp]['weight'] for fp in chosen_relays['e']])
     ge_weight = sum([chosen_relays['ge'][fp]['weight'] for fp in chosen_relays['ge']])
@@ -753,12 +752,12 @@ def __log_bwweights_chosen_network(chosen_relays):
     g_consweight = g_weight/min_weight
     e_consweight = e_weight/min_weight
     ge_consweight = ge_weight/min_weight
-    m_consweight = m_weight/min_weight 
+    m_consweight = m_weight/min_weight
     T = g_consweight+e_consweight+ge_consweight+m_consweight
 
     casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
     __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
-    
+
     logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(
         len(chosen_relays['g'])+len(chosen_relays['e'])+len(chosen_relays['ge'])+len(chosen_relays['m'])))
     logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
@@ -767,17 +766,17 @@ def __log_bwweights_chosen_network(chosen_relays):
 def __log_bwweights_sampled_network(sampled_relays, sampled_weights):
     #compute bandwidth-weights
     min_weight = __get_min(sampled_relays)
-    
+
     g_consweight_samp = sampled_weights['g']/min_weight
     e_consweight_samp = sampled_weights['e']/min_weight
     ge_consweight_samp = sampled_weights['ge']/min_weight
     m_consweight_samp = sampled_weights['m']/min_weight
     T =\
-    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp 
+    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp
     casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
     __recompute_bwweights(g_consweight_samp, m_consweight_samp,
                           e_consweight_samp, ge_consweight_samp, T)
-    
+
     logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
     logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
                  .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
