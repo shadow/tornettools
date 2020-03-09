@@ -288,26 +288,26 @@ def get_clients(args):
     with open(tally_path, 'r') as tally_file:
         measurement3 = json.load(tally_file)
 
-    n_total_clients, n_active_clients, n_inactive_clients = __get_client_counts(measurement1, measurement1_scale, args.network_scale)
-    logging.info("Privcount measurements scaled to {} Tor clients, {} active and {} inactive".format(n_total_clients, n_active_clients, n_inactive_clients))
+    n_total_users, n_active_users, n_inactive_users = __get_client_counts(measurement1, measurement1_scale, args.network_scale)
+    logging.info("Privcount measurements scaled to {} Tor users, {} active and {} inactive".format(n_total_users, n_active_users, n_inactive_users))
 
     n_total_circs, n_active_circs, n_inactive_circs = __get_exit_circuit_counts(measurement3, measurement3_scale, args.network_scale)
     logging.info("Privcount measurements scaled to {} exit circuits, {} active and {} inactive".format(n_total_circs, n_active_circs, n_inactive_circs))
 
-    tgen_clients, total_circuits_10_mins = __get_tgen_clients(args, n_active_clients, n_active_circs, measurement2)
+    tgen_clients, total_circuits_10_mins = __get_tgen_clients(args, n_active_users, n_active_circs, measurement2)
 
-    logging.info("We will use {} TGen clients to emulate {} Tor clients and create {} circuits every 10 minutes in aggregate".format(len(tgen_clients), n_active_clients, total_circuits_10_mins))
+    logging.info("We will use {} TGen client processes to emulate {} Tor users and create {} circuits every 10 minutes in aggregate".format(len(tgen_clients), n_active_users, total_circuits_10_mins))
 
-    perf_clients = __get_perf_clients(args, n_active_clients)
+    perf_clients = __get_perf_clients(args, n_active_users)
 
     logging.info("We will use {} perf nodes to benchmark Tor performance".format(len(perf_clients)))
 
     return tgen_clients, perf_clients
 
-def __get_perf_clients(args, n_clients):
+def __get_perf_clients(args, n_users):
     perf_clients = []
 
-    n_perf = round(n_clients * args.torperf_scale)
+    n_perf = round(n_users * args.torperf_scale)
     for i in range(n_perf):
         chosen_country_code = choice(ONIONPERF_COUNTRY_CODES)
         client = {
@@ -328,21 +328,26 @@ def __load_user_data(args):
 
     return country_codes, country_probs
 
-def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
+def __get_tgen_clients(args, n_users, n_circuits, measurement2):
     # we need a set of TGen clients generating Tor client load
     tgen_clients = []
-    n_clients_per_tgen = round(1.0 / args.client_scale)
-    n_tgen = round(n_clients / n_clients_per_tgen)
+
+    n_users_per_tgen = round(1.0 / args.process_scale)
+    n_tgen = round(n_users / n_users_per_tgen)
+
     if n_tgen < TGEN_CLIENT_MIN_COUNT:
-        # in this case, each tgen client will emulate fewer than requested tor clients.
-        # i.e., args.client_scale will be ignored
+        # in this case, each tgen client will emulate fewer than requested tor users.
+        # i.e., args.process_scale will be ignored
         n_tgen = TGEN_CLIENT_MIN_COUNT
-        n_clients_per_tgen = round(n_clients / n_tgen)
+        n_users_per_tgen = round(n_users / n_tgen)
 
     # each client will be placed in a country
     country_codes, country_probs = __load_user_data(args)
 
-    n_circuits_per_tgen = n_circuits / n_tgen
+    # the number of circuits each tgen creates every 10 minutes.
+    # we adjust by the load scale here instead of on n_tgen, because n_tgen
+    # can already be adjusted with args.process_scale.
+    n_circuits_per_tgen = round(n_circuits / n_tgen * args.load_scale)
 
     total_circuits_10_mins = 0
     for i in range(n_tgen):
@@ -354,7 +359,7 @@ def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
         #        because there was a DoS attack on Tor during the measurement which caused entry
         #        relays to see ~10 times as many circuits as exit relays. So instead we use the
         #        more accurate total circuit counts from exits.
-        #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_clients_per_tgen)
+        #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_users_per_tgen)
         num_circs_every_10_minutes = int(n_circuits_per_tgen)
         total_circuits_10_mins += num_circs_every_10_minutes
 

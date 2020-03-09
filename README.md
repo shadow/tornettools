@@ -63,13 +63,13 @@ for the collection of information from Tor throughout an experiment.
 
 ### stage first, process relay and user info
 
-    tornetgen stage consensuses-2020-01 server-descriptors-2020-01 userstats-relay-country.csv -g tor/src/config/geoip
+    tornetgen stage consensuses-2020-01 server-descriptors-2020-01 userstats-relay-country.csv --geoip_path tor/src/config/geoip
 
 ### now we can used the staged files to generate many times
 
 For example, use '-n 0.1' to generate a private Tor network at '10%' the scale of public Tor:
 
-    tornetgen generate relayinfo_staging_2020-01-01--2020-02-01.json userinfo_staging_2020-01-01--2020-02-01.json tmodel-ccs2018.github.io -n 0.1 -p tornet-0.1
+    tornetgen generate relayinfo_staging_2020-01-01--2020-02-01.json userinfo_staging_2020-01-01--2020-02-01.json tmodel-ccs2018.github.io --network_scale 0.1 --prefix tornet-0.1
 
 ### you can parse the torperf data so we can compare public Tor and our private Tor performance benchmarks
 
