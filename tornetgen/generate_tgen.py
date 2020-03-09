@@ -344,10 +344,6 @@ def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
 
     n_circuits_per_tgen = n_circuits / n_tgen
 
-    quarter_circuits = n_circuits_per_tgen * 0.75
-    n_circs_low = n_circuits_per_tgen-quarter_circuits
-    n_circs_high = n_circuits_per_tgen+quarter_circuits
-
     total_circuits_10_mins = 0
     for i in range(n_tgen):
         # where to place the tgen process
@@ -359,7 +355,7 @@ def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
         #        relays to see ~10 times as many circuits as exit relays. So instead we use the
         #        more accurate total circuit counts from exits.
         #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_clients_per_tgen)
-        num_circs_every_10_minutes = int(round(uniform(n_circs_low, n_circs_high)))
+        num_circs_every_10_minutes = int(n_circuits_per_tgen)
         total_circuits_10_mins += num_circs_every_10_minutes
 
         # convert circuit count into a rate for the exponential distribution
