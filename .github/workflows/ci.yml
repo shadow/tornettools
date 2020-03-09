@@ -1,0 +1,27 @@
+# Syntax reference:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+
+name: Build
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+
+jobs:
+  building:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install tornetgen dependencies
+        run: sudo apt install -y python python-dev python-pip python-virtualenv libxml2 libxml2-dev libxslt1.1 libxslt1-dev libpng16-16 libpng-dev libfreetype6 libfreetype6-dev libblas-dev liblapack-dev
+
+      - name: Build tornetgen
+        run: virtualenv tornetgenenv && source tornetgenenv/bin/activate && pip install -r requirements.txt && pip install -I .

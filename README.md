@@ -1,5 +1,7 @@
 # TorNetGen
 
+![](https://github.com/shadow/tornetgen/workflows/Build/badge.svg)
+
 This tool generates configuration files that can be used to set up and run
 private Tor networks of a configurable scale. The configuration files that
 are generated can be run in the
