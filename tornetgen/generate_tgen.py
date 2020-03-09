@@ -7,7 +7,7 @@ from random import randrange
 
 from networkx import DiGraph, write_graphml
 
-from shadowtortools.generate_defaults import *
+from tornetgen.generate_defaults import *
 
 def generate_tgen_config(args, tgen_clients, tgen_servers):
     # make sure the config directory exists
@@ -378,14 +378,14 @@ def __get_tgen_clients(args, n_clients, n_circuits, measurement2):
 
     return tgen_clients, total_circuits_10_mins
 
-def __get_client_counts(measurement, privcount_scale, shadowtor_scale):
+def __get_client_counts(measurement, privcount_scale, tornet_scale):
     # extract the counts from the tally file data
     total_count = measurement['EntryClientIPCount']['bins'][0][2]
     active_count = measurement['EntryActiveClientIPCount']['bins'][0][2]
     inactive_count = measurement['EntryInactiveClientIPCount']['bins'][0][2]
 
-    # we need to convert the counts at the privcount scale, to counts at our shadowtor scale
-    scale_factor = shadowtor_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
+    # we need to convert the counts at the privcount scale, to counts at our tornet scale
+    scale_factor = tornet_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
 
     total_scaled = int(round(total_count * scale_factor))
     active_scaled = int(round(active_count * scale_factor))
@@ -393,14 +393,14 @@ def __get_client_counts(measurement, privcount_scale, shadowtor_scale):
 
     return total_scaled, active_scaled, inactive_scaled
 
-def __get_exit_circuit_counts(measurement, privcount_scale, shadowtor_scale):
+def __get_exit_circuit_counts(measurement, privcount_scale, tornet_scale):
     # extract the counts from the tally file data
     total_count = measurement['ExitCircuitCount']['bins'][0][2]
     active_count = measurement['ExitActiveCircuitCount']['bins'][0][2]
     inactive_count = measurement['ExitInactiveCircuitCount']['bins'][0][2]
 
-    # we need to convert the counts at the privcount scale, to counts at our shadowtor scale
-    scale_factor = shadowtor_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
+    # we need to convert the counts at the privcount scale, to counts at our tornet scale
+    scale_factor = tornet_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
 
     total_scaled = int(round(total_count * scale_factor))
     active_scaled = int(round(active_count * scale_factor))

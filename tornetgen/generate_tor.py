@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 from numpy import array_split
 from numpy.random import choice, uniform
 
-from shadowtortools.generate_defaults import *
+from tornetgen.generate_defaults import *
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
@@ -41,8 +41,8 @@ def __generate_fingerprint(subproc_args):
 
 def __read_fingerprint(datadir):
     with open("{0}/fingerprint".format(datadir), 'r') as f:
-        shadowtor_fp = f.readline().strip().split()[1]
-    return shadowtor_fp
+        tornet_fp = f.readline().strip().split()[1]
+    return tornet_fp
 
 def generate_tor_keys(args, relays):
     template_prefix = "{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH)
@@ -108,7 +108,7 @@ def generate_tor_keys(args, relays):
         for fp in relays[pos]:
             nickname = relays[pos][fp]["nickname"]
             datadir = "{}/{}".format(hosts_prefix, nickname)
-            relays[pos][fp]["shadowtor_fingerprint"] = __read_fingerprint(datadir)
+            relays[pos][fp]["tornet_fingerprint"] = __read_fingerprint(datadir)
 
     authorities = {}
     for i in range(n_authorities):
@@ -117,7 +117,7 @@ def generate_tor_keys(args, relays):
         fp = __read_fingerprint(datadir)
         authorities[fp] = {
             "nickname": nickname,
-            "shadowtor_fingerprint": fp,
+            "tornet_fingerprint": fp,
             "v3identity": __generate_authority_keys(args.torgencertexe, datadir, keygen_torrc, keygen_pw),
             "bandwidth_capacity": BW_1GBIT_BYTES,
             "address": "100.0.0.{0}".format(i+1),
@@ -166,16 +166,16 @@ def __generate_tor_v3bw_file(args, authorities, relays):
             # authorities are weighted minimially for regular circuits
             cons_bw_weight = int(round(1.0))
             nickname = authority['nickname']
-            shadowtor_fp = authority['shadowtor_fingerprint']
-            v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(shadowtor_fp, cons_bw_weight, nickname))
+            tornet_fp = authority['tornet_fingerprint']
+            v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(tornet_fp, cons_bw_weight, nickname))
 
         for pos in ['ge', 'e', 'g', 'm']:
             # use reverse to sort each class from fastest to slowest when assigning the id counter
             for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
                 cons_bw_weight = int(round(relay['weight']/min_weight))
                 nickname = relay['nickname']
-                shadowtor_fp = relay['shadowtor_fingerprint']
-                v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(shadowtor_fp, cons_bw_weight, nickname))
+                tornet_fp = relay['tornet_fingerprint']
+                v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(tornet_fp, cons_bw_weight, nickname))
 
     # link to the initial v3bw file in the same directory
     v3bw_path = "{}/v3bw".format(bwauth_dir)
@@ -190,8 +190,8 @@ def __generate_torrc_common(conf_path, authorities):
         nickname = authority['nickname']
         v3id = authority['v3identity']
         address = authority['address']
-        shadowtor_fp = authority['shadowtor_fingerprint']
-        fp_with_spaces = " ".join(shadowtor_fp[i:i+4] for i in range(0, len(shadowtor_fp), 4))
+        tornet_fp = authority['tornet_fingerprint']
+        fp_with_spaces = " ".join(tornet_fp[i:i+4] for i in range(0, len(tornet_fp), 4))
 
         line = 'DirServer {} v3ident={} orport={} {}:{} {}'.format(nickname, v3id, TOR_OR_PORT, address, TOR_DIR_PORT, fp_with_spaces)
         torrc_file.write('{}\n'.format(line))
@@ -229,12 +229,12 @@ def __generate_torrc_common(conf_path, authorities):
     torrc_file.close()
 
 def __generate_torrc_authority(conf_path, relays):
-    shadowtor_fps_g = [relays['g'][fp]['shadowtor_fingerprint'] for fp in relays['g']]
-    shadowtor_fps_e = [relays['e'][fp]['shadowtor_fingerprint'] for fp in relays['e']]
-    shadowtor_fps_ge = [relays['ge'][fp]['shadowtor_fingerprint'] for fp in relays['ge']]
+    tornet_fps_g = [relays['g'][fp]['tornet_fingerprint'] for fp in relays['g']]
+    tornet_fps_e = [relays['e'][fp]['tornet_fingerprint'] for fp in relays['e']]
+    tornet_fps_ge = [relays['ge'][fp]['tornet_fingerprint'] for fp in relays['ge']]
 
-    guard_fps = shadowtor_fps_g + shadowtor_fps_ge
-    exit_fps = shadowtor_fps_e + shadowtor_fps_ge
+    guard_fps = tornet_fps_g + tornet_fps_ge
+    exit_fps = tornet_fps_e + tornet_fps_ge
 
     torrc_file = open("{}/{}".format(conf_path, TORRC_AUTHORITY_FILENAME), 'w')
 

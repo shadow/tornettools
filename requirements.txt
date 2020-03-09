@@ -1,6 +1,4 @@
 lxml
-#matplotlib
 networkx
 numpy
-#scipy
 stem

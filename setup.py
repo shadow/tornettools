@@ -2,11 +2,11 @@
 
 from distutils.core import setup
 
-setup(name='ShadowTorTools',
-      version="0.0.1",
-      description='A utility to generate ShadowTor networks, and to analyze and visualize ShadowTor output',
+setup(name='TorNetGen',
+      version="0.0.0",
+      description='A utility to generate private Tor network configurations',
       author='Rob Jansen',
-      url='https://github.com/shadow/shadow-plugin-tor',
-      packages=['shadowtortools'],
-      scripts=['shadowtortools/shadowtortools'],
+      url='https://github.com/shadow/tornetgen',
+      packages=['tornetgen'],
+      scripts=['tornetgen/tornetgen'],
      )

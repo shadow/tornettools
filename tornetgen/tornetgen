@@ -1,30 +1,29 @@
 #!/usr/bin/env python
 
 '''
-  shadowtortools
+  tornetgen
   Authored by Rob Jansen, 2019
   See LICENSE for licensing information
 '''
 
 import sys, os, argparse, logging
 
-from shadowtortools._version import __version__
+from tornetgen._version import __version__
 
 DESC_MAIN = """
-ShadowTorTools is a utility to assist in the generation of private Tor
-networks that run in Shadow. ShadowTorTools is also used to parse and
-plot output produced by Tor following a Shadow experiment.
-ShadowTorTools must be run with a subcommand to specify a mode of operation.
+tornetgen is a utility to assist in the generation of private Tor
+networks that can run in Shadow. tornetgen must be run with a
+subcommand to specify a mode of operation.
 
-For more information, see https://github.com/shadow/shadow-plugin-tor.
+For more information, see https://github.com/shadow/tornetgen.
 """
 HELP_MAIN = """
-Use 'shadowtortools <subcommand> --help' for more info
+Use 'tornetgen <subcommand> --help' for more info
 """
 
 DESC_STAGE = """
 Process Tor network consensuses, relay descriptors, and user files
-from Tor metrics to stage ShadowTor network generation.
+from Tor metrics to stage TorNet network generation.
 
 This command should be used before running generate. This command
 produces staging files that will be required for the generate
@@ -35,24 +34,24 @@ Process Tor metrics data for staging
 """
 
 DESC_GENERATE = """
-Loads the ShadowTor staging files produced with the stage command
-and uses them to generate a valid ShadowTor network configuration.
+Loads the TorNet staging files produced with the stage command
+and uses them to generate a valid TorNet network configuration.
 """
 HELP_GENERATE = """
-Generate ShadowTor network configurations
+Generate TorNet network configurations
 """
 
 DESC_PARSEPERF = """
 Processes a set of TorPerf results from Tor metrics and exports the
 performance data in a format that can be plotted with `tgentools`
-and compared to ShadowTor performance benchmarks.
+and compared to TorNet performance benchmarks.
 """
 
 HELP_PARSEPERF = """
 Parse TorPerf performance benchmark results
 """
 
-logging.basicConfig(format='%(asctime)s %(created)f [shadowtortools] [%(levelname)s] %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(format='%(asctime)s %(created)f [tornetgen] [%(levelname)s] %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
 class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
     # adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
@@ -244,18 +243,18 @@ def main():
     # get args and call the command handler for the chosen mode
     args = main_parser.parse_args()
     if args.do_version:
-        logging.info("ShadowTorTools version {}".format(__version__))
+        logging.info("tornetgen version {}".format(__version__))
         return
     args.func(args)
 
 def stage(args):
-    from shadowtortools import stage
+    from tornetgen import stage
     stage.run(args)
 
 def generate(args):
     if args.events_csv.lower() == "none":
         args.events_csv = None
-    from shadowtortools import generate
+    from tornetgen import generate
     generate.run(args)
 
 def parseperf(args):
@@ -265,7 +264,7 @@ def parseperf(args):
         if args.xz_path is None or args.dd_path is None:
             logging.warning("Compression requested, but either 'xz' or 'dd' is not in your path")
             args.do_compress = False
-    from shadowtortools import parse_perf
+    from tornetgen import parse_perf
     parse_perf.run(args)
 
 def make_dir_path(path):

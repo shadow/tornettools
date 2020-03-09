@@ -1,5 +1,5 @@
 '''
-  shadowtortools
+  tornetgen
   Authored by Rob Jansen, 2019
   See LICENSE for licensing information
 '''
@@ -11,7 +11,5 @@ __all__ = [
    'generate_tgen',
    'generate_tor',
    'geoip',
-   #'parse',
-   #'plot',
    '_version',
 ]
