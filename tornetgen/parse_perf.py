@@ -65,7 +65,7 @@ def run(args):
     logging.info("We processed {} downloads and skipped {} onion downloads from the source data".format(count, onion_count))
 
     # this filename is used so that `tgentools plot` will automatically work!
-    path = args.output_path
+    path = args.prefix
     if args.do_compress:
         with open("/dev/null", 'a') as nullf:
             path = "{}.xz".format(path)
