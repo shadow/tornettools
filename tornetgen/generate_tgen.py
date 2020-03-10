@@ -360,7 +360,7 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
         #        relays to see ~10 times as many circuits as exit relays. So instead we use the
         #        more accurate total circuit counts from exits.
         #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_users_per_tgen)
-        num_circs_every_10_minutes = int(n_circuits_per_tgen)
+        num_circs_every_10_minutes = int(round(uniform(n_circuits_per_tgen*0.25, n_circuits_per_tgen*1.75)))
         total_circuits_10_mins += num_circs_every_10_minutes
 
         # convert circuit count into a rate for the exponential distribution
