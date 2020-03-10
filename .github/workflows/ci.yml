@@ -24,4 +24,4 @@ jobs:
         run: sudo apt install -y python python-dev python-pip python-virtualenv libxml2 libxml2-dev libxslt1.1 libxslt1-dev libpng16-16 libpng-dev libfreetype6 libfreetype6-dev libblas-dev liblapack-dev
 
       - name: Build tornetgen
-        run: virtualenv tornetgenenv && source tornetgenenv/bin/activate && pip install -r requirements.txt && pip install -I .
+        run: mkdir build && virtualenv build/tornetgenenv && source build/tornetgenenv/bin/activate && pip install -r requirements.txt && pip install -I .
