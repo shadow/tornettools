@@ -4,7 +4,7 @@ import logging
 import datetime
 import json
 
-from tornettools.geoip import GeoIP
+from tornettools.util_geoip import GeoIP
 
 from multiprocessing import Pool, cpu_count
 from statistics import median

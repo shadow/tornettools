@@ -2,7 +2,7 @@
 
 '''
   tornettools
-  Authored by Rob Jansen, 2019
+  Authored by Rob Jansen, 2019-2020
   See LICENSE for licensing information
 '''
 
@@ -12,11 +12,16 @@ import argparse
 import logging
 
 from datetime import datetime
+from random import randint
 from random import seed as stdseed
 from numpy.random import seed as numpyseed
 
+from tornettools.util import *
 from tornettools._version import __version__
 
+HELP_MAIN = """
+Use 'tornettools <subcommand> --help' for more info
+"""
 DESC_MAIN = """
 tornettools is a utility to assist in the generation of private Tor
 networks that can run in Shadow. tornettools must be run with a
@@ -24,10 +29,10 @@ subcommand to specify a mode of operation.
 
 For more information, see https://github.com/shadow/tornettools.
 """
-HELP_MAIN = """
-Use 'tornettools <subcommand> --help' for more info
-"""
 
+HELP_STAGE = """
+Process Tor metrics data for staging
+"""
 DESC_STAGE = """
 Process Tor network consensuses, relay descriptors, and user files
 from Tor metrics to stage TorNet network generation.
@@ -36,16 +41,41 @@ This command should be used before running generate. This command
 produces staging files that will be required for the generate
 command to succeed.
 """
-HELP_STAGE = """
-Process Tor metrics data for staging
-"""
 
+HELP_GENERATE = """
+Generate TorNet network configurations
+"""
 DESC_GENERATE = """
 Loads the TorNet staging files produced with the stage command
 and uses them to generate a valid TorNet network configuration.
 """
-HELP_GENERATE = """
-Generate TorNet network configurations
+
+HELP_SIMULATE = """
+Run a TorNet simulation in Shadow
+"""
+DESC_SIMULATE = """
+TODO
+"""
+
+HELP_PARSE = """
+Parse useful data from simulation log files
+"""
+DESC_PARSE = """
+TODO
+"""
+
+HELP_PLOT = """
+Plot previously parsed data to visualize results
+"""
+DESC_PLOT = """
+TODO
+"""
+
+HELP_ARCHIVE = """
+Cleanup and compress Shadow simulation data
+"""
+DESC_ARCHIVE = """
+TODO
 """
 
 DESC_PARSEPERF = """
@@ -53,7 +83,6 @@ Processes a set of TorPerf results from Tor metrics and exports the
 performance data in a format that can be plotted with `tgentools`
 and compared to TorNet performance benchmarks.
 """
-
 HELP_PARSEPERF = """
 Parse TorPerf performance benchmark results
 """
@@ -104,12 +133,14 @@ def main():
 
     main_parser.add_argument('-s', '--seed',
         help="""Initialize PRNGs with a seed to allow for deterministic behavior.""",
-        action="store", type=int, dest="seed",
+        action="store", type=int, dest="seed", metavar="N",
         default=None)
 
     sub_parser = main_parser.add_subparsers(help=HELP_MAIN)
 
-    # stage
+    #########
+    # stage #
+    #########
     stage_parser = sub_parser.add_parser('stage',
         description=DESC_STAGE,
         help=HELP_STAGE,
@@ -148,7 +179,9 @@ def main():
         action="store", dest="geoip_path",
         default=None)
 
-    # generate
+    ############
+    # generate #
+    ############
     generate_parser = sub_parser.add_parser('generate',
         description=DESC_GENERATE,
         help=HELP_GENERATE,
@@ -218,7 +251,6 @@ def main():
         action="store", dest="torperf_scale",
         default=0.001)
 
-
     generate_parser.add_argument('-l', '--load_scale',
         help="""A float number by which we scale the number of circuit flows created by each TGen
         client relative to the 'normal' number of flows a client should create. E.g., a value of 2.0
@@ -266,7 +298,45 @@ def main():
         action="store", dest="torgencertexe",
         default=which("tor-gencert"))
 
-    # parse torperf data
+    ############
+    # simulate #
+    ############
+    simulate_parser = sub_parser.add_parser('simulate',
+        description=DESC_SIMULATE,
+        help=HELP_SIMULATE,
+        formatter_class=my_formatter_class)
+    simulate_parser.set_defaults(func=simulate, formatter_class=my_formatter_class)
+
+    #########
+    # parse #
+    #########
+    parse_parser = sub_parser.add_parser('parse',
+        description=DESC_PARSE,
+        help=HELP_PARSE,
+        formatter_class=my_formatter_class)
+    parse_parser.set_defaults(func=parse, formatter_class=my_formatter_class)
+
+    ########
+    # plot #
+    ########
+    plot_parser = sub_parser.add_parser('plot',
+        description=DESC_PLOT,
+        help=HELP_PLOT,
+        formatter_class=my_formatter_class)
+    plot_parser.set_defaults(func=plot, formatter_class=my_formatter_class)
+
+    ###########
+    # archive #
+    ###########
+    archive_parser = sub_parser.add_parser('archive',
+        description=DESC_ARCHIVE,
+        help=HELP_ARCHIVE,
+        formatter_class=my_formatter_class)
+    archive_parser.set_defaults(func=archive, formatter_class=my_formatter_class)
+
+    ######################
+    # parse torperf data #
+    ######################
     parseperf_parser = sub_parser.add_parser('parseperf',
         description=DESC_PARSEPERF,
         help=HELP_PARSEPERF,
@@ -310,11 +380,15 @@ def main():
         logging.info("tornettools version {}".format(__version__))
         return
 
-    # seed the pseudo-random generators if we have a seed
-    if args.seed != None:
-        stdseed(args.seed)
-        numpyseed(args.seed)
-        logging.info("Seeded standard and numpy PRNGs with seed={}".format(args.seed))
+    # seed the pseudo-random generators
+    # if we don't have a seed, choose one and make sure we log it for reproducibility
+    if args.seed == None:
+        args.seed = randint(0, 2**31)
+    stdseed(args.seed)
+    numpyseed(args.seed)
+    logging.info("Seeded standard and numpy PRNGs with seed={}".format(args.seed))
+
+    logging.info("The argument namespace is: {}".format(str(args)))
 
     # now run the configured mode
     args.func(args)
@@ -329,6 +403,22 @@ def generate(args):
     from tornettools import generate
     generate.run(args)
 
+def simulate(args):
+    from tornettools import simulate
+    simulate.run(args)
+
+def parse(args):
+    from tornettools import parse
+    parse.run(args)
+
+def plot(args):
+    from tornettools import plot
+    plot.run(args)
+
+def archive(args):
+    from tornettools import archive
+    archive.run(args)
+
 def parseperf(args):
     if args.do_compress:
         args.xz_path = which('xz')
@@ -338,11 +428,6 @@ def parseperf(args):
             args.do_compress = False
     from tornettools import parse_perf
     parse_perf.run(args)
-
-def make_dir_path(path):
-    p = os.path.abspath(os.path.expanduser(path))
-    if not os.path.exists(p):
-        os.makedirs(p)
 
 def type_nonnegative_integer(value):
     i = int(value)
@@ -378,22 +463,6 @@ def type_str_path_in(value):
         raise argparse.ArgumentTypeError("path '%s' does not exist" % s)
     return p
 
-## helper - test if program is in path
-def which(program):
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    #return "Error: Path Not Found"
-    return None
-
 # a custom action for passing in experimental data directories when plotting
 class PathStringArgsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -410,4 +479,5 @@ class PathStringArgsAction(argparse.Action):
         dest = getattr(namespace, self.dest)
         dest.append((p, s))
 
-if __name__ == '__main__': sys.exit(main())
+if __name__ == '__main__':
+    sys.exit(main())
