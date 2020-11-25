@@ -1,6 +1,6 @@
-# TorNetGen
+# tornettools
 
-![](https://github.com/shadow/tornetgen/workflows/Build/badge.svg)
+![](https://github.com/shadow/tornettools/workflows/Build/badge.svg)
 
 This tool generates configuration files that can be used to set up and run
 private Tor networks of a configurable scale. The configuration files that
@@ -19,16 +19,16 @@ for the collection of information from Tor throughout an experiment.
 
 ### setup is easy with virtualenv and pip
 
-    virtualenv -p /bin/python3 tornetgenenv
-    source tornetgenenv/bin/activate
+    virtualenv -p /bin/python3 tornettoolsenv
+    source tornettoolsenv/bin/activate
     pip install -r requirements.txt
     pip install -I .
 
 ### read the help menus
 
-    tornetgen -h
-    tornetgen stage -h
-    tornetgen generate -h
+    tornettools -h
+    tornettools stage -h
+    tornettools generate -h
 
 ### grab the data we need
 
@@ -63,17 +63,17 @@ for the collection of information from Tor throughout an experiment.
 
 ### stage first, process relay and user info
 
-    tornetgen stage consensuses-2020-01 server-descriptors-2020-01 userstats-relay-country.csv --geoip_path tor/src/config/geoip
+    tornettools stage consensuses-2020-01 server-descriptors-2020-01 userstats-relay-country.csv --geoip_path tor/src/config/geoip
 
 ### now we can used the staged files to generate many times
 
 For example, use '-n 0.1' to generate a private Tor network at '10%' the scale of public Tor:
 
-    tornetgen generate relayinfo_staging_2020-01-01--2020-02-01.json userinfo_staging_2020-01-01--2020-02-01.json tmodel-ccs2018.github.io --network_scale 0.1 --prefix tornet-0.1
+    tornettools generate relayinfo_staging_2020-01-01--2020-02-01.json userinfo_staging_2020-01-01--2020-02-01.json tmodel-ccs2018.github.io --network_scale 0.1 --prefix tornet-0.1
 
 ### you can parse the torperf data so we can compare public Tor and our private Tor performance benchmarks
 
-    tornetgen parseperf torperf-2020-01
+    tornettools parseperf torperf-2020-01
 
 ### now if you have shadow, tgen, and oniontrace installed, you can run shadow
 

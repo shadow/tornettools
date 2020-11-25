@@ -7,9 +7,9 @@ import shlex
 
 from lxml import etree
 
-from tornetgen.generate_defaults import *
-from tornetgen.generate_tgen import *
-from tornetgen.generate_tor import *
+from tornettools.generate_defaults import *
+from tornettools.generate_tgen import *
+from tornettools.generate_tor import *
 
 def run(args):
     # get the set of relays we will create in shadow

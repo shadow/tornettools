@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-  tornetgen
+  tornettools
   Authored by Rob Jansen, 2019
   See LICENSE for licensing information
 '''
@@ -13,17 +13,17 @@ import logging
 
 from datetime import datetime
 
-from tornetgen._version import __version__
+from tornettools._version import __version__
 
 DESC_MAIN = """
-tornetgen is a utility to assist in the generation of private Tor
-networks that can run in Shadow. tornetgen must be run with a
+tornettools is a utility to assist in the generation of private Tor
+networks that can run in Shadow. tornettools must be run with a
 subcommand to specify a mode of operation.
 
-For more information, see https://github.com/shadow/tornetgen.
+For more information, see https://github.com/shadow/tornettools.
 """
 HELP_MAIN = """
-Use 'tornetgen <subcommand> --help' for more info
+Use 'tornettools <subcommand> --help' for more info
 """
 
 DESC_STAGE = """
@@ -68,7 +68,7 @@ def setup_logging(logfilename=None):
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s %(created)f [tornetgen] [%(levelname)s] %(message)s',
+        format='%(asctime)s %(created)f [tornettools] [%(levelname)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=my_handlers,
     )
@@ -293,27 +293,27 @@ def main():
             prefixstr = str(args.prefix)
             funcstr = str(args.func.__name__)
             datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
-            logfilename = "{}/tornetgen.{}.{}.log".format(prefixstr, funcstr, datestr)
+            logfilename = "{}/tornettools.{}.{}.log".format(prefixstr, funcstr, datestr)
         setup_logging(logfilename)
     else:
         pass # no logging
 
     # check if it's just a version check and we should short circuit
     if args.do_version:
-        logging.info("tornetgen version {}".format(__version__))
+        logging.info("tornettools version {}".format(__version__))
         return
 
     # now run the configured mode
     args.func(args)
 
 def stage(args):
-    from tornetgen import stage
+    from tornettools import stage
     stage.run(args)
 
 def generate(args):
     if args.events_csv.lower() == "none":
         args.events_csv = None
-    from tornetgen import generate
+    from tornettools import generate
     generate.run(args)
 
 def parseperf(args):
@@ -323,7 +323,7 @@ def parseperf(args):
         if args.xz_path is None or args.dd_path is None:
             logging.warning("Compression requested, but either 'xz' or 'dd' is not in your path")
             args.do_compress = False
-    from tornetgen import parse_perf
+    from tornettools import parse_perf
     parse_perf.run(args)
 
 def make_dir_path(path):

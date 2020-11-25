@@ -7,7 +7,7 @@ from random import randrange
 
 from networkx import DiGraph, write_graphml
 
-from tornetgen.generate_defaults import *
+from tornettools.generate_defaults import *
 
 def generate_tgen_config(args, tgen_clients, tgen_servers):
     # make sure the config directory exists

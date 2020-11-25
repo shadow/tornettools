@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# run from base tornetgen directory
-# tornetgen must have already been installed in a virtual environment
-# in build/tornetgenenv
+# run from base tornettools directory
+# tornettools must have already been installed in a virtual environment
+# in build/tornettoolsenv
 
-#source build/tornetgenenv/bin/activate
+#source build/tornettoolsenv/bin/activate
 
 # must set these options *after* sourcing the above environment
 set -euo pipefail
@@ -31,9 +31,9 @@ cd build
 
 export PATH=${PATH}:`pwd`/tor/src/core/or:`pwd`/tor/src/app:`pwd`/tor/src/tools
 
-#tornetgen parseperf torperf-2020-01
+#tornettools parseperf torperf-2020-01
 
-#tornetgen stage \
+#tornettools stage \
 #    consensuses-2020-01 \
 #    server-descriptors-2020-01 \
 #    userstats-relay-country.csv \
@@ -49,7 +49,7 @@ do
             do
                 for l in 0.5 1.0 1.5
                 do
-                    tornetgen generate \
+                    tornettools generate \
                         relayinfo_staging_2020-01-01--2020-02-01.json \
                         userinfo_staging_2020-01-01--2020-02-01.json \
                         tmodel-ccs2018.github.io \

@@ -23,8 +23,8 @@ jobs:
       - name: Update packages
         run: sudo apt-get update
 
-      - name: Install tornetgen dependencies
+      - name: Install tornettools dependencies
         run: sudo apt install -y python python-dev python-pip python-virtualenv libxml2 libxml2-dev libxslt1.1 libxslt1-dev libpng16-16 libpng-dev libfreetype6 libfreetype6-dev libblas-dev liblapack-dev
 
-      - name: Build tornetgen
-        run: mkdir build && virtualenv build/tornetgenenv && source build/tornetgenenv/bin/activate && pip install -r requirements.txt && pip install -I .
+      - name: Build tornettools
+        run: mkdir build && virtualenv build/tornettoolsenv && source build/tornettoolsenv/bin/activate && pip install -r requirements.txt && pip install -I .

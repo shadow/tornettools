@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 from numpy import array_split
 from numpy.random import choice, uniform
 
-from tornetgen.generate_defaults import *
+from tornettools.generate_defaults import *
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)

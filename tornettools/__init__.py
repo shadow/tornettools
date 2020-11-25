@@ -1,5 +1,5 @@
 '''
-  tornetgen
+  tornettools
   Authored by Rob Jansen, 2019
   See LICENSE for licensing information
 '''
