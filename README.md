@@ -53,7 +53,7 @@ for the collection of information from Tor throughout an experiment.
     git clone https://git.torproject.org/tor.git
     cd tor
     ./autogen.sh
-    ./configure --disable-asciidoc
+    ./configure --disable-asciidoc --disable-unittests --disable-manpage --disable-html-manual
     make
     cd ..
 
