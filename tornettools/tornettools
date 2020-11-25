@@ -12,6 +12,8 @@ import argparse
 import logging
 
 from datetime import datetime
+from random import seed as stdseed
+from numpy.random import seed as numpyseed
 
 from tornettools._version import __version__
 
@@ -99,6 +101,11 @@ def main():
         help="""Do not write log messages to file. Use twice to also not write to stdout.""",
         action="count", dest="quiet",
         default=0)
+
+    main_parser.add_argument('-s', '--seed',
+        help="""Initialize PRNGs with a seed to allow for deterministic behavior.""",
+        action="store", type=int, dest="seed",
+        default=None)
 
     sub_parser = main_parser.add_subparsers(help=HELP_MAIN)
 
@@ -302,6 +309,12 @@ def main():
     if args.do_version:
         logging.info("tornettools version {}".format(__version__))
         return
+
+    # seed the pseudo-random generators if we have a seed
+    if args.seed != None:
+        stdseed(args.seed)
+        numpyseed(args.seed)
+        logging.info("Seeded standard and numpy PRNGs with seed={}".format(args.seed))
 
     # now run the configured mode
     args.func(args)
