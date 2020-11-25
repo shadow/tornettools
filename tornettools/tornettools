@@ -239,7 +239,7 @@ def main():
             specified as a CSV string) throughout the simulation. Set to 'None' to disable.""",
         metavar="CSV", type=str,
         action="store", dest="events_csv",
-        default="BW")
+        default="BW,CIRC")
 
     generate_parser.add_argument('-r', '--record',
         help="""Run oniontrace on each Tor node to record circuit building and stream assignment
