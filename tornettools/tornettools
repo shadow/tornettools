@@ -31,7 +31,7 @@ For more information, see https://github.com/shadow/tornettools.
 """
 
 HELP_STAGE = """
-Process Tor metrics data for staging
+Process Tor metrics data for staging network generation
 """
 DESC_STAGE = """
 Process Tor network consensuses, relay descriptors, and user files
@@ -136,6 +136,11 @@ def main():
         action="store", type=int, dest="seed", metavar="N",
         default=None)
 
+    main_parser.add_argument('--extended',
+        help="""Enable unstable extended or experimental behavior.""",
+        action="store_true", dest="extended",
+        default=False)
+
     sub_parser = main_parser.add_subparsers(help=HELP_MAIN)
 
     #########
@@ -157,6 +162,10 @@ def main():
 
     stage_parser.add_argument("user_stats_path",
         help="Path to a Tor user stats file (https://metrics.torproject.org/userstats-relay-country.csv)",
+        type=type_str_path_in)
+
+    stage_parser.add_argument("torperf_data_path",
+        help="Path to a directory of torperf performance data",
         type=type_str_path_in)
 
     stage_parser.add_argument('--prefix',
@@ -298,66 +307,71 @@ def main():
         action="store", dest="torgencertexe",
         default=which("tor-gencert"))
 
-    ############
-    # simulate #
-    ############
-    simulate_parser = sub_parser.add_parser('simulate',
-        description=DESC_SIMULATE,
-        help=HELP_SIMULATE,
-        formatter_class=my_formatter_class)
-    simulate_parser.set_defaults(func=simulate, formatter_class=my_formatter_class)
+    if '--extended' in sys.argv:
+        ############
+        # simulate #
+        ############
+        simulate_parser = sub_parser.add_parser('simulate',
+            description=DESC_SIMULATE,
+            help=HELP_SIMULATE,
+            formatter_class=my_formatter_class)
+        simulate_parser.set_defaults(func=simulate, formatter_class=my_formatter_class)
 
-    #########
-    # parse #
-    #########
-    parse_parser = sub_parser.add_parser('parse',
-        description=DESC_PARSE,
-        help=HELP_PARSE,
-        formatter_class=my_formatter_class)
-    parse_parser.set_defaults(func=parse, formatter_class=my_formatter_class)
+        #########
+        # parse #
+        #########
+        parse_parser = sub_parser.add_parser('parse',
+            description=DESC_PARSE,
+            help=HELP_PARSE,
+            formatter_class=my_formatter_class)
+        parse_parser.set_defaults(func=parse, formatter_class=my_formatter_class)
 
-    ########
-    # plot #
-    ########
-    plot_parser = sub_parser.add_parser('plot',
-        description=DESC_PLOT,
-        help=HELP_PLOT,
-        formatter_class=my_formatter_class)
-    plot_parser.set_defaults(func=plot, formatter_class=my_formatter_class)
+        ########
+        # plot #
+        ########
+        plot_parser = sub_parser.add_parser('plot',
+            description=DESC_PLOT,
+            help=HELP_PLOT,
+            formatter_class=my_formatter_class)
+        plot_parser.set_defaults(func=plot, formatter_class=my_formatter_class)
 
-    ###########
-    # archive #
-    ###########
-    archive_parser = sub_parser.add_parser('archive',
-        description=DESC_ARCHIVE,
-        help=HELP_ARCHIVE,
-        formatter_class=my_formatter_class)
-    archive_parser.set_defaults(func=archive, formatter_class=my_formatter_class)
+        ###########
+        # archive #
+        ###########
+        archive_parser = sub_parser.add_parser('archive',
+            description=DESC_ARCHIVE,
+            help=HELP_ARCHIVE,
+            formatter_class=my_formatter_class)
+        archive_parser.set_defaults(func=archive, formatter_class=my_formatter_class)
 
     ######################
     # parse torperf data #
     ######################
-    parseperf_parser = sub_parser.add_parser('parseperf',
-        description=DESC_PARSEPERF,
-        help=HELP_PARSEPERF,
-        formatter_class=my_formatter_class)
-    parseperf_parser.set_defaults(func=parseperf, formatter_class=my_formatter_class)
+    # this command was meant to parse the torperf data into a format that
+    # could then be plotted with `tgentools plot`
+    # but this is deprecated for parse_torperf which is executed during `stage`
+    if '--extended' in sys.argv:
+        parseperf_parser = sub_parser.add_parser('parseperf',
+            description=DESC_PARSEPERF,
+            help=HELP_PARSEPERF,
+            formatter_class=my_formatter_class)
+        parseperf_parser.set_defaults(func=parseperf, formatter_class=my_formatter_class)
 
-    parseperf_parser.add_argument('torperf_data_path',
-        help="Path to an extracted directory of TorPerf results data",
-        type=type_str_path_in)
+        parseperf_parser.add_argument('torperf_data_path',
+            help="Path to an extracted directory of TorPerf results data",
+            type=type_str_path_in)
 
-    parseperf_parser.add_argument('--prefix',
-        help="""A file PATH where the processed data
-            file generated by this script will be written""",
-        metavar="PATH", type=type_str_file_path_out,
-        action="store", dest="prefix",
-        default="{}".format(os.getcwd()))
+        parseperf_parser.add_argument('--prefix',
+            help="""A file PATH where the processed data
+                file generated by this script will be written""",
+            metavar="PATH", type=type_str_file_path_out,
+            action="store", dest="prefix",
+            default="{}".format(os.getcwd()))
 
-    parseperf_parser.add_argument('-c', '--compress',
-        help="""Compress output with xz.""",
-        action="store_true", dest="do_compress",
-        default=False)
+        parseperf_parser.add_argument('-c', '--compress',
+            help="""Compress output with xz.""",
+            action="store_true", dest="do_compress",
+            default=False)
 
     # get args and call the command handler for the chosen mode
     args = main_parser.parse_args()
@@ -394,8 +408,10 @@ def main():
     args.func(args)
 
 def stage(args):
-    from tornettools import stage
-    stage.run(args)
+    #from tornettools import stage
+    #stage.run(args)
+    from tornettools import parse_torperf
+    parse_torperf.parse(args)
 
 def generate(args):
     if args.events_csv.lower() == "none":
@@ -420,12 +436,6 @@ def archive(args):
     archive.run(args)
 
 def parseperf(args):
-    if args.do_compress:
-        args.xz_path = which('xz')
-        args.dd_path = which('dd')
-        if args.xz_path is None or args.dd_path is None:
-            logging.warning("Compression requested, but either 'xz' or 'dd' is not in your path")
-            args.do_compress = False
     from tornettools import parse_perf
     parse_perf.run(args)
 

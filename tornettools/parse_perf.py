@@ -2,8 +2,16 @@ import sys
 import os
 import json
 import logging
+import lzma
 
 from subprocess import Popen, PIPE
+
+# This code parses torperf metrics data.
+# The output is in a format that the `tgentools plot` command can use to compare
+# tgen results to Tor metrics results.
+#
+# This is deprecated for the newer parse_torperf module, which works on the reproducible
+# metrics and can actually be plotted with tornetttools.
 
 def run(args):
     # as long as the download is within this bytes we consider it a full one
@@ -67,17 +75,12 @@ def run(args):
     # this filename is used so that `tgentools plot` will automatically work!
     path = "{}/torperf.analysis.json".format(args.prefix)
     if args.do_compress:
-        with open("/dev/null", 'a') as nullf:
-            path = "{}.xz".format(path)
-            xzp = Popen([args.xz_path, "-"], stdin=PIPE, stdout=PIPE)
-            ddp = Popen([args.dd_path, "of={}".format(path)], stdin=xzp.stdout, stdout=nullf, stderr=nullf)
-            str = json.dumps(db, sort_keys=True, separators=(',', ': '), indent=2)
-            xzp.stdin.write(str.encode('utf-8'))
-            xzp.stdin.close()
-            xzp.wait()
-            ddp.wait()
+        path += ".xz"
+        outf = lzma.open(path, 'wt')
     else:
-        with open(path, 'w') as outf:
-            json.dump(db, outf, sort_keys=True, separators=(',', ': '), indent=2)
+        outf = open(path, 'w')
+
+    json.dump(db, outf, sort_keys=True, separators=(',', ': '), indent=2)
+    outf.close()
 
     logging.info("Output stored in '{}'".format(path))

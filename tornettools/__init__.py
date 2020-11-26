@@ -12,6 +12,8 @@ __all__ = [
    'generate_tor',
    'simulate',
    'parse',
+   'parse_perf',
+   'parse_torperf',
    'plot',
    'archive',
    'util',
