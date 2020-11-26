@@ -4,12 +4,12 @@ import json
 import lzma
 import logging
 
-# This code parses torperf metrics data. 
+# This code parses torperf metrics data.
 # The output is in a format that the `plot` command can use to compare
 # shadow results to Tor metrics results.
 # see https://metrics.torproject.org/reproducible-metrics.html#performance
 
-def parse(args):
+def run(args):
     db = {"circuit_rtt": [], "throughput": [], "circuit_build_times": [],
         "download_times": {}, "daily_counts": {}}
 
@@ -37,9 +37,16 @@ def parse(args):
     logging.info(f"We processed {len(db['circuit_rtt'])} downloads")
 
     dirname = os.path.basename(args.torperf_data_path)
-    out_path = "{}/{}.json.xz".format(args.prefix, dirname)
-    with lzma.open(out_path, 'wt') as outf:
-        json.dump(db, outf, sort_keys=True, separators=(',', ': '), indent=2)
+    out_path = "{}/{}.json".format(args.prefix, dirname)
+    
+    if args.do_compress:
+        out_path += ".xz"
+        outf = lzma.open(out_path, 'wt')
+    else:
+        outf = open(out_path, 'w')
+
+    json.dump(db, outf, sort_keys=True, separators=(',', ': '), indent=2)
+    outf.close()
 
     logging.info("Parsed torperf data stored in '{}'".format(out_path))
 
