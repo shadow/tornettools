@@ -320,8 +320,7 @@ def __get_perf_clients(args, n_users):
 
 def __load_user_data(args):
     # geographical user info taken from stage command output, i.e., tor metrics
-    with open(args.user_info_path, 'r') as infile:
-        user_data = json.load(infile)
+    user_data = load_json_data(args.user_info_path)
 
     country_codes = sorted(user_data.keys())
     country_probs = [float(user_data[code]) for code in country_codes]

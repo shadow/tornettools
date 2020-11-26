@@ -1,6 +1,8 @@
 import sys
 import os
 import logging
+import json
+import lzma
 
 def make_dir_path(path):
     p = os.path.abspath(os.path.expanduser(path))
@@ -22,3 +24,26 @@ def which(program):
                 return exe_file
     #return "Error: Path Not Found"
     return None
+
+def dump_json_data(args, output, outfile_basename):
+    outfile_path = "{}/{}".format(args.prefix, outfile_basename)
+
+    if args.do_compress:
+        outfile_path += ".xz"
+        outfile = lzma.open(outfile_path, 'wt')
+    else:
+        outfile = open(outfile_path, 'w')
+
+    json.dump(output, outfile, sort_keys=True, separators=(',', ': '), indent=2)
+    outfile.close()
+
+def load_json_data(infile_path):
+    if infile_path.endswith('.xz'):
+        infile = lzma.open(infile_path, 'r')
+    else:
+        infile = open(infile_path, 'r')
+
+    data = json.load(infile)
+    infile.close()
+
+    return data

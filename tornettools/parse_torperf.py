@@ -4,6 +4,8 @@ import json
 import lzma
 import logging
 
+from tornettools.util import dump_json_data
+
 # This code parses torperf metrics data.
 # The output is in a format that the `plot` command can use to compare
 # shadow results to Tor metrics results.
@@ -36,17 +38,8 @@ def run(args):
 
     logging.info(f"We processed {len(db['circuit_rtt'])} downloads")
 
-    dirname = os.path.basename(args.torperf_data_path)
-    out_path = "{}/{}.json".format(args.prefix, dirname)
-    
-    if args.do_compress:
-        out_path += ".xz"
-        outf = lzma.open(out_path, 'wt')
-    else:
-        outf = open(out_path, 'w')
-
-    json.dump(db, outf, sort_keys=True, separators=(',', ': '), indent=2)
-    outf.close()
+    out_basename = "{}.json".format(os.path.basename(args.torperf_data_path))
+    dump_json_data(args, db, out_basename)
 
     logging.info("Parsed torperf data stored in '{}'".format(out_path))
 

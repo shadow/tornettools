@@ -4,6 +4,7 @@ import logging
 import datetime
 import json
 
+from tornettools.util import dump_json_data
 from tornettools.util_geoip import GeoIP
 
 from multiprocessing import Pool, cpu_count
@@ -93,11 +94,9 @@ def stage_users(args, min_unix_time, max_unix_time):
         output[country_code] = output[country_code] / total_prob
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
-    user_info_filename = "{}/userinfo_staging_{}.json".format(args.prefix, timesuffix)
-    logging.info("Writing user info to {}".format(user_info_filename))
-
-    with open(user_info_filename, 'w') as outfile:
-        json.dump(output, outfile, indent=True, sort_keys=True)
+    user_info_basename = "userinfo_staging_{}.json".format(timesuffix)
+    logging.info("Writing user info to {}".format(user_info_basename))
+    dump_json_data(args, output, user_info_basename)
 
 # this function parses consensus and server descriptor files from, e.g.,
 # https://collector.torproject.org/archive/relay-descriptors/consensuses/consensuses-2019-01.tar.xz
@@ -157,11 +156,9 @@ def stage_relays(args):
             output['relays'][fingerprint]['country_code'] = geo.ip_to_country_code(r.address)
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
-    relay_info_filename = "{}/relayinfo_staging_{}.json".format(args.prefix, timesuffix)
-    logging.info("Writing relay info to {}".format(relay_info_filename))
-
-    with open(relay_info_filename, 'w') as outfile:
-        json.dump(output, outfile, indent=2)
+    relay_info_basename = "relayinfo_staging_{}.json".format(timesuffix)
+    logging.info("Writing relay info to {}".format(relay_info_basename))
+    dump_json_data(args, output, relay_info_basename)
 
     return min_unix_time, max_unix_time
 

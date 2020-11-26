@@ -11,6 +11,7 @@ from numpy import array_split
 from numpy.random import choice, uniform
 
 from tornettools.generate_defaults import *
+from tornettools.util import load_json_data
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
@@ -304,8 +305,7 @@ def __generate_torrc_perfclient(conf_path):
     torrc_file.close()
 
 def get_relays(args):
-    with open(args.relay_info_path, 'r') as infile:
-        data = json.load(infile)
+    data = load_json_data(args.relay_info_path)
 
     relays = data['relays']
     stats = data['network_stats']
