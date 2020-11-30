@@ -78,7 +78,7 @@ DESC_ARCHIVE = """
 TODO
 """
 
-def setup_logging(logfilename=None):
+def setup_logging_helper(logfilename=None):
     my_handlers = []
 
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -99,6 +99,19 @@ def setup_logging(logfilename=None):
     if logfilename != None:
         msg += " and to '{}'".format(logfilename)
     logging.info(msg)
+
+def setup_logging(args):
+    if args.quiet <= 1:
+        logfilename = None
+        if args.quiet == 0 and hasattr(args, 'prefix'):
+            # log to a file too
+            prefixstr = str(args.prefix)
+            funcstr = str(args.command) if args.command is not None else "none"
+            datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+            logfilename = "{}/tornettools.{}.{}.log".format(prefixstr, funcstr, datestr)
+        setup_logging_helper(logfilename)
+    else:
+        pass # no logging
 
 class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
     # adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
@@ -132,7 +145,10 @@ def main():
         action="store_true", dest="extended",
         default=False)
 
-    sub_parser = main_parser.add_subparsers(help=HELP_MAIN)
+    sub_parser = main_parser.add_subparsers(
+        help=HELP_MAIN,
+        required = False, # `tornettools -v` is valid
+        dest = 'command')
 
     #########
     # stage #
@@ -343,23 +359,19 @@ def main():
     # get args and call the command handler for the chosen mode
     args = main_parser.parse_args()
 
-    # set up logging
-    if args.quiet <= 1:
-        logfilename = None
-        if args.quiet == 0 and hasattr(args, 'prefix'):
-            # log to a file too
-            prefixstr = str(args.prefix)
-            funcstr = str(args.func.__name__)
-            datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
-            logfilename = "{}/tornettools.{}.{}.log".format(prefixstr, funcstr, datestr)
-        setup_logging(logfilename)
-    else:
-        pass # no logging
-
     # check if it's just a version check and we should short circuit
     if args.do_version:
+        setup_logging(args)
         logging.info("tornettools version {}".format(__version__))
         return
+
+    # if it's anything other than version, we need a subcommand
+    if args.command == None:
+        main_parser.print_usage()
+        return
+
+    # now we know we can start
+    setup_logging(args)
 
     # seed the pseudo-random generators
     # if we don't have a seed, choose one and make sure we log it for reproducibility
