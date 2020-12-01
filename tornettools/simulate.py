@@ -11,7 +11,7 @@ from time import sleep
 from tornettools.util import which
 
 def run(args):
-    logging.info("Starting a simulation from {}".format(args.tornet_config_path))
+    logging.info("Starting a simulation from {}".format(args.prefix))
 
     logging.info("Starting dstat")
     dstat_subp = __start_dstat(args)
@@ -37,9 +37,9 @@ def __run_shadow(args):
     if shadow_exe_path == None:
         return None
 
-    with __open_file(f"{args.tornet_config_path}/shadow.log", args.do_compress) as outf:
+    with __open_file(f"{args.prefix}/shadow.log", args.do_compress) as outf:
         shadow_cmd = shlex.split(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
-        retcode = subprocess.run(shadow_cmd, cwd=args.tornet_config_path, stdout=outf)
+        retcode = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return retcode
 
@@ -47,15 +47,15 @@ def __run_free_loop(args, stop_event):
     date_exe_path = which('date')
     free_exe_path = which('free')
 
-    with open(f"{args.tornet_config_path}/free.log", 'w') as outf:
+    with open(f"{args.prefix}/free.log", 'w') as outf:
         while not stop_event.is_set():
             if date_exe_path != None:
                 date_cmd = shlex.split(date_exe_path)
-                retcode = subprocess.run(date_cmd, cwd=args.tornet_config_path, stdout=outf, stderr=subprocess.STDOUT)
+                retcode = subprocess.run(date_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             if free_exe_path != None:
                 free_cmd = shlex.split(f"{free_exe_path} -w -b -l")
-                retcode = subprocess.run(free_cmd, cwd=args.tornet_config_path, stdout=outf, stderr=subprocess.STDOUT)
+                retcode = subprocess.run(free_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             sleep(1)
 
@@ -66,7 +66,7 @@ def __start_dstat(args):
         return None
 
     dstat_cmd = shlex.split(f"{dstat_exe_path} -cmstTy --fs --output dstat.log")
-    dstat_subp = subprocess.Popen(dstat_cmd, cwd=args.tornet_config_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    dstat_subp = subprocess.Popen(dstat_cmd, cwd=args.prefix, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     return dstat_subp
 
