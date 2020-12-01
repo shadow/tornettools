@@ -14,7 +14,7 @@ def run(args):
     logging.info("Starting a simulation from {}".format(args.tornet_config_path))
 
     logging.info("Starting dstat")
-    dstat_subp = __start_dstat(args.tornet_config_path)
+    dstat_subp = __start_dstat(args)
 
     logging.info("Starting free loop")
     free_stop_event = threading.Event()
@@ -38,7 +38,7 @@ def __run_shadow(args):
         return None
 
     with __open_file(f"{args.tornet_config_path}/shadow.log", args.do_compress) as outf:
-        shadow_cmd = shlex.split(f"{shadow_exe_path} {args.shadowargs} shadow.config.xml")
+        shadow_cmd = shlex.split(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
         retcode = subprocess.run(shadow_cmd, cwd=args.tornet_config_path, stdout=outf)
 
     return retcode

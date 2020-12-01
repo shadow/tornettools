@@ -334,7 +334,7 @@ def main():
         simulate_parser.add_argument('-a', '--args',
             help="""The argument string to pass to Shadow when running the simulation.""",
             type=str,
-            action="store", dest="args_str",
+            action="store", dest="shadow_args",
             default="-w {}".format(cpu_count()))
 
         simulate_parser.add_argument('-c', '--compress',
