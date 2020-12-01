@@ -376,7 +376,8 @@ def __sample_relays(relays, sample_size):
         #Makes the flag assignment probabilistic w.r.t. relays' observed flag
         #frequency. Relays receiving the guard flag must at least have
         #TOR_GUARD_MIN_CONSBW
-        has_guard_f = True if int(round(relays[fp]['weight']/min_weight_sampled))>= TOR_GUARD_MIN_CONSBW\
+        has_guard_f = True if relays[fp]['weight'] > 0 and \
+                            int(round(relays[fp]['weight']/min_weight_sampled))>= TOR_GUARD_MIN_CONSBW\
                               and uniform() <= relays[fp]['guard_frequency'] else False
         has_exit_f = True if uniform() <= relays[fp]['exit_frequency'] else False
 

@@ -113,7 +113,8 @@ def stage_relays(args):
 
     servdesc_paths = get_file_list(args.server_descriptor_path)
     logging.info("Processing {} server descriptor files from {}...".format(len(servdesc_paths), args.server_descriptor_path))
-    bandwidths = process(num_processes, servdesc_paths, parse_serverdesc, combine_parsed_serverdesc_results)
+    sdesc_args = [[p, min_unix_time, max_unix_time] for p in servdesc_paths]
+    bandwidths = process(num_processes, sdesc_args, parse_serverdesc, combine_parsed_serverdesc_results)
 
     found_bandwidths = 0
     for fingerprint in relays:
@@ -274,7 +275,7 @@ def combine_parsed_consensus_results(results):
             continue
 
         if result['pub_dt'] is not None:
-            unix_time = int(result['pub_dt'].strftime("%s"))
+            unix_time = result['pub_dt'].timestamp()
             if min_unix_time == None or unix_time < min_unix_time:
                 min_unix_time = unix_time
             if max_unix_time == None or unix_time > max_unix_time:
@@ -325,10 +326,15 @@ def combine_parsed_consensus_results(results):
     return relays, min_unix_time, max_unix_time, network_stats
 
 # this func is run by helper processes in process pool
-def parse_serverdesc(path):
+def parse_serverdesc(args):
+    path, min_time, max_time = args
     relay = next(parse_file(path, document_handler='DOCUMENT', descriptor_type='server-descriptor 1.0', validate=False))
 
     if relay == None:
+        return None
+
+    pub_ts = relay.published.timestamp()
+    if pub_ts < min_time or pub_ts > max_time:
         return None
 
     if relay.observed_bandwidth is None:

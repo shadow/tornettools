@@ -83,12 +83,12 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
     plugin.set("path", "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX))
 
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
-        __add_xml_tor_relay(args, root, authority, is_authority=True)
+        __add_xml_tor_relay(args, root, authority, fp, is_authority=True)
 
     for pos in ['ge', 'e', 'g', 'm']:
         # use reverse to sort each class from fastest to slowest when assigning the id counter
         for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-            __add_xml_tor_relay(args, root, relay, is_authority=False)
+            __add_xml_tor_relay(args, root, relay, fp, is_authority=False)
 
     for server in tgen_servers:
         __add_xml_server(args, root, server)
@@ -154,9 +154,13 @@ def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
     process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
     process.set("arguments", tgenrc)
 
-def __add_xml_tor_relay(args, root, relay, is_authority=False):
+def __add_xml_tor_relay(args, root, relay, orig_fp, is_authority=False):
     # prepare items for the host element
     kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
+
+    hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH) 
+    with open("{}/{}/livetorfp".format(hosts_prefix, relay['nickname']), 'w') as outf:
+        outf.write(f"{orig_fp}\n")
 
     # add the host element and attributes
     host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
