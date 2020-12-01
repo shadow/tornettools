@@ -1,46 +1,31 @@
-import sys
-import os
 import logging
-import datetime
 
-from tornettools.util import which, open_file
+from tornettools.parse_oniontrace import *
+from tornettools.parse_tgen import *
+from tornettools.parse_rusage import *
 
 def run(args):
     logging.info("Parsing simulation output from {}".format(args.prefix))
-    __parse_tgen(args)
-    __parse_oniontrace(args)
 
-def __parse_tgen(args):
-    tgentools_exe = which('tgentools')
+    logging.info("Parsing tgen logs.")
+    if parse_tgen_logs(args):
+        logging.info("Extracting tgen plot data.")
+        extract_tgen_plot_data(args)
+    else:
+        logging.warning("Parsing tgen logs failed, so we cannot extract tgen plot data.")
 
-    if tgentools_exe == None:
-        logging.warning("Cannot find tgentools in your PATH. Is your python venv active? Do you have tgentools installed?")
-        logging.warning("Unable to parse tgen simulation data.")
-        return
+    logging.info("Parsing oniontrace logs.")
+    if parse_oniontrace_logs(args):
+        logging.info("Extracting oniontrace plot data.")
+        extract_oniontrace_plot_data(args)
+    else:
+        logging.warning("Parsing oniontrace logs failed, so we cannot extract oniontrace plot data.")
 
-    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient.*tgen.*\.log' shadow.data/hosts"
-    cmd = shlex.split(cmd_str)
+    logging.info("Parsing resource usage logs.")
+    if parse_resource_usage_logs(args):
+        logging.info("Extracting resource usage plot data.")
+        extract_resource_usage_plot_data(args)
+    else:
+        logging.warning("Parsing resource usage logs failed, so we cannot extract resource usage plot data.")
 
-    datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
-
-    with open_file(f"{args.prefix}/tgentools.parse.{datestr}.log", False) as outf:
-        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf)
-    logging.info(f"tgentools returned code {comproc.returncode}")
-
-
-def __parse_oniontrace(args):
-    otracetools_exe = which('oniontracetools')
-
-    if otracetools_exe == None:
-        logging.warning("Cannot find oniontracetools in your PATH. Is your python venv active? Do you have oniontracetools installed?")
-        logging.warning("Unable to parse oniontrace simulation data.")
-        return
-
-    cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e 'oniontrace.*\.log' shadow.data/hosts"
-    cmd = shlex.split(cmd_str)
-
-    datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
-
-    with open_file(f"{args.prefix}/oniontracetools.parse.{datestr}.log", False) as outf:
-        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf)
-    logging.info(f"oniontracetools returned code {comproc.returncode}")
+    logging.info("Done parsing!")

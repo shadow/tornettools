@@ -94,9 +94,9 @@ def stage_users(args, min_unix_time, max_unix_time):
         output[country_code] = output[country_code] / total_prob
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
-    user_info_basename = "userinfo_staging_{}.json".format(timesuffix)
-    logging.info("Writing user info to {}".format(user_info_basename))
-    dump_json_data(args, output, user_info_basename)
+    user_info_path = f"{args.prefix}/userinfo_staging_{timesuffix}.json"
+    logging.info("Writing user info to {}".format(user_info_path))
+    dump_json_data(output, user_info_path, compress=False)
 
 # this function parses consensus and server descriptor files from, e.g.,
 # https://collector.torproject.org/archive/relay-descriptors/consensuses/consensuses-2019-01.tar.xz
@@ -156,9 +156,9 @@ def stage_relays(args):
             output['relays'][fingerprint]['country_code'] = geo.ip_to_country_code(r.address)
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
-    relay_info_basename = "relayinfo_staging_{}.json".format(timesuffix)
-    logging.info("Writing relay info to {}".format(relay_info_basename))
-    dump_json_data(args, output, relay_info_basename)
+    relay_info_path = f"{args.prefix}/relayinfo_staging_{timesuffix}.json"
+    logging.info("Writing relay info to {}".format(relay_info_path))
+    dump_json_data(output, relay_info_path, compress=False)
 
     return min_unix_time, max_unix_time
 

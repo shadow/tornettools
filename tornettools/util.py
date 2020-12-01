@@ -5,12 +5,8 @@ import json
 import lzma
 import subprocess
 
-def make_dir_path(path):
-    p = os.path.abspath(os.path.expanduser(path))
-    if not os.path.exists(p):
-        os.makedirs(p)
-
 def make_directories(path):
+    p = os.path.abspath(os.path.expanduser(path))
     d = os.path.dirname(path)
     if not os.path.exists(d):
         os.makedirs(d)
@@ -31,33 +27,32 @@ def which(program):
     #return "Error: Path Not Found"
     return None
 
-def open_file(filepath, do_compress):
-    if do_compress:
-        return lzma.open(f"{filepath}.xz", 'wt')
+def open_writeable_file(filepath, compress=False):
+    make_directories(filepath)
+    if compress:
+        if not filepath.endswith(".xz"):
+            filepath += ".xz"
+        outfile = lzma.open(filepath, 'wt')
     else:
-        return open(filepath, 'w')
-        
-def dump_json_data(args, output, outfile_basename):
-    outfile_path = "{}/{}".format(args.prefix, outfile_basename)
+        outfile = open(filepath, 'w')
+    return outfile
 
-    if args.do_compress:
-        outfile_path += ".xz"
-        outfile = lzma.open(outfile_path, 'wt')
+def open_readable_file(filepath):
+    if not os.path.exists(filepath) and not filepath.endswith('.xz'):
+        filepath += ".xz" # look for the compressed version
+    if filepath.endswith('.xz'):
+        infile = lzma.open(filepath, 'r')
     else:
-        outfile = open(outfile_path, 'w')
+        infile = open(filepath, 'r')
+    return infile
 
-    json.dump(output, outfile, sort_keys=True, separators=(',', ': '), indent=2)
-    outfile.close()
+def dump_json_data(output, outfile_path, compress=False):
+    with open_writeable_file(outfile_path, compress) as outfile:
+        json.dump(output, outfile, sort_keys=True, separators=(',', ': '), indent=2)
 
 def load_json_data(infile_path):
-    if infile_path.endswith('.xz'):
-        infile = lzma.open(infile_path, 'r')
-    else:
-        infile = open(infile_path, 'r')
-
-    data = json.load(infile)
-    infile.close()
-
+    with open_readable_file(infile_path) as infile:
+        data = json.load(infile)
     return data
 
 def copy_and_extract_file(src, dst):
@@ -85,13 +80,13 @@ def type_str_file_path_out(value):
     if s == "-":
         return s
     p = os.path.abspath(os.path.expanduser(s))
-    make_dir_path(os.path.dirname(p))
+    make_directories(p)
     return p
 
 def type_str_dir_path_out(value):
     s = str(value)
     p = os.path.abspath(os.path.expanduser(s))
-    make_dir_path(p)
+    make_directories(p)
     return p
 
 def type_str_path_in(value):

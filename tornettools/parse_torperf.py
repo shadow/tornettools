@@ -39,7 +39,8 @@ def run(args):
     logging.info(f"We processed {len(db['circuit_rtt'])} downloads")
 
     out_basename = "{}.json".format(os.path.basename(args.torperf_data_path))
-    dump_json_data(args, db, out_basename)
+    out_path = f"{args.prefix}/{out_basename}"
+    dump_json_data(db, out_path, compress=False)
 
     logging.info("Parsed torperf data stored in '{}'".format(out_path))
 
