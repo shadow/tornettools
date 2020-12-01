@@ -3,6 +3,7 @@ import os
 import logging
 import json
 import lzma
+import shutil
 import subprocess
 
 def make_directories(path):
@@ -13,19 +14,8 @@ def make_directories(path):
 
 ## test if program is in path
 def which(program):
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    #return "Error: Path Not Found"
-    return None
+    #returns None if not found
+    return shutil.which(program)
 
 def open_writeable_file(filepath, compress=False):
     make_directories(filepath)
@@ -59,10 +49,10 @@ def copy_and_extract_file(src, dst):
     shutil.copy2(src, dst)
 
     xz_cmd = "xz -d {}".format(dst)
-    retcode = subprocess.run(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if retcode != 0:
+    completed_proc = subprocess.run(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if completed_proc.returncode != 0:
         logging.critical("Error extracting file {} using command {}".format(dst, cmd))
-    assert retcode == 0
+    assert completed_proc.returncode == 0
 
 def type_nonnegative_integer(value):
     i = int(value)

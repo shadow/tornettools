@@ -2,7 +2,6 @@ import sys
 import os
 import json
 import logging
-import shutil
 import shlex
 
 from lxml import etree
