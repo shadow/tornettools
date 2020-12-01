@@ -146,10 +146,7 @@ def main():
         action="store_true", dest="extended",
         default=False)
 
-    sub_parser = main_parser.add_subparsers(
-        help=HELP_MAIN,
-        required = False, # `tornettools -v` is valid
-        dest = 'command')
+    sub_parser = main_parser.add_subparsers(help=HELP_MAIN, dest='command')
 
     #########
     # stage #

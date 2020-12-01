@@ -150,8 +150,8 @@ def __add_xml_tor_relay(args, root, relay, orig_fp, is_authority=False):
     # prepare items for the host element
     kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
 
-    hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH) 
-    with open("{}/{}/livetorfp".format(hosts_prefix, relay['nickname']), 'w') as outf:
+    hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
+    with open("{}/{}/livetor-fingerprint".format(hosts_prefix, relay['nickname']), 'w') as outf:
         outf.write(f"{orig_fp}\n")
 
     # add the host element and attributes
