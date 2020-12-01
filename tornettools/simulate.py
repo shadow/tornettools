@@ -11,7 +11,7 @@ from time import sleep
 from tornettools.util import which
 
 def run(args):
-    logging.info("Starting a simulation from {}".format(args.prefix))
+    logging.info("Starting a simulation from tornet prefix {}".format(args.prefix))
 
     logging.info("Starting dstat")
     dstat_subp = __start_dstat(args)

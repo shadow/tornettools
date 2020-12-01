@@ -10,6 +10,11 @@ def make_dir_path(path):
     if not os.path.exists(p):
         os.makedirs(p)
 
+def make_directories(path):
+    d = os.path.dirname(path)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
 ## test if program is in path
 def which(program):
     def is_exe(fpath):
@@ -58,7 +63,36 @@ def copy_and_extract_file(src, dst):
         logging.critical("Error extracting file {} using command {}".format(dst, cmd))
     assert retcode == 0
 
-def make_directories(path):
-    d = os.path.dirname(path)
-    if not os.path.exists(d):
-        os.makedirs(d)
+def type_nonnegative_integer(value):
+    i = int(value)
+    if i < 0: raise argparse.ArgumentTypeError("'%s' is an invalid non-negative int value" % value)
+    return i
+
+def type_fractional_float(value):
+    i = float(value)
+    if i <= 0.0 or i > 1.0:
+        raise argparse.ArgumentTypeError("'%s' is an invalid fractional float value" % value)
+    return i
+
+def type_str_file_path_out(value):
+    s = str(value)
+    if s == "-":
+        return s
+    p = os.path.abspath(os.path.expanduser(s))
+    make_dir_path(os.path.dirname(p))
+    return p
+
+def type_str_dir_path_out(value):
+    s = str(value)
+    p = os.path.abspath(os.path.expanduser(s))
+    make_dir_path(p)
+    return p
+
+def type_str_path_in(value):
+    s = str(value)
+    if s == "-":
+        return s
+    p = os.path.abspath(os.path.expanduser(s))
+    if not os.path.exists(p):
+        raise argparse.ArgumentTypeError("path '%s' does not exist" % s)
+    return p

@@ -79,7 +79,7 @@ DESC_ARCHIVE = """
 TODO
 """
 
-def setup_logging_helper(logfilename=None):
+def __setup_logging_helper(logfilename=None):
     my_handlers = []
 
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -101,7 +101,7 @@ def setup_logging_helper(logfilename=None):
         msg += " and to '{}'".format(logfilename)
     logging.info(msg)
 
-def setup_logging(args):
+def __setup_logging(args):
     if args.quiet <= 1:
         logfilename = None
         if args.quiet == 0 and hasattr(args, 'prefix'):
@@ -110,14 +110,9 @@ def setup_logging(args):
             funcstr = str(args.command) if args.command is not None else "none"
             datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
             logfilename = "{}/tornettools.{}.{}.log".format(prefixstr, funcstr, datestr)
-        setup_logging_helper(logfilename)
+        __setup_logging_helper(logfilename)
     else:
         pass # no logging
-
-class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
-    # adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
-    def _fill_text(self, text, width, indent):
-        return ''.join([indent + line for line in text.splitlines(True)])
 
 def main():
     # argparse.RawDescriptionHelpFormatter, RawTextHelpFormatter, RawDescriptionHelpFormatter
@@ -386,7 +381,7 @@ def main():
 
     # check if it's just a version check and we should short circuit
     if args.do_version:
-        setup_logging(args)
+        __setup_logging(args)
         logging.info("tornettools version {}".format(__version__))
         return
 
@@ -396,7 +391,7 @@ def main():
         return
 
     # now we know we can start
-    setup_logging(args)
+    __setup_logging(args)
 
     # seed the pseudo-random generators
     # if we don't have a seed, choose one and make sure we log it for reproducibility
@@ -439,39 +434,10 @@ def archive(args):
     from tornettools import archive
     archive.run(args)
 
-def type_nonnegative_integer(value):
-    i = int(value)
-    if i < 0: raise argparse.ArgumentTypeError("'%s' is an invalid non-negative int value" % value)
-    return i
-
-def type_fractional_float(value):
-    i = float(value)
-    if i <= 0.0 or i > 1.0:
-        raise argparse.ArgumentTypeError("'%s' is an invalid fractional float value" % value)
-    return i
-
-def type_str_file_path_out(value):
-    s = str(value)
-    if s == "-":
-        return s
-    p = os.path.abspath(os.path.expanduser(s))
-    make_dir_path(os.path.dirname(p))
-    return p
-
-def type_str_dir_path_out(value):
-    s = str(value)
-    p = os.path.abspath(os.path.expanduser(s))
-    make_dir_path(p)
-    return p
-
-def type_str_path_in(value):
-    s = str(value)
-    if s == "-":
-        return s
-    p = os.path.abspath(os.path.expanduser(s))
-    if not os.path.exists(p):
-        raise argparse.ArgumentTypeError("path '%s' does not exist" % s)
-    return p
+# adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
+class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    def _fill_text(self, text, width, indent):
+        return ''.join([indent + line for line in text.splitlines(True)])
 
 # a custom action for passing in experimental data directories when plotting
 class PathStringArgsAction(argparse.Action):
