@@ -324,7 +324,7 @@ def main():
 
         simulate_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory produced with the 'generate' command",
-            type=type_str_path_in, dest="prefix")
+            type=type_str_path_in)
 
         simulate_parser.add_argument('-a', '--args',
             help="""The argument string to pass to Shadow when running the simulation.""",
@@ -348,9 +348,9 @@ def main():
 
         parse_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory after running the 'simulate' command",
-            type=type_str_path_in, dest="prefix")
+            type=type_str_path_in)
 
-        generate_parser.add_argument('-m', '--multiproc',
+        parse_parser.add_argument('-m', '--multiproc',
             help="""Enable multiprocessing with N worker processes, which may be '0'
                 to use the number of available processor cores (use '1' to disable)""",
             metavar="N", type=type_nonnegative_integer,
@@ -368,7 +368,7 @@ def main():
 
         plot_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory after running the 'parse' command",
-            type=type_str_path_in, dest="prefix")
+            type=type_str_path_in)
 
         ###########
         # archive #
@@ -381,9 +381,9 @@ def main():
 
         archive_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory after running the 'plot' command",
-            type=type_str_path_in, dest="prefix")
+            type=type_str_path_in)
 
-        generate_parser.add_argument('-m', '--multiproc',
+        archive_parser.add_argument('-m', '--multiproc',
             help="""Enable multiprocessing with N worker processes, which may be '0'
                 to use the number of available processor cores (use '1' to disable)""",
             metavar="N", type=type_nonnegative_integer,
@@ -392,6 +392,9 @@ def main():
 
     # get args and call the command handler for the chosen mode
     args = main_parser.parse_args()
+
+    if not hasattr(args, "prefix") and hasattr(args, "tornet_config_path"):
+        args.prefix = args.tornet_config_path
 
     # check if it's just a version check and we should short circuit
     if args.do_version:
