@@ -10,6 +10,7 @@ from lxml import etree
 from tornettools.generate_defaults import *
 from tornettools.generate_tgen import *
 from tornettools.generate_tor import *
+from tornettools.util import copy_and_extract_file
 
 def run(args):
     # get the set of relays we will create in shadow
@@ -40,16 +41,7 @@ def run(args):
         logging.info("Copying atlas topology file (use the '-a/--atlas' option to disable)")
         topology_src_path = "{}/data/shadow/network/{}.xz".format(args.tmodel_git_path, TMODEL_TOPOLOGY_FILENAME)
         topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME)
-        __copy_and_extract_file(topology_src_path, topology_dst_path)
-
-def __copy_and_extract_file(src, dst):
-    shutil.copy2(src, dst)
-
-    xz_cmd = "xz -d {}".format(dst)
-    retcode = subprocess.call(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if retcode != 0:
-        logging.critical("Error extracting file {} using command {}".format(dst, cmd))
-    assert retcode == 0
+        copy_and_extract_file(topology_src_path, topology_dst_path)
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the XML for the shadow.config.xml file

@@ -3,6 +3,7 @@ import os
 import logging
 import json
 import lzma
+import subprocess
 
 def make_dir_path(path):
     p = os.path.abspath(os.path.expanduser(path))
@@ -47,3 +48,17 @@ def load_json_data(infile_path):
     infile.close()
 
     return data
+
+def copy_and_extract_file(src, dst):
+    shutil.copy2(src, dst)
+
+    xz_cmd = "xz -d {}".format(dst)
+    retcode = subprocess.run(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if retcode != 0:
+        logging.critical("Error extracting file {} using command {}".format(dst, cmd))
+    assert retcode == 0
+
+def make_directories(path):
+    d = os.path.dirname(path)
+    if not os.path.exists(d):
+        os.makedirs(d)
