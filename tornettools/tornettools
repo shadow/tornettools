@@ -330,7 +330,7 @@ def main():
             help="""The argument string to pass to Shadow when running the simulation.""",
             type=str,
             action="store", dest="shadow_args",
-            default="-w {}".format(cpu_count()))
+            default="--workers={}".format(cpu_count()))
 
         simulate_parser.add_argument('-c', '--compress',
             help="""Compress output with lzma.""",
@@ -349,6 +349,13 @@ def main():
         parse_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory after running the 'simulate' command",
             type=type_str_path_in, dest="prefix")
+
+        generate_parser.add_argument('-m', '--multiproc',
+            help="""Enable multiprocessing with N worker processes, which may be '0'
+                to use the number of available processor cores (use '1' to disable)""",
+            metavar="N", type=type_nonnegative_integer,
+            action="store", dest="nprocesses",
+            default=0)
 
         ########
         # plot #
@@ -375,6 +382,13 @@ def main():
         archive_parser.add_argument('tornet_config_path',
             help="Path to a tornet configuration directory after running the 'plot' command",
             type=type_str_path_in, dest="prefix")
+
+        generate_parser.add_argument('-m', '--multiproc',
+            help="""Enable multiprocessing with N worker processes, which may be '0'
+                to use the number of available processor cores (use '1' to disable)""",
+            metavar="N", type=type_nonnegative_integer,
+            action="store", dest="nprocesses",
+            default=0)
 
     # get args and call the command handler for the chosen mode
     args = main_parser.parse_args()

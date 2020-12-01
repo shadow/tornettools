@@ -31,6 +31,12 @@ def which(program):
     #return "Error: Path Not Found"
     return None
 
+def open_file(filepath, do_compress):
+    if do_compress:
+        return lzma.open(f"{filepath}.xz", 'wt')
+    else:
+        return open(filepath, 'w')
+        
 def dump_json_data(args, output, outfile_basename):
     outfile_path = "{}/{}".format(args.prefix, outfile_basename)
 
