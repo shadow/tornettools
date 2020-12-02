@@ -395,6 +395,8 @@ def main():
 
     if not hasattr(args, "prefix") and hasattr(args, "tornet_config_path"):
         args.prefix = args.tornet_config_path
+    if hasattr(args, "nprocesses"):
+        args.nprocesses = args.nprocesses if args.nprocesses > 0 else cpu_count()
 
     # check if it's just a version check and we should short circuit
     if args.do_version:
