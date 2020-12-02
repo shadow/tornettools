@@ -61,13 +61,17 @@ def __extract_resource_usage(args, data):
 def __get_ram_usage(data):
     used = {float(ts): data[ts]["mem_used"] for ts in data}
 
-    mem_start = used[min(used.keys())] # mem used by OS, i.e., before starting shadow
-    mem_max_bytes = max(used.values()) - mem_start # subtract mem used by OS
-    mem_max_gib = mem_max_bytes/(1024.0**3)
+    ts_start = min(used.keys())
+    mem_start = used[ts_start] # mem used by OS, i.e., before starting shadow
+    mem_max = max(used.values())
 
-    used_gib = {ts: (used[ts]-mem_start)/(1024.0**3) for ts in used}
+    # subtract mem used by OS, get time offset from beginning of simulation
+    gib_used_over_time = {int(ts-ts_start): (used[ts]-mem_start)/(1024.0**3) for ts in used}
+    bytes_used_max = mem_max - mem_start
+    gib_used_max = bytes_used_max/(1024.0**3)
 
-    return {"bytes_used_max": mem_max_bytes, "gib_used_max": mem_max_gib, "gib_used_over_time": used_gib}
+
+    return {"bytes_used_max": bytes_used_max, "gib_used_max": gib_used_max, "gib_used_over_time": gib_used_over_time}
 
 def __get_run_time(data):
     times = [float(k) for k in data.keys()]
