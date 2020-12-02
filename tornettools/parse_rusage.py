@@ -87,4 +87,7 @@ def __get_run_time(data):
     dt_max = datetime.datetime.fromtimestamp(max(times))
     runtime = dt_max - dt_min
 
-    return {"human": str(runtime), "seconds": runtime.total_seconds()}
+    return {"human": str(runtime),
+        "seconds": runtime.total_seconds(),
+        "minutes": runtime.total_seconds()/60.0,
+        "hours": runtime.total_seconds()/3600.0}
