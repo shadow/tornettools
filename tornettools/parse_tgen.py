@@ -46,23 +46,23 @@ def extract_tgen_plot_data(args):
 
 def __extract_round_trip_time(args, data, startts, stopts):
     rtt = __get_round_trip_time(data, startts, stopts)
-    outpath = f"{args.prefix}/tornet_plot_data/round_trip_time.json"
+    outpath = f"{args.prefix}/tornet.plot.data/round_trip_time.json"
     dump_json_data(rtt, outpath, compress=False)
 
 def __extract_download_time(args, data, startts, stopts):
     key = "time_to_first_byte_recv"
     dt = __get_download_time(data, startts, stopts, key)
-    outpath = f"{args.prefix}/tornet_plot_data/{key}.json"
+    outpath = f"{args.prefix}/tornet.plot.data/{key}.json"
     dump_json_data(dt, outpath, compress=False)
 
     key = "time_to_last_byte_recv"
     dt = __get_download_time(data, startts, stopts, key)
-    outpath = f"{args.prefix}/tornet_plot_data/{key}.json"
+    outpath = f"{args.prefix}/tornet.plot.data/{key}.json"
     dump_json_data(dt, outpath, compress=False)
 
 def __extract_error_rate(args, data, startts, stopts):
     errrate_per_client = __get_error_rate(data, startts, stopts)
-    outpath = f"{args.prefix}/tornet_plot_data/error_rate.json"
+    outpath = f"{args.prefix}/tornet.plot.data/error_rate.json"
     dump_json_data(errrate_per_client, outpath, compress=False)
 
 def __get_download_time(data, startts, stopts, bytekey):
