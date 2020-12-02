@@ -86,6 +86,7 @@ def __setup_logging_helper(logfilename=None):
     my_handlers.append(stdout_handler)
 
     if logfilename != None:
+        make_directories(logfilename)
         file_handler = logging.FileHandler(filename=logfilename)
         my_handlers.append(file_handler)
 

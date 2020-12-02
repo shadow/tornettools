@@ -4,6 +4,7 @@ import logging
 import json
 import lzma
 import shutil
+import shlex
 import subprocess
 
 def make_directories(path):

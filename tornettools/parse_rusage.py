@@ -65,9 +65,9 @@ def __get_ram_usage(data):
     mem_max_bytes = max(used.values()) - mem_start # subtract mem used by OS
     mem_max_gib = mem_max_bytes/(1024.0**3)
 
-    shadow_used = {ts: used[ts]-mem_start for ts in used}
+    used_gib = {ts: (used[ts]-mem_start)/(1024.0**3) for ts in used}
 
-    return {"max_bytes_used": mem_max_bytes, "max_gib_used": mem_max_gib, "used_over_time": shadow_used}
+    return {"bytes_used_max": mem_max_bytes, "gib_used_max": mem_max_gib, "gib_used_over_time": used_gib}
 
 def __get_run_time(data):
     times = [float(k) for k in data.keys()]
