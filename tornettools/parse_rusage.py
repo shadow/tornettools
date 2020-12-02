@@ -57,7 +57,7 @@ def extract_resource_usage_plot_data(args):
 
 def __extract_resource_usage(args, data):
     rusage = {"ram": __get_ram_usage(data), "run_time": __get_run_time(data)}
-    outpath = f"{args.prefix}/plot.data/resource_usage.json"
+    outpath = f"{args.prefix}/tornet_plot_data/resource_usage.json"
     dump_json_data(rusage, outpath, compress=False)
 
 def __get_ram_usage(data):
