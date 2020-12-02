@@ -56,3 +56,15 @@ def copy_and_extract_file(src, dst):
     if completed_proc.returncode != 0:
         logging.critical("Error extracting file {} using command {}".format(dst, cmd))
     assert completed_proc.returncode == 0
+
+def find_matching_files_in_dir(search_dir, filename):
+    logging.info(f"Searching for files with name {filename} in directory tree at {search_dir}")
+    found = []
+    for root, dirs, files in os.walk(search_dir):
+        for name in files:
+            if filename in name:
+                p = os.path.join(root, name)
+                logging.info("Found {}".format(p))
+                found.append(p)
+    logging.info(f"Found {len(found)} total files")
+    return found
