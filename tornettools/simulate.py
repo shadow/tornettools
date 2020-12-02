@@ -1,14 +1,13 @@
 import sys
 import os
 import logging
-import shlex
 import subprocess
 import threading
 import lzma
 
 from time import sleep
 
-from tornettools.util import which, open_writeable_file
+from tornettools.util import which, cmdsplit, open_writeable_file
 
 def run(args):
     logging.info("Starting a simulation from tornet prefix {}".format(args.prefix))
@@ -37,7 +36,7 @@ def __run_shadow(args):
         return None
 
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = shlex.split(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
+        shadow_cmd = cmdsplit(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc
@@ -49,11 +48,11 @@ def __run_free_loop(args, stop_event):
     with open(f"{args.prefix}/free.log", 'w') as outf:
         while not stop_event.is_set():
             if date_exe_path != None:
-                date_cmd = shlex.split(date_exe_path)
+                date_cmd = cmdsplit(date_exe_path)
                 comproc = subprocess.run(date_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             if free_exe_path != None:
-                free_cmd = shlex.split(f"{free_exe_path} -w -b -l")
+                free_cmd = cmdsplit(f"{free_exe_path} -w -b -l")
                 comproc = subprocess.run(free_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             sleep(1)
@@ -64,7 +63,7 @@ def __start_dstat(args):
     if dstat_exe_path == None:
         return None
 
-    dstat_cmd = shlex.split(f"{dstat_exe_path} -cmstTy --fs --output dstat.log")
+    dstat_cmd = cmdsplit(f"{dstat_exe_path} -cmstTy --fs --output dstat.log")
     dstat_subp = subprocess.Popen(dstat_cmd, cwd=args.prefix, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     return dstat_subp

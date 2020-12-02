@@ -2,7 +2,7 @@ import os
 import logging
 import datetime
 
-from tornettools.util import *
+from tornettools.util import open_readable_file, load_json_data, dump_json_data
 
 def parse_resource_usage_logs(args):
     free_filepath = f"{args.prefix}/free.log"

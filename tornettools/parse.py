@@ -1,8 +1,8 @@
 import logging
 
-from tornettools.parse_oniontrace import *
-from tornettools.parse_tgen import *
-from tornettools.parse_rusage import *
+from tornettools.parse_oniontrace import parse_oniontrace_logs, extract_oniontrace_plot_data
+from tornettools.parse_tgen import parse_tgen_logs, extract_tgen_plot_data
+from tornettools.parse_rusage import parse_resource_usage_logs, extract_resource_usage_plot_data
 
 def run(args):
     logging.info("Parsing simulation output from {}".format(args.prefix))

@@ -1,9 +1,9 @@
 import os
 import logging
 import datetime
-import shlex
+import subprocess
 
-from tornettools.util import *
+from tornettools.util import which, cmdsplit, open_writeable_file, load_json_data, dump_json_data
 
 def parse_oniontrace_logs(args):
     otracetools_exe = which('oniontracetools')
@@ -14,7 +14,7 @@ def parse_oniontrace_logs(args):
         return
 
     cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e 'oniontrace.*\.log' shadow.data/hosts"
-    cmd = shlex.split(cmd_str)
+    cmd = cmdsplit(cmd_str)
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 

@@ -2,10 +2,9 @@ import sys
 import os
 import logging
 import shutil
-import shlex
 import subprocess
 
-from tornettools.util import which
+from tornettools.util import which, cmdsplit
 
 def run(args):
     logging.info("Starting to archive simulation results now.")
@@ -48,8 +47,8 @@ def run(args):
 def __xz_parallel(args, filename):
     path = f"{args.prefix}/{filename}"
     if os.path.exists(path):
-        comproc = subprocess.run(shlex.split(f"xz -9 --threads={args.nprocesses} {path}"),
-            cwd=args.prefix, stdout=subprocess.DEVNULL)
+        xz_cmd = cmdsplit(f"xz -9 --threads={args.nprocesses} {path}")
+        comproc = subprocess.run(xz_cmd, cwd=args.prefix, stdout=subprocess.DEVNULL)
         if comproc.returncode == 0:
             return True
     return False
@@ -65,16 +64,14 @@ def __tar_xz_parallel(args, dirname, excludes=[]):
     flags = [f"--exclude='{e}'" for e in excludes]
     flag_str = ' '.join(flags)
 
-    # NOTE: DO NOT USE shlex.split() in the tar command;
-    # we need the ' chars in the exclude strings for the tar command, but shlex removes them
-    tar_cmd = f"tar cf - {flag_str} {dirname}"
-    tarproc = subprocess.Popen(tar_cmd.split(), cwd=args.prefix, stdout=subprocess.PIPE)
+    tar_cmd = cmdsplit(f"tar cf - {flag_str} {dirname}")
+    tarproc = subprocess.Popen(tar_cmd, cwd=args.prefix, stdout=subprocess.PIPE)
 
-    xz_cmd = f"xz -9 --threads={args.nprocesses} -"
-    xzproc = subprocess.Popen(shlex.split(xz_cmd), cwd=args.prefix, stdin=tarproc.stdout, stdout=subprocess.PIPE)
+    xz_cmd = cmdsplit(f"xz -9 --threads={args.nprocesses} -")
+    xzproc = subprocess.Popen(xz_cmd, cwd=args.prefix, stdin=tarproc.stdout, stdout=subprocess.PIPE)
 
-    dd_cmd = f"dd of={dirname}.tar.xz"
-    ddproc = subprocess.Popen(shlex.split(dd_cmd), cwd=args.prefix, stdin=xzproc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    dd_cmd = cmdsplit(f"dd of={dirname}.tar.xz")
+    ddproc = subprocess.Popen(dd_cmd, cwd=args.prefix, stdin=xzproc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # wait for the above and collec the return codes
     tar_rc = tarproc.wait()
