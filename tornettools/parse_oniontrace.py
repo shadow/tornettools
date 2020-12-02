@@ -16,11 +16,11 @@ def parse_oniontrace_logs(args):
     cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e 'oniontrace.*\.log' shadow.data/hosts"
     cmd = shlex.split(cmd_str)
 
-    datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 
     with open_writeable_file(f"{args.prefix}/oniontracetools.parse.{datestr}.log") as outf:
         logging.info("Parsing oniontrace log data with oniontracetools now...")
-        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf)
+        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
         logging.info(f"oniontracetools returned code {comproc.returncode}")
 
     return comproc.returncode == 0

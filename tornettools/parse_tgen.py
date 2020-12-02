@@ -16,11 +16,11 @@ def parse_tgen_logs(args):
     cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient.*tgen.*\.log' shadow.data/hosts"
     cmd = shlex.split(cmd_str)
 
-    datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 
     with open_writeable_file(f"{args.prefix}/tgentools.parse.{datestr}.log") as outf:
         logging.info("Parsing tgen log data with tgentools now...")
-        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf)
+        comproc = subprocess.run(cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
         logging.info(f"tgentools returned code {comproc.returncode}")
 
     return comproc.returncode == 0

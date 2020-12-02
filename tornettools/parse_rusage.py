@@ -20,9 +20,9 @@ def parse_resource_usage_logs(args):
     with open_readable_file(free_filepath) as inf:
         for line in inf:
             if line.count(':') == 2:
-                dt = datetime.datetime.strptime(line, "%a %b %d %H:%M:%S %Z %Y")
+                dt = datetime.datetime.strptime(line.strip(), "%a %b %d %H:%M:%S %Z %Y")
                 last_ts = dt.timestamp()
-            elif 'total' in line and mem_header = None:
+            elif 'total' in line and mem_header == None:
                 mem_header = [p.strip() for p in line.strip().split()]
             elif "Mem:" in line:
                 parts = [p.strip() for p in line.strip().split()]
@@ -59,15 +59,15 @@ def __extract_resource_usage(args, data):
     dump_json_data(rusage, outpath, compress=False)
 
 def __get_ram_usage(data):
-    used = {float(ts): data[k]["mem_used"] for ts in data}
+    used = {float(ts): data[ts]["mem_used"] for ts in data}
 
     mem_start = used[min(used.keys())] # mem used by OS, i.e., before starting shadow
     mem_max_bytes = max(used.values()) - mem_start # subtract mem used by OS
     mem_max_gib = mem_max_bytes/(1024.0**3)
 
-    shadow_used = {ts: data[ts]-mem_start for ts in data}
+    shadow_used = {ts: used[ts]-mem_start for ts in used}
 
-    return {"max_bytes_used": b, "max_gib_used": g, "used_over_time": shadow_used}
+    return {"max_bytes_used": mem_max_bytes, "max_gib_used": mem_max_gib, "used_over_time": shadow_used}
 
 def __get_run_time(data):
     times = [float(k) for k in data.keys()]
