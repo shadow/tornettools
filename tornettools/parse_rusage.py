@@ -2,6 +2,8 @@ import os
 import logging
 import datetime
 
+from numpy import mean
+
 from tornettools.util import open_readable_file, load_json_data, dump_json_data
 
 def parse_resource_usage_logs(args):
@@ -66,12 +68,17 @@ def __get_ram_usage(data):
     mem_max = max(used.values())
 
     # subtract mem used by OS, get time offset from beginning of simulation
-    gib_used_over_time = {int(ts-ts_start): (used[ts]-mem_start)/(1024.0**3) for ts in used}
+    gib_used_per_second = {int(ts-ts_start): (used[ts]-mem_start)/(1024.0**3) for ts in used}
     bytes_used_max = mem_max - mem_start
     gib_used_max = bytes_used_max/(1024.0**3)
 
+    gib_minute_bins = {}
+    for second in gib_used_per_second:
+        gib_minute_bins.setdefault(int(second/60), []).append(gib_used_per_second[second])
 
-    return {"bytes_used_max": bytes_used_max, "gib_used_max": gib_used_max, "gib_used_over_time": gib_used_over_time}
+    gib_used_per_minute = {minute: mean(gib_minute_bins[minute]) for minute in gib_minute_bins}
+
+    return {"bytes_used_max": bytes_used_max, "gib_used_max": gib_used_max, "gib_used_per_minute": gib_used_per_minute}
 
 def __get_run_time(data):
     times = [float(k) for k in data.keys()]
