@@ -18,7 +18,7 @@ def which(program):
     return shutil.which(program)
 
 def cmdsplit(cmd_str):
-    return shlex.split(shlex.quote(cmd_str))
+    return shlex.split(cmd_str)
 
 def open_writeable_file(filepath, compress=False):
     make_directories(filepath)
