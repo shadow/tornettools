@@ -30,13 +30,22 @@ def run(args):
 def __plot_tornet(args):
     torperf_dbs = __load_torperf_datasets(args.torperf)
 
-    __plot_rtt(args, torperf_dbs)
+    args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
 
-def __plot_rtt(args, torperf_dbs):
-    # get the tornet rtts
     tornet_dbs = __load_tornet_datasets(args, f"round_trip_time.json")
+    __plot_rtt(args, torperf_dbs, tornet_dbs)
 
-    # cache the torperf rtts in the 'data' keyword
+    tornet_dbs = __load_tornet_datasets(args, f"time_to_last_byte_recv.json")
+    __plot_download_time(args, torperf_dbs, tornet_dbs, "51200")
+    __plot_download_time(args, torperf_dbs, tornet_dbs, "1048576")
+    __plot_download_time(args, torperf_dbs, tornet_dbs, "5242880")
+
+    args.pdfpages.close()
+
+def __plot_rtt(args, torperf_dbs, tornet_dbs):
+    # cache the rtts in the 'data' keyword
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = tornet_db['dataset']
     for torperf_db in torperf_dbs:
         torperf_db['data'] = [torperf_db['dataset']['circuit_rtt']]
 
@@ -46,6 +55,21 @@ def __plot_rtt(args, torperf_dbs):
     __plot_cdf_figure(args, dbs_to_plot, filename,
         yscale="taillog",
         xlabel="Circuit Round Trip Time (s)",
+        ylabel="CDF")
+
+def __plot_download_time(args, torperf_dbs, tornet_dbs, bytes_key):
+    # cache the download times in the 'data' keyword
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = [tornet_db['dataset'][k][bytes_key] for k in range(len(tornet_db['dataset']))]
+    for torperf_db in torperf_dbs:
+        torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+    filename = f"{args.prefix}/download_time_{bytes_key}.pdf"
+
+    __plot_cdf_figure(args, dbs_to_plot, filename,
+        yscale="taillog",
+        xlabel=f"Download Time {bytes_key} Bytes (s)",
         ylabel="CDF")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel=None):
@@ -95,6 +119,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     pyplot.legend(lines, labels, loc='best')
     pyplot.tight_layout(pad=0.3)
     pyplot.savefig(filename)
+    args.pdfpages.savefig()
 
 def __get_scale_suffix(scale):
     if scale == 'taillog':
@@ -114,7 +139,7 @@ def __load_tornet_datasets(args, filename):
     if args.tornet_collection_path != None:
         for collection_dir in args.tornet_collection_path:
             tornet_db = {
-                'data': [load_json_data(p) for p in find_matching_files_in_dir(collection_dir, filename)],
+                'dataset': [load_json_data(p) for p in find_matching_files_in_dir(collection_dir, filename)],
                 'label': next(label_cycle) if label_cycle != None else os.path.basename(collection_dir),
                 'color': next(color_cycle) if color_cycle != None else None,
             }
