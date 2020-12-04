@@ -27,23 +27,54 @@ def run(args):
         logging.info("Attempting to plot individual oniontrace results")
         plot_oniontrace(args)
 
+    logging.info(f"Done plotting! PDF files are saved to {args.prefix}")
+
 def __plot_tornet(args):
+    logging.info("Loading TorPerf data")
     torperf_dbs = __load_torperf_datasets(args.torperf)
 
     args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
 
-    tornet_dbs = __load_tornet_datasets(args, f"round_trip_time.json")
-    __plot_rtt(args, torperf_dbs, tornet_dbs)
+    logging.info("Loading tornet circuit build time data")
+    tornet_dbs = __load_tornet_datasets(args, "oniontrace_perfclient_cbt.json")
+    logging.info("Plotting circuit build times")
+    __plot_circuit_build_time(args, torperf_dbs, tornet_dbs)
 
-    tornet_dbs = __load_tornet_datasets(args, f"time_to_last_byte_recv.json")
-    __plot_download_time(args, torperf_dbs, tornet_dbs, "51200")
-    __plot_download_time(args, torperf_dbs, tornet_dbs, "1048576")
-    __plot_download_time(args, torperf_dbs, tornet_dbs, "5242880")
+    logging.info("Loading tornet round trip time data")
+    tornet_dbs = __load_tornet_datasets(args, "round_trip_time.json")
+    logging.info("Plotting round trip times")
+    __plot_round_trip_time(args, torperf_dbs, tornet_dbs)
+
+    logging.info("Loading tornet transfer time data")
+    tornet_dbs = __load_tornet_datasets(args, "time_to_last_byte_recv.json")
+    logging.info("Plotting transfer times")
+    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "51200")
+    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "1048576")
+    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "5242880")
+
+    logging.info("Loading tornet transfer error rate data")
+    tornet_dbs = __load_tornet_datasets(args, "error_rate.json")
+    logging.info("Plotting transfer error rates")
+    __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, "ALL")
 
     args.pdfpages.close()
 
-def __plot_rtt(args, torperf_dbs, tornet_dbs):
-    # cache the rtts in the 'data' keyword
+def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = tornet_db['dataset']
+    for torperf_db in torperf_dbs:
+        torperf_db['data'] = [torperf_db['dataset']['circuit_build_times']]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+    filename = f"{args.prefix}/circuit_build_time.pdf"
+
+    __plot_cdf_figure(args, dbs_to_plot, filename,
+        yscale="taillog",
+        xlabel="Circuit Build Time (s)")
+
+def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
     for torperf_db in torperf_dbs:
@@ -54,25 +85,37 @@ def __plot_rtt(args, torperf_dbs, tornet_dbs):
 
     __plot_cdf_figure(args, dbs_to_plot, filename,
         yscale="taillog",
-        xlabel="Circuit Round Trip Time (s)",
-        ylabel="CDF")
+        xlabel="Circuit Round Trip Time (s)")
 
-def __plot_download_time(args, torperf_dbs, tornet_dbs, bytes_key):
-    # cache the download times in the 'data' keyword
+def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][k][bytes_key] for k in range(len(tornet_db['dataset']))]
     for torperf_db in torperf_dbs:
         torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/download_time_{bytes_key}.pdf"
+    filename = f"{args.prefix}/transfer_time_{bytes_key}.pdf"
 
     __plot_cdf_figure(args, dbs_to_plot, filename,
         yscale="taillog",
-        xlabel=f"Download Time {bytes_key} Bytes (s)",
-        ylabel="CDF")
+        xlabel=f"Transfer Time (s): Bytes={bytes_key}")
 
-def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel=None):
+def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = [tornet_db['dataset'][k][error_key] for k in range(len(tornet_db['dataset']))]
+    for torperf_db in torperf_dbs:
+        err_rates = __compute_torperf_error_rates(torperf_db['dataset']['daily_counts'])
+        torperf_db['data'] = [err_rates]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+    filename = f"{args.prefix}/transfer_error_rates_{error_key}.pdf"
+
+    __plot_cdf_figure(args, dbs_to_plot, filename,
+        xlabel=f"Transfer Error Rate (\%): Type={error_key}")
+
+def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)
     linestyle_cycle = cycle(DEFAULT_LINESTYLES)
 
@@ -160,3 +203,26 @@ def __load_torperf_datasets(torperf_argset):
             torperf_dbs.append(torperf_db)
 
     return torperf_dbs
+
+def __compute_torperf_error_rates(daily_counts):
+    err_rates = []
+    for day in daily_counts:
+        year = int(day.split('-')[0])
+        month = int(day.split('-')[1])
+
+        total = int(daily_counts[day]['requests'])
+        if total <= 0:
+            continue
+
+        timeouts = int(daily_counts[day]['timeouts'])
+        failures = int(daily_counts[day]['failures'])
+
+        # the hong kong onionperf infrastucture is unreliable
+        # https://metrics.torproject.org/torperf-failures.html?start=2019-06-01&end=2019-08-31&server=public
+        if timeouts > 100 and year == 2019 and month in [6, 7, 8]:
+            continue
+        if timeouts > 100 and year == 2018 and month in [1, 5, 6, 7, 12]:
+            continue
+
+        err_rates.append((timeouts+failures)/float(total)*100.0)
+    return err_rates

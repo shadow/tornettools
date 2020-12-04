@@ -54,7 +54,7 @@ def __extract_relay_tput(args, data, startts, stopts):
     dump_json_data(tput, outpath, compress=False)
 
 def __get_perfclient_cbt(data, startts, stopts):
-    perf_cbt = {}
+    perf_cbt = []
 
     # cbts can differ by microseconds
     resolution = 1.0/1000000.0
@@ -72,11 +72,10 @@ def __get_perfclient_cbt(data, startts, stopts):
             for secstr in cbt:
                 sec = int(secstr)-946684800
                 if sec >= startts and (stopts < 0 or sec < stopts):
-                    perf_cbt.setdefault(sec, [])
                     for val in cbt[secstr]:
                         #item = [val, resolution]
                         item = val
-                        perf_cbt[sec].append(item)
+                        perf_cbt.append(item)
 
     return perf_cbt
 
