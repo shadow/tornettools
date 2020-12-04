@@ -46,11 +46,18 @@ def __plot_tornet(args):
     __plot_round_trip_time(args, torperf_dbs, tornet_dbs)
 
     logging.info("Loading tornet transfer time data")
-    tornet_dbs = __load_tornet_datasets(args, "time_to_last_byte_recv.json")
+    ttlb = __load_tornet_datasets(args, "time_to_last_byte_recv.json")
+    tornet_dbs = ttlb
     logging.info("Plotting transfer times")
     __plot_transfer_time(args, torperf_dbs, tornet_dbs, "51200")
     __plot_transfer_time(args, torperf_dbs, tornet_dbs, "1048576")
     __plot_transfer_time(args, torperf_dbs, tornet_dbs, "5242880")
+
+    logging.info("Loading tornet goodput data")
+    ttfb = __load_tornet_datasets(args, "time_to_first_byte_recv.json")
+    tornet_dbs = __compute_tornet_client_goodput(ttfb, ttlb)
+    logging.info("Plotting client goodput")
+    __plot_client_goodput(args, torperf_dbs, tornet_dbs)
 
     logging.info("Loading tornet transfer error rate data")
     tornet_dbs = __load_tornet_datasets(args, "error_rate.json")
@@ -114,6 +121,26 @@ def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
 
     __plot_cdf_figure(args, dbs_to_plot, filename,
         xlabel=f"Transfer Error Rate (\%): Type={error_key}")
+
+def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
+    # Tor computes goodput based on the time between the .5 MiB byte to the 1 MiB
+    # byte in order to cut out circuit build and other startup costs.
+    # https://metrics.torproject.org/reproducible-metrics.html#performance
+
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = tornet_db['dataset']
+    for torperf_db in torperf_dbs:
+        # convert tor's microseconds into seconds
+        client_gput = [t/1000000.0 for t in torperf_db['dataset']["throughput"]]
+        torperf_db['data'] = [client_gput]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+    filename = f"{args.prefix}/client_goodput.pdf"
+
+    __plot_cdf_figure(args, dbs_to_plot, filename,
+        yscale="taillog",
+        xlabel="Client Transfer Goodput (s): 0.5 to 1 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)
@@ -226,3 +253,43 @@ def __compute_torperf_error_rates(daily_counts):
 
         err_rates.append((timeouts+failures)/float(total)*100.0)
     return err_rates
+
+# TODO: this should be removed when tgen starts logging 0.5 and 1.0 MiB times
+def __compute_tornet_client_goodput(ttfb_dbs, ttlb_dbs):
+    # Tor computs gput based on the time between the .5 MiB byte to the 1 MiB byte.
+    # Ie to cut out circuit build and other startup costs. Since tgen doesn't have a
+    # timestamp for .5MiB on each download, we instead cut out the ttfb.
+    # https://metrics.torproject.org/reproducible-metrics.html#performance
+    gput_dbs = []
+
+    for i, _ in enumerate(ttfb_dbs):
+        ttfb_dset = ttfb_dbs[i]['dataset']
+        ttlb_dset = ttlb_dbs[i]['dataset']
+
+        gput_db = {'dataset': [], 'label': ttfb_dbs[i]['label'], 'color': ttfb_dbs[i]['color']}
+
+        for j, _ in enumerate(ttfb_dset):
+            ttfb = ttfb_dset[j]
+            ttlb = ttlb_dset[j]
+
+            gput = []
+
+            mean_ttfb_1m = mean(ttfb['1048576'])
+            for seconds in ttlb["1048576"]:
+                gput_sec = seconds - mean_ttfb_1m
+                if gput_sec <= 0: continue
+                mbit_per_second = 1048576.0/1048576.0*8.0/gput_sec
+                gput.append(mbit_per_second)
+
+            mean_ttfb_5m = mean(ttfb['5242880'])
+            for seconds in ttlb["5242880"]:
+                gput_sec = seconds - mean_ttfb_5m
+                if gput_sec <= 0: continue
+                mbit_per_second = 5242880.0/1048576.0*8.0/gput_sec
+                gput.append(mbit_per_second)
+
+            gput_db['dataset'].append(gput)
+
+        gput_dbs.append(gput_db)
+
+    return gput_dbs
