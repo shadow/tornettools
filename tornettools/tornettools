@@ -495,36 +495,6 @@ def archive(args):
     from tornettools import archive
     archive.run(args)
 
-# adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
-class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
-    def _fill_text(self, text, width, indent):
-        return ''.join([indent + line for line in text.splitlines(True)])
-
-# a custom action for passing in experimental data directories when plotting
-class PathStringArgsAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if len(values) == 0:
-            raise argparse.ArgumentError(self, "A path is required.")
-        elif len(values) > 3:
-            raise argparse.ArgumentError(self, "Must specify 3 or fewer strings.")
-
-        # get the values
-        path = values[0]
-        label = values[1] if len(values) > 1 else None
-        color = values[2] if len(values) > 2 else None
-
-        # extract and validate the path
-        path = __type_str_file_path_in(path)
-
-        # remove the default
-        if "_didremovedefault" not in namespace:
-            setattr(namespace, self.dest, [])
-            setattr(namespace, "_didremovedefault", True)
-
-        # append our new arg set
-        dest = getattr(namespace, self.dest)
-        dest.append([path, label, color])
-
 def __type_nonnegative_integer(value):
     i = int(value)
     if i < 0:
@@ -570,6 +540,39 @@ def __type_str_dir_path_in(value):
     elif not os.path.isdir(p):
         raise argparse.ArgumentTypeError(f"Path is not a directory: {p}")
     return p
+
+def type_str_file_path_in(p):
+    return __type_str_file_path_in(p)
+
+# adds the 'RawDescriptionHelpFormatter' to the ArgsDefault one
+class CustomHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    def _fill_text(self, text, width, indent):
+        return ''.join([indent + line for line in text.splitlines(True)])
+
+# a custom action for passing in experimental data directories when plotting
+class PathStringArgsAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if len(values) == 0:
+            raise argparse.ArgumentError(self, "A path is required.")
+        elif len(values) > 3:
+            raise argparse.ArgumentError(self, "Must specify 3 or fewer strings.")
+
+        # get the values
+        path = values[0]
+        label = values[1] if len(values) > 1 else None
+        color = values[2] if len(values) > 2 else None
+
+        # extract and validate the path
+        path = type_str_file_path_in(path)
+
+        # remove the default
+        if "_didremovedefault" not in namespace:
+            setattr(namespace, self.dest, [])
+            setattr(namespace, "_didremovedefault", True)
+
+        # append our new arg set
+        dest = getattr(namespace, self.dest)
+        dest.append([path, label, color])
 
 if __name__ == '__main__':
     sys.exit(main())
