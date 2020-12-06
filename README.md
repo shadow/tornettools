@@ -36,6 +36,7 @@ for the collection of information from Tor throughout an experiment.
     wget https://collector.torproject.org/archive/relay-descriptors/server-descriptors/server-descriptors-2020-01.tar.xz
     wget https://metrics.torproject.org/userstats-relay-country.csv
     wget https://collector.torproject.org/archive/torperf/torperf-2020-01.tar.xz
+    wget -O bandwidth-2020-01.csv "https://metrics.torproject.org/bandwidth.csv?start=2020-01-01&end=2020-01-31"
 
 ### extract
 

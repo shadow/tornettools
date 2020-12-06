@@ -30,10 +30,15 @@ def run(args):
     logging.info(f"Done plotting! PDF files are saved to {args.prefix}")
 
 def __plot_tornet(args):
-    logging.info("Loading TorPerf data")
-    torperf_dbs = __load_torperf_datasets(args.torperf)
+    logging.info("Loading Tor metrics data")
+    torperf_dbs = __load_torperf_datasets(args.tor_metrics_path)
 
     args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
+
+    logging.info("Loading tornet relay goodput data")
+    tornet_dbs = __load_tornet_datasets(args, "oniontrace_relay_tput.json")
+    logging.info("Plotting relay goodput")
+    __plot_relay_goodput(args, torperf_dbs, tornet_dbs)
 
     logging.info("Loading tornet circuit build time data")
     tornet_dbs = __load_tornet_datasets(args, "oniontrace_perfclient_cbt.json")
@@ -66,6 +71,24 @@ def __plot_tornet(args):
 
     args.pdfpages.close()
 
+def __plot_relay_goodput(args, torperf_dbs, tornet_dbs):
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = []
+        for i, d in enumerate(tornet_db['dataset']):
+            l = [b/(1024**3)*8 for b in d.values()] # bytes to gbits
+            tornet_db['data'].append(l)
+    for torperf_db in torperf_dbs:
+        net_scale = 0.05 # TODO automatically extract this from the generate logs
+        gput = torperf_db['dataset']['relay_goodput']
+        torperf_db['data'] = [[net_scale*gbits for gbits in gput.values()]]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+    filename = f"{args.prefix}/relay_goodput.pdf"
+
+    __plot_cdf_figure(args, dbs_to_plot, filename,
+        xlabel="Sum of Relays' Goodput (bytes)")
+
 def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
@@ -97,7 +120,7 @@ def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
 def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = [tornet_db['dataset'][k][bytes_key] for k in range(len(tornet_db['dataset']))]
+        tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset'])]
     for torperf_db in torperf_dbs:
         torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
 
@@ -111,7 +134,7 @@ def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
 def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = [tornet_db['dataset'][k][error_key] for k in range(len(tornet_db['dataset']))]
+        tornet_db['data'] = [tornet_db['dataset'][i][error_key] for i, _ in enumerate(tornet_db['dataset'])]
     for torperf_db in torperf_dbs:
         err_rates = __compute_torperf_error_rates(torperf_db['dataset']['daily_counts'])
         torperf_db['data'] = [err_rates]
@@ -132,7 +155,7 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
         tornet_db['data'] = tornet_db['dataset']
     for torperf_db in torperf_dbs:
         # convert tor's microseconds into seconds
-        client_gput = [t/1000000.0 for t in torperf_db['dataset']["throughput"]]
+        client_gput = [t/1000000.0 for t in torperf_db['dataset']["client_goodput"]]
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
@@ -150,7 +173,9 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     lines, labels = [], []
 
     for db in dbs:
-        if len(db['data']) == 1:
+        if 'data' not in db or len(db['data']) < 1:
+            continue
+        elif len(db['data']) == 1:
             plot_func, d = draw_cdf, db['data'][0]
         else:
             plot_func, d = draw_cdf_ci, db['data']
