@@ -36,13 +36,13 @@ def __plot_tornet(args):
     args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
 
     logging.info("Loading tornet relay goodput data")
-    tornet_dbs = __load_tornet_datasets(args, "oniontrace_relay_tput.json")
+    tornet_dbs = __load_tornet_datasets(args, "relay_goodput.json")
     net_scale = __get_simulated_network_scale(args)
     logging.info("Plotting relay goodput")
     __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale)
 
     logging.info("Loading tornet circuit build time data")
-    tornet_dbs = __load_tornet_datasets(args, "oniontrace_perfclient_cbt.json")
+    tornet_dbs = __load_tornet_datasets(args, "perfclient_circuit_build_time.json")
     logging.info("Plotting circuit build times")
     __plot_circuit_build_time(args, torperf_dbs, tornet_dbs)
 

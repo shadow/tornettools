@@ -45,12 +45,12 @@ def extract_oniontrace_plot_data(args):
 
 def __extract_circuit_build_times(args, data, startts, stopts):
     cbt = __get_perfclient_cbt(data, startts, stopts)
-    outpath = f"{args.prefix}/tornet.plot.data/oniontrace_perfclient_cbt.json"
+    outpath = f"{args.prefix}/tornet.plot.data/perfclient_circuit_build_time.json"
     dump_json_data(cbt, outpath, compress=False)
 
 def __extract_relay_tput(args, data, startts, stopts):
     tput = __get_relay_tput(data, startts, stopts)
-    outpath = f"{args.prefix}/tornet.plot.data/oniontrace_relay_tput.json"
+    outpath = f"{args.prefix}/tornet.plot.data/relay_goodput.json"
     dump_json_data(tput, outpath, compress=False)
 
 def __get_perfclient_cbt(data, startts, stopts):
