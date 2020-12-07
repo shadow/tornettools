@@ -13,7 +13,7 @@ def parse_tgen_logs(args):
         logging.warning("Unable to parse tgen simulation data.")
         return
 
-    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient.*tgen.*\.log' shadow.data/hosts"
+    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient.*tgen.*\.log' --complete shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
@@ -43,6 +43,7 @@ def extract_tgen_plot_data(args):
     __extract_round_trip_time(args, data, startts, stopts)
     __extract_download_time(args, data, startts, stopts)
     __extract_error_rate(args, data, startts, stopts)
+    __extract_client_goodput(args, data, startts, stopts)
 
 def __extract_round_trip_time(args, data, startts, stopts):
     rtt = __get_round_trip_time(data, startts, stopts)
@@ -65,6 +66,11 @@ def __extract_error_rate(args, data, startts, stopts):
     outpath = f"{args.prefix}/tornet.plot.data/error_rate.json"
     dump_json_data(errrate_per_client, outpath, compress=False)
 
+def __extract_client_goodput(args, data, startts, stopts):
+    client_goodput = __get_client_goodput(data, startts, stopts)
+    outpath = f"{args.prefix}/tornet.plot.data/perfclient_goodput.json"
+    dump_json_data(client_goodput, outpath, compress=False)
+
 def __get_download_time(data, startts, stopts, bytekey):
     dt = {'ALL':[]}
 
@@ -73,7 +79,8 @@ def __get_download_time(data, startts, stopts, bytekey):
 
     if 'data' in data:
         for name in data['data']:
-            if 'perfclient' not in name: continue
+            if 'perfclient' not in name:
+                continue
             db = data['data'][name]
             ss = db['tgen']['stream_summary']
             mybytes, mytime = 0, 0.0
@@ -100,7 +107,8 @@ def __get_round_trip_time(data, startts, stopts):
 
     if 'data' in data:
         for name in data['data']:
-            if 'perfclient' not in name: continue
+            if 'perfclient' not in name:
+                continue
 
             db = data['data'][name]
             ss = db['tgen']['stream_summary']
@@ -121,7 +129,8 @@ def __get_error_rate(data, startts, stopts):
 
     if 'data' in data:
         for name in data['data']:
-            if 'perfclient' not in name: continue
+            if 'perfclient' not in name:
+                continue
             db = data['data'][name]
             ss = db['tgen']['stream_summary']
 
@@ -166,3 +175,37 @@ def __get_error_rate(data, startts, stopts):
                     errors_per_client.setdefault(errtype, []).append([error_rate, resolution])
 
     return errors_per_client
+
+def __get_client_goodput(data, startts, stopts):
+    # Tor computs gput based on the time between the .5 MiB byte to the 1 MiB byte.
+    # Ie to cut out circuit build and other startup costs. Since tgen doesn't have a
+    # timestamp for .5MiB on each download, we instead cut out the ttfb.
+    # https://metrics.torproject.org/reproducible-metrics.html#performance
+
+    goodput = []
+
+    resolution = 0.0 # TODO: goodput would be in bits/second
+
+    # example json format
+    #['data']['perfclient1']['tgen']['streams']["blah:blah:localhost:etc"]['elapsed_seconds']['payload_bytes_recv']['512000'] = 3.4546
+
+    if 'data' in data:
+        for name in data['data']:
+            if 'perfclient' not in name:
+                continue
+            db = data['data'][name]
+            streams = db['tgen']['streams']
+
+            for sid in streams:
+                stream = streams[sid]
+                if "elapsed_seconds" in stream and \
+                    "payload_bytes_recv" in stream['elapsed_seconds']:
+                    bytes_db = stream['elapsed_seconds']['payload_bytes_recv']
+                    if '512000' in bytes_db and '1048576' in bytes_db:
+                        seconds = float(bytes_db['1048576']) - float(bytes_db['512000'])
+                        bytes = 1048576 - 512000
+                        mbit = bytes/1048576.0*8.0
+                        mbit_per_second = mbit/seconds
+                        goodput.append(mbit_per_second)
+
+    return goodput

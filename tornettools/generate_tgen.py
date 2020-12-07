@@ -35,7 +35,9 @@ def __generate_tgenrc_perfclient(abs_conf_path, server_peers):
 
     G = DiGraph()
 
-    G.add_node("start", loglevel="message", socksproxy=proxy, peers=peers, packetmodelmode="path")
+    # need info level logs so we can collect incremental download times, which we
+    # later use for comparing the client goodput metric with Tor metrics data
+    G.add_node("start", loglevel="info", socksproxy=proxy, peers=peers, packetmodelmode="path")
 
     # torperf uses 5 minute pause, but we reduce it for shadow
     G.add_node("pause", time="1 minute")
