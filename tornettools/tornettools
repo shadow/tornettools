@@ -224,7 +224,7 @@ def main():
     generate_parser.add_argument("tmodel_git_path",
         help="Path to a local directory that contains a git clone of the repo: \
             'https://github.com/tmodel-ccs2018/tmodel-ccs2018.github.io.git'",
-        type=__type_str_file_path_in)
+        type=__type_str_dir_path_in)
 
     generate_parser.add_argument('--prefix',
         help="""A directory PATH prefix where the tornet network configuration
