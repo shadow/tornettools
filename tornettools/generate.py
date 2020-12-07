@@ -12,6 +12,17 @@ from tornettools.generate_tor import *
 from tornettools.util import copy_and_extract_file
 
 def run(args):
+    if args.torexe == None:
+        logging.critical("Unable to find a 'tor' executable in PATH, but we need it to generate keys. Did you build 'tor'? Did you set your PATH or provide the path to the 'tor' executable?")
+        logging.critical("Refusing to generate a network without 'tor'.")
+        return
+    if args.torgencertexe == None:
+        logging.critical("Unable to find a 'tor-gencert' executable in PATH, but we need it to generate keys. Did you build 'tor-gencert'? Did you set your PATH or provide the path to the 'tor-gencert' executable?")
+        logging.critical("Refusing to generate a network without 'tor-gencert'.")
+        return
+
+    logging.info(f"Generating network using tor and tor-gencert at {args.torexe} and {args.torgencertexe}")
+
     # get the set of relays we will create in shadow
     logging.info("Sampling Tor relays now")
     relays, relay_count = get_relays(args)
