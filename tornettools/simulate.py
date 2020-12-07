@@ -28,7 +28,8 @@ def run(args):
     free_stop_event.set()
     free_thread.join()
 
-    logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
+    if comproc != None:
+        logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
 
 def __run_shadow(args):
     shadow_exe_path = which('shadow')
