@@ -37,8 +37,9 @@ def __plot_tornet(args):
 
     logging.info("Loading tornet relay goodput data")
     tornet_dbs = __load_tornet_datasets(args, "oniontrace_relay_tput.json")
+    net_scale = __get_simulated_network_scale(args)
     logging.info("Plotting relay goodput")
-    __plot_relay_goodput(args, torperf_dbs, tornet_dbs)
+    __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale)
 
     logging.info("Loading tornet circuit build time data")
     tornet_dbs = __load_tornet_datasets(args, "oniontrace_perfclient_cbt.json")
@@ -71,7 +72,7 @@ def __plot_tornet(args):
 
     args.pdfpages.close()
 
-def __plot_relay_goodput(args, torperf_dbs, tornet_dbs):
+def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = []
@@ -79,7 +80,6 @@ def __plot_relay_goodput(args, torperf_dbs, tornet_dbs):
             l = [b/(1024**3)*8 for b in d.values()] # bytes to gbits
             tornet_db['data'].append(l)
     for torperf_db in torperf_dbs:
-        net_scale = 0.05 # TODO automatically extract this from the generate logs
         gput = torperf_db['dataset']['relay_goodput']
         torperf_db['data'] = [[net_scale*gbits for gbits in gput.values()]]
 
@@ -255,6 +255,23 @@ def __load_torperf_datasets(torperf_argset):
             torperf_dbs.append(torperf_db)
 
     return torperf_dbs
+
+def __get_simulated_network_scale(args):
+    sim_info = __load_tornet_datasets(args, "simulation_info.json")
+
+    net_scale = 0.0
+    for db in sim_info:
+        for i, d in enumerate(db['dataset']):
+            if 'net_scale' in d:
+                if net_scale == 0.0:
+                    net_scale = float(d['net_scale'])
+                    logging.info(f"Found simulated network scale {net_scale}")
+                else:
+                    if float(d['net_scale']) != net_scale:
+                        logging.warning("Some of your tornet data is from networks of different scale")
+                        logging.critical(f"Found network scales {net_scale} and {float(d['net_scale'])} and they don't match")
+
+    return net_scale
 
 def __compute_torperf_error_rates(daily_counts):
     err_rates = []

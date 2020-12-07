@@ -34,7 +34,7 @@ def open_readable_file(filepath):
     if not os.path.exists(filepath) and not filepath.endswith('.xz'):
         filepath += ".xz" # look for the compressed version
     if filepath.endswith('.xz'):
-        infile = lzma.open(filepath, 'r')
+        infile = lzma.open(filepath, 'rt')
     else:
         infile = open(filepath, 'r')
     return infile
