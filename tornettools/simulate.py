@@ -33,6 +33,8 @@ def run(args):
 def __run_shadow(args):
     shadow_exe_path = which('shadow')
     if shadow_exe_path == None:
+        logging.warning("Cannot find shadow in your PATH. Do you have shadow installed (e.g., in ~/.shadow/bin)? Did you update your PATH?")
+        logging.warning("Unable to run simulation without shadow.")
         return None
 
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
