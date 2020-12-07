@@ -21,9 +21,13 @@ def parse_resource_usage_logs(args):
     mem_header = None
     with open_readable_file(free_filepath) as inf:
         for line in inf:
-            if line.count(':') == 2:
-                dt = datetime.datetime.strptime(line.strip(), "%a %b %d %H:%M:%S %Z %Y")
-                last_ts = dt.timestamp()
+            if "UTC" in line:
+                parts = line.strip().split()
+                if len(parts) >= 1:
+                    ts = float(parts[0])
+                    #dt = datetime.datetime.fromtimestamp(ts)
+                    #last_ts = dt.timestamp()
+                    last_ts = ts
             elif 'total' in line and mem_header == None:
                 mem_header = [p.strip() for p in line.strip().split()]
             elif "Mem:" in line:

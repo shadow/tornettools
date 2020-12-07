@@ -51,7 +51,7 @@ def __run_free_loop(args, stop_event):
     with open(f"{args.prefix}/free.log", 'w') as outf:
         while not stop_event.is_set():
             if date_exe_path != None:
-                date_cmd = cmdsplit(date_exe_path)
+                date_cmd = cmdsplit(f"{date_exe_path} --utc '+%s.%N %Z seconds since epoch'")
                 comproc = subprocess.run(date_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             if free_exe_path != None:
