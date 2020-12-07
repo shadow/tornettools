@@ -12,6 +12,8 @@ from scipy.stats import scoreatpercentile as score, t
 from numpy import ma, mean, median, std, log10, quantile, sqrt, linspace, var
 from numpy import array as nparray, log10 as nplog10
 
+from tornettools.util import which
+
 DEFAULT_COLORS = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
 DEFAULT_LINESTYLES = ['-', ':', '--', '-.']
 
@@ -214,16 +216,23 @@ def set_plot_options():
         'legend.handlelength' : 2.0,
         'legend.labelspacing' : 0.25,
         'legend.markerscale' : 1.0,
+    }
+
+    options_latex = {
         # turn on the following to embedd fonts; requires latex
         'ps.useafm' : True,
         'pdf.use14corefonts' : True,
         'text.usetex' : True,
-        #'text.latex.preamble': r'\boldmath',
+        # 'text.latex.preamble': r'\boldmath',
         'text.latex.preamble': r'\usepackage{amsmath}',
     }
 
     for option_key in options:
         rcParams[option_key] = options[option_key]
+
+    if which("latex") != None:
+        for option_key in options_latex:
+            rcParams[option_key] = options_latex[option_key]
 
     if 'figure.max_num_figures' in rcParams:
         rcParams['figure.max_num_figures'] = 50
