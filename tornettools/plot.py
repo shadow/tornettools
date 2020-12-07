@@ -201,8 +201,17 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
 
     m = 0.025
     pyplot.margins(m)
-    x_visible_max = max([quantile(db['data'][0], 0.99) for db in dbs])
-    pyplot.xlim(xmin=-m*x_visible_max, xmax=(m+1)*x_visible_max)
+
+    # the plot will exit the visible space at the 99th percentile,
+    # so make sure the x-axis is centered correctly
+    # (this is usually only a problem if using the 'taillog' yscale)
+    x_visible_max = None
+    for db in dbs:
+        if len(db['data']) >= 1:
+            q = quantile(db['data'][0], 0.99)
+            x_visible_max = q if x_visible_max == None else max(x_visible_max, q)
+    if x_visible_max != None:
+        pyplot.xlim(xmin=-m*x_visible_max, xmax=(m+1)*x_visible_max)
 
     pyplot.tick_params(axis='both', which='major', labelsize=8)
     pyplot.tick_params(axis='both', which='minor', labelsize=5)
