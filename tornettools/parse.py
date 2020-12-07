@@ -8,8 +8,6 @@ from tornettools.util import open_readable_file, dump_json_data
 
 def run(args):
     logging.info("Parsing simulation output from {}".format(args.prefix))
-    __parse_tornettools_log(args)
-    return
 
     logging.info("Parsing tgen logs.")
     if parse_tgen_logs(args):
