@@ -85,7 +85,7 @@ def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
     filename = f"{args.prefix}/relay_goodput.pdf"
 
     __plot_cdf_figure(args, dbs_to_plot, filename,
-        xlabel="Sum of Relays' Goodput (bytes)")
+        xlabel="Sum of Relays' Goodput (Gbit/s)")
 
 def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
@@ -161,7 +161,7 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
 
     __plot_cdf_figure(args, dbs_to_plot, filename,
         yscale="taillog",
-        xlabel="Client Transfer Goodput (s): 0.5 to 1 MiB")
+        xlabel="Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)
