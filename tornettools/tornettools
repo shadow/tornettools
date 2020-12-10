@@ -402,19 +402,21 @@ def main():
             default=os.getcwd(),
             metavar="PATH")
 
-        plot_parser.add_argument('-l', '--label',
+        plot_parser.add_argument('-l', '--labels',
             help="""Labels for the tornet collections to be used in the graph legends.""",
             action='store',
             type=str,
             dest="labels",
-            nargs='+')
+            nargs='+',
+            metavar='LABEL')
 
-        plot_parser.add_argument('-c', '--color',
+        plot_parser.add_argument('-c', '--colors',
             help="""Colors for the tornet collections to be used in the graph plots.""",
             action='store',
             type=str,
             dest="colors",
-            nargs='+')
+            nargs='+',
+            metavar='COLOR')
 
         plot_parser.add_argument('-a', '--all',
             help="""Also generate individual tgentools and oniontracetools plots for each simulation.""",
