@@ -178,8 +178,7 @@ def __get_error_rate(data, startts, stopts):
 
 def __get_client_goodput(data, startts, stopts):
     # Tor computs gput based on the time between the .5 MiB byte to the 1 MiB byte.
-    # Ie to cut out circuit build and other startup costs. Since tgen doesn't have a
-    # timestamp for .5MiB on each download, we instead cut out the ttfb.
+    # Ie to cut out circuit build and other startup costs.
     # https://metrics.torproject.org/reproducible-metrics.html#performance
 
     goodput = []

@@ -15,7 +15,7 @@ __all__ = [
     'parse_oniontrace',
     'parse_rusage',
     'parse_tgen',
-    'parse_torperf',
+    'parse_onionperf',
     'plot',
     'plot_oniontrace',
     'plot_tgen',

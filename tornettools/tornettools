@@ -165,11 +165,11 @@ def main():
         help="Path to a Tor user stats file (https://metrics.torproject.org/userstats-relay-country.csv)",
         type=__type_str_file_path_in)
 
-    stage_parser.add_argument('-t', '--torperf_data_path',
-        help="Path to a directory of torperf performance data",
+    stage_parser.add_argument('-o', '--onionperf_data_path',
+        help="Path to a directory of onionperf performance data",
         type=__type_str_dir_path_in,
         action='store',
-        dest='torperf_data_path',
+        dest='onionperf_data_path',
         metavar='PATH')
 
     stage_parser.add_argument('-b', '--bandwidth_data_path',
@@ -488,8 +488,8 @@ def main():
 def stage(args):
     from tornettools import stage
     stage.run(args)
-    from tornettools import parse_torperf
-    parse_torperf.run(args)
+    from tornettools import parse_onionperf
+    parse_onionperf.run(args)
 
 def generate(args):
     if args.events_csv.lower() == "none":
