@@ -86,8 +86,42 @@ mscale.register_scale(TailLog)
 def __get_error_factor(k, confidence):
     return t.ppf(confidence/2 + 0.5, k-1)/sqrt(k-1)
 
+def __compute_sample_mean_and_error(bucket_list, confidence):
+    means, mins, maxs = [], [], []
+    z_cache = {}
+
+    for i, bucket in enumerate(bucket_list):
+        # get the error factor from the student's t distribution
+        # and cache the result to minimize the number of ppf lookups
+        k = len(bucket)
+        z = z_cache.setdefault(k, __get_error_factor(k, confidence))
+
+        # bucket will be a list of items, each of which will either
+        # be the value (a number), or a list of two numbers (the
+        # value and the resolution).  If it's just a value, the
+        # correspinding resolution is 0.  Create the list of values
+        # and the list of resolutions.
+        emp_sample = [getfirstorself(item) for item in bucket]
+        resolutions = [getsecondorzero(item) for item in bucket]
+
+        # The resolution variance is 1/12 of the sum of the squares
+        # of the resolutions
+        resolution_variance = sum([res**2 for res in resolutions])/12
+
+        m, v = mean(emp_sample), var(emp_sample)
+        s = sqrt(v + resolution_variance)
+        e = z*s
+
+        means.append(m)
+        mins.append(max(0, m-e))
+        maxs.append(m+e)
+
+    return means, mins, maxs
+
 # compute a cdf with confidence intervals based on the dataset and plot it on axis
 # dataset is a list of data
+# confidence is the confidence interval level (eg 0.95 for 95% CIs)
+# kwargs is passed to the plot function
 # each data may be a list of values, or a list of [value, resolution] items
 def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
     y = list(linspace(0, 0.99, num=1000))
@@ -105,41 +139,13 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
             val_at_q = data[int((num_items-1) * q)]
             quantile_buckets[q].append(val_at_q)
 
-    # get the error factor from the student's t distribution
-    k = len(quantile_buckets[0])
-    z = __get_error_factor(k, confidence)
-
     # compute the confidence intervals for each quantile
-    x, x_left, x_right = [], [], []
-    for i, q in enumerate(y):
-        bucket = quantile_buckets[q]
-
-        # bucket will be a list of items, each of which will either
-        # be the value (a number), or a list of two numbers (the
-        # value and the resolution).  If it's just a value, the
-        # correspinding resolution is 0.  Create the list of values
-        # and the list of resolutions.
-        emp_sample = [getfirstorself(item) for item in bucket]
-        resolutions = [getsecondorzero(item) for item in bucket]
-        assert len(emp_sample) == k and len(resolutions) == k
-
-        # The resolution variance is 1/12 of the sum of the squares
-        # of the resolutions
-        resolution_variance = sum([res**2 for res in resolutions])/12
-
-        m, v = mean(emp_sample), var(emp_sample)
-        s = sqrt(v + resolution_variance)
-
-        x_left_val = m-z*s
-        x_right_val = m+z*s
-
-        x.append(m)
-        x_left.append(max(0, x_left_val))
-        x_right.append(x_right_val)
+    bucket_list = [quantile_buckets[q] for _, q in enumerate(y)]
+    x, x_min, x_max = __compute_sample_mean_and_error(bucket_list, confidence)
 
     # for debugging
-    #axis.plot(x_left, y, label=f"k={k}", color=colors[l%len(colors)], linestyle=linestyle)
-    #axis.plot(x_right, y, label=f"k={k}", color=colors[l%len(colors)], linestyle=linestyle)
+    #axis.plot(x_min, y, label=f"k={k}", color=colors[l%len(colors)], linestyle=linestyle)
+    #axis.plot(x_max, y, label=f"k={k}", color=colors[l%len(colors)], linestyle=linestyle)
 
     # if we wanted a ccdf
     #y = [1-q for q in y]
@@ -149,7 +155,7 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
     kwargs['alpha'] = 0.5
     kwargs['linestyle'] = '-'
 
-    axis.fill_betweenx(y, x_left, x_right, **kwargs)
+    axis.fill_betweenx(y, x_min, x_max, **kwargs)
     fill_line = axis.fill(0, 0, color=kwargs['color'], alpha=kwargs['alpha'])
 
     return (plot_line[0], fill_line[0])
@@ -160,6 +166,36 @@ def draw_cdf(axis, data, **kwargs):
     d = [getfirstorself(item) for item in data]
     y = list(linspace(0.0, 1.0, num=1000))
     x = quantile(d, y)
+    plot_line = axis.plot(x, y, **kwargs)
+    return plot_line[0]
+
+# plot a line with error bars
+# x is a list of x-coordinates
+# ydata is a list of 'datas' for each x-coordinate
+# each 'data' may be a list of values, or a list of [value, resolution] items
+def draw_line_ci(axis, x, ydata, confidence=0.95, **kwargs):
+    # compute the confidence intervals for each x-coordinate
+    bucket_list = [ydata[i] for i, _ in enumerate(x)]
+    y, y_min, y_max = __compute_sample_mean_and_error(bucket_list, confidence)
+
+    plot_line = axis.plot(x, y, **kwargs)
+
+    kwargs['alpha'] = 0.5
+    kwargs['linestyle'] = '-'
+
+    axis.fill_between(x, y_min, y_max, **kwargs)
+    fill_line = axis.fill(0, 0, color=kwargs['color'], alpha=kwargs['alpha'])
+
+    return (plot_line[0], fill_line[0])
+
+# plot a line with error bars
+# x is a list of x-coordinates
+# ydata may be a list of values, or a list of [value, resolution] items (one for each x-coordinate)
+def draw_line(axis, x, ydata, **kwargs):
+    y = []
+    for i, _ in enumerate(x):
+        data = [getfirstorself(item) for item in ydata[i]]
+        y.append(data)
     plot_line = axis.plot(x, y, **kwargs)
     return plot_line[0]
 

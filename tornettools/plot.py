@@ -4,6 +4,7 @@ import logging
 
 from itertools import cycle
 import matplotlib.pyplot as pyplot
+from matplotlib.ticker import FuncFormatter
 
 from tornettools.util import load_json_data, find_matching_files_in_dir
 
@@ -30,10 +31,15 @@ def run(args):
     logging.info(f"Done plotting! PDF files are saved to {args.prefix}")
 
 def __plot_tornet(args):
+    args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
+
+    logging.info("Loading tornet resource usage data")
+    tornet_dbs = __load_tornet_datasets(args, "resource_usage.json")
+    __plot_memory_usage(args, tornet_dbs)
+    __plot_run_time(args, tornet_dbs)
+
     logging.info("Loading Tor metrics data")
     torperf_dbs = __load_torperf_datasets(args.tor_metrics_path)
-
-    args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
 
     logging.info("Loading tornet relay goodput data")
     tornet_dbs = __load_tornet_datasets(args, "relay_goodput.json")
@@ -70,6 +76,44 @@ def __plot_tornet(args):
 
     args.pdfpages.close()
 
+def __plot_memory_usage(args, tornet_dbs):
+    for tornet_db in tornet_dbs:
+        xy = {}
+        for i, d in enumerate(tornet_db['dataset']):
+            if 'ram' not in d or 'gib_used_per_minute' not in d['ram']:
+                continue
+            timed = d['ram']['gib_used_per_minute']
+            for sim_minute in timed:
+                s = int(sim_minute)*60.0 # to seconds
+                xy.setdefault(s, []).append(timed[sim_minute])
+        tornet_db['data'] = xy
+
+    dbs_to_plot = tornet_dbs
+
+    __plot_timeseries_figure(args, dbs_to_plot, "ram",
+        xtime=True,
+        xlabel="Real Time",
+        ylabel="RAM Used (GiB)")
+
+def __plot_run_time(args, tornet_dbs):
+    for tornet_db in tornet_dbs:
+        xy = {}
+        for i, d in enumerate(tornet_db['dataset']):
+            if 'run_time' not in d or 'real_seconds_per_sim_second' not in d['run_time']:
+                continue
+            timed = d['run_time']['real_seconds_per_sim_second']
+            for sim_secs in timed:
+                s = int(round(float(sim_secs)))
+                xy.setdefault(s, []).append(timed[sim_secs])
+        tornet_db['data'] = xy
+
+    dbs_to_plot = tornet_dbs
+
+    __plot_timeseries_figure(args, dbs_to_plot, "run_time",
+        ytime=True, xtime=True,
+        xlabel="Simulation Time",
+        ylabel="Real Time")
+
 def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
@@ -82,9 +126,8 @@ def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
         torperf_db['data'] = [[net_scale*gbits for gbits in gput.values()]]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/relay_goodput.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, 'relay_goodput',
         xlabel="Sum of Relays' Goodput (Gbit/s)")
 
 def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
@@ -95,9 +138,8 @@ def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
         torperf_db['data'] = [torperf_db['dataset']['circuit_build_times']]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/circuit_build_time.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, 'circuit_build_time',
         yscale="taillog",
         xlabel="Circuit Build Time (s)")
 
@@ -109,9 +151,8 @@ def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
         torperf_db['data'] = [torperf_db['dataset']['circuit_rtt']]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/round_trip_time.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, 'round_trip_time',
         yscale="taillog",
         xlabel="Circuit Round Trip Time (s)")
 
@@ -123,9 +164,8 @@ def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
         torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/transfer_time_{bytes_key}.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}",
         yscale="taillog",
         xlabel=f"Transfer Time (s): Bytes={bytes_key}")
 
@@ -138,9 +178,8 @@ def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
         torperf_db['data'] = [err_rates]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/transfer_error_rates_{error_key}.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}",
         xlabel=f"Transfer Error Rate (\%): Type={error_key}")
 
 def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
@@ -157,9 +196,8 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
-    filename = f"{args.prefix}/client_goodput.pdf"
 
-    __plot_cdf_figure(args, dbs_to_plot, filename,
+    __plot_cdf_figure(args, dbs_to_plot, 'client_goodput',
         yscale="taillog",
         xlabel="Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
@@ -213,6 +251,50 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     if x_visible_max != None:
         pyplot.xlim(xmin=-m*x_visible_max, xmax=(m+1)*x_visible_max)
 
+    __plot_finish(args, lines, labels, filename)
+
+def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlabel=None, ylabel=None):
+    color_cycle = cycle(DEFAULT_COLORS)
+    linestyle_cycle = cycle(DEFAULT_LINESTYLES)
+
+    f = pyplot.figure()
+    lines, labels = [], []
+
+    for db in dbs:
+        if 'data' not in db or len(db['data']) < 1:
+            continue
+
+        x = sorted(db['data'].keys())
+        y_buckets = [db['data'][k] for k in x]
+
+        if len(db['dataset']) > 1:
+            plot_func = draw_line_ci
+        else:
+            plot_func = draw_line
+
+        line = plot_func(pyplot, x, y_buckets,
+            label=db['label'],
+            color=db['color'] or next(color_cycle),
+            linestyle=next(linestyle_cycle))
+
+        lines.append(line)
+        labels.append(db['label'])
+
+    if xlabel != None:
+        pyplot.xlabel(xlabel)
+    if ylabel != None:
+        pyplot.ylabel(ylabel)
+
+    if xtime:
+        f.axes[0].xaxis.set_major_formatter(FuncFormatter(__time_format_func))
+        # this locates y-ticks at the hours
+        #ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3600))
+    if ytime:
+        f.axes[0].yaxis.set_major_formatter(FuncFormatter(__time_format_func))
+
+    __plot_finish(args, lines, labels, filename)
+
+def __plot_finish(args, lines, labels, filename):
     pyplot.tick_params(axis='both', which='major', labelsize=8)
     pyplot.tick_params(axis='both', which='minor', labelsize=5)
     pyplot.grid(True, axis='both', which='minor', color='0.1', linestyle=':', linewidth='0.5')
@@ -220,7 +302,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
 
     pyplot.legend(lines, labels, loc='best')
     pyplot.tight_layout(pad=0.3)
-    pyplot.savefig(filename)
+    pyplot.savefig(f"{args.prefix}/{filename}.{'png' if args.plot_pngs else 'pdf'}")
     args.pdfpages.savefig()
 
 def __get_scale_suffix(scale):
@@ -230,6 +312,12 @@ def __get_scale_suffix(scale):
         return " (log scale)"
     else:
         return ""
+
+def __time_format_func(x, pos):
+    hours = int(x//3600)
+    minutes = int((x%3600)//60)
+    seconds = int(x%60)
+    return "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
 def __load_tornet_datasets(args, filename):
     tornet_dbs = []

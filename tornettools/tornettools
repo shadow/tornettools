@@ -424,6 +424,12 @@ def main():
             dest="plot_all",
             default=False)
 
+        plot_parser.add_argument('--pngs',
+            help="""Save individual plot images in png instead of pdf format.""",
+            action="store_true",
+            dest="plot_pngs",
+            default=False)
+
         ###########
         # archive #
         ###########
