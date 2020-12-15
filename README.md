@@ -2,9 +2,18 @@
 
 ![](https://github.com/shadow/tornettools/workflows/Build/badge.svg)
 
-This tool generates configuration files that can be used to set up and run
-private Tor networks of a configurable scale. The configuration files that
-are generated can be run in the
+tornettools is a utility to guide you through the Tor network
+experimentation process using Shadow, by assisting with the
+following experimentation steps:
+
+  - stage:     Process Tor metrics data for staging network generation
+  - generate:  Generate TorNet network configurations
+  - simulate:  Run a TorNet simulation in Shadow
+  - parse:     Parse useful data from simulation log files
+  - plot:      Plot previously parsed data to visualize results
+  - archive:   Cleanup and compress Shadow simulation data
+
+The configuration files that are generated can be run in the
 [Shadow network simulator](https://github.com/shadow/shadow);
 [NetMirage](https://crysp.uwaterloo.ca/software/netmirage)
 and
@@ -19,8 +28,8 @@ for the collection of information from Tor throughout an experiment.
 
 ### setup is easy with virtualenv and pip
 
-    virtualenv -p /bin/python3 tornettoolsenv
-    source tornettoolsenv/bin/activate
+    python3 -m venv toolsenv
+    source toolsenv/bin/activate
     pip install -r requirements.txt
     pip install -I .
 
@@ -29,20 +38,24 @@ for the collection of information from Tor throughout an experiment.
     tornettools -h
     tornettools stage -h
     tornettools generate -h
+    tornettools simulate -h
+    tornettools parse -h
+    tornettools plot -h
+    tornettools archive -h
 
 ### grab the data we need
 
-    wget https://collector.torproject.org/archive/relay-descriptors/consensuses/consensuses-2020-01.tar.xz
-    wget https://collector.torproject.org/archive/relay-descriptors/server-descriptors/server-descriptors-2020-01.tar.xz
+    wget https://collector.torproject.org/archive/relay-descriptors/consensuses/consensuses-2020-11.tar.xz
+    wget https://collector.torproject.org/archive/relay-descriptors/server-descriptors/server-descriptors-2020-11.tar.xz
     wget https://metrics.torproject.org/userstats-relay-country.csv
-    wget https://collector.torproject.org/archive/torperf/torperf-2020-01.tar.xz
-    wget -O bandwidth-2020-01.csv "https://metrics.torproject.org/bandwidth.csv?start=2020-01-01&end=2020-01-31"
+    wget https://collector.torproject.org/archive/onionperf/onionperf-2020-11.tar.xz
+    wget -O bandwidth-2020-11.csv "https://metrics.torproject.org/bandwidth.csv?start=2020-11-01&end=2020-11-30"
 
 ### extract
 
-    tar xaf consensuses-2020-01.tar.xz
-    tar xaf server-descriptors-2020-01.tar.xz
-    tar xaf torperf-2020-01.tar.xz
+    tar xaf consensuses-2020-11.tar.xz
+    tar xaf server-descriptors-2020-11.tar.xz
+    tar xaf onionperf-2020-11.tar.xz
 
 ### we also utilize privcount Tor traffic model measurements
 
@@ -64,19 +77,35 @@ for the collection of information from Tor throughout an experiment.
 
 ### stage first, process relay and user info
 
-    tornettools stage consensuses-2020-01 server-descriptors-2020-01 userstats-relay-country.csv --geoip_path tor/src/config/geoip
+    tornettools stage \
+        consensuses-2020-11 \
+        server-descriptors-2020-11 \
+        userstats-relay-country.csv \
+        --onionperf_data_path onionperf-2020-11 \
+        --bandwidth_data_path bandwidth-2020-11.csv \
+        --geoip_path tor/src/config/geoip
 
 ### now we can used the staged files to generate many times
 
 For example, use '-n 0.1' to generate a private Tor network at '10%' the scale of public Tor:
 
-    tornettools generate relayinfo_staging_2020-01-01--2020-02-01.json userinfo_staging_2020-01-01--2020-02-01.json tmodel-ccs2018.github.io --network_scale 0.1 --prefix tornet-0.1
+    tornettools generate \
+        relayinfo_staging_2020-11-01--2020-12-01.json \
+        userinfo_staging_2020-11-01--2020-12-01.json \
+        tmodel-ccs2018.github.io \
+        --network_scale 0.1 \
+        --prefix tornet-0.1
 
-### you can parse the torperf data so we can compare public Tor and our private Tor performance benchmarks
+### now you can run a simulation and process the results
 
-    tornettools parseperf torperf-2020-01
+Make sure you have already installed [shadow](https://github.com/shadow/shadow), [tgen](https://github.com/shadow/tgen), and [oniontrace](https://github.com/shadow/oniontrace).
 
-### now if you have shadow, tgen, and oniontrace installed, you can run shadow
+    tornettools simulate tornet-0.1
+    tornettools parse tornet-0.1
+    tornettools plot \
+        tornet-0.1 \
+        --tor_metrics_path tor_metrics_2020-11-01--2020-11-30.json \
+        --prefix pdfs
+    tornettools archive tornet-0.1
 
-    cd tornet-0.1
-    shadow -w 12 shadow.config.xml > shadow.log
+Performance metrics are plotted in the graph files in the pdfs directory.

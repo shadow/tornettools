@@ -24,8 +24,8 @@ HELP_MAIN = """
 Use 'tornettools <subcommand> --help' for more info
 """
 DESC_MAIN = """
-tornettools is a utility to assist in the generation of private Tor
-networks that can run in Shadow. tornettools must be run with a
+tornettools is a utility to guide you through the Tor network
+experimentation process using Shadow. tornettools must be run with a
 subcommand to specify a mode of operation.
 
 For more information, see https://github.com/shadow/tornettools.
@@ -49,34 +49,49 @@ Generate TorNet network configurations
 DESC_GENERATE = """
 Loads the TorNet staging files produced with the stage command
 and uses them to generate a valid TorNet network configuration.
+
+This command should be used after running stage.
 """
 
 HELP_SIMULATE = """
 Run a TorNet simulation in Shadow
 """
 DESC_SIMULATE = """
-TODO
+Runs a Tor simulation using Shadow and the TorNet network
+configurations files generated with the generate command.
+
+This command should be used after running generate.
 """
 
 HELP_PARSE = """
 Parse useful data from simulation log files
 """
 DESC_PARSE = """
-TODO
+Parses log files created by simulations run with the simulate
+command; extracts and stores various useful performance metrics.
+
+This command should be used after running simulate.
 """
 
 HELP_PLOT = """
 Plot previously parsed data to visualize results
 """
 DESC_PLOT = """
-TODO
+Visualizes various performance metrics that were extracted and
+stored with the parse command by producing graphical plots.
+
+This command should be used after running plot.
 """
 
 HELP_ARCHIVE = """
 Cleanup and compress Shadow simulation data
 """
 DESC_ARCHIVE = """
-TODO
+Prepares a Shadow simulation directory for archival by compressing
+simulation output log files and data directories.
+
+This command can be used any time after running simulate, but
+ideally after parsing and plotting is also completed.
 """
 
 def __setup_logging_helper(logfilename=None):
@@ -335,7 +350,7 @@ def main():
         help="""The argument string to pass to Shadow when running the simulation.""",
         type=str,
         action="store", dest="shadow_args",
-        default="--workers={}".format(cpu_count()))
+        default="--workers={} --seed=666".format(cpu_count()))
 
     simulate_parser.add_argument('-c', '--compress',
         help="""Compress output with lzma.""",
