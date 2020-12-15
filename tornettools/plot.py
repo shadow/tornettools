@@ -381,12 +381,5 @@ def __compute_torperf_error_rates(daily_counts):
         timeouts = int(daily_counts[day]['timeouts'])
         failures = int(daily_counts[day]['failures'])
 
-        # the hong kong onionperf infrastucture is unreliable
-        # https://metrics.torproject.org/torperf-failures.html?start=2019-06-01&end=2019-08-31&server=public
-        if timeouts > 100 and year == 2019 and month in [6, 7, 8]:
-            continue
-        if timeouts > 100 and year == 2018 and month in [1, 5, 6, 7, 12]:
-            continue
-
         err_rates.append((timeouts+failures)/float(total)*100.0)
     return err_rates
