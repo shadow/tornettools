@@ -289,6 +289,8 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
         f.axes[0].xaxis.set_major_formatter(FuncFormatter(__time_format_func))
         # this locates y-ticks at the hours
         #ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3600))
+        # rotate xlabels so they don't overlap
+        pyplot.xticks(rotation=30)
     if ytime:
         f.axes[0].yaxis.set_major_formatter(FuncFormatter(__time_format_func))
 
