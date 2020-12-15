@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# run from base tornettools directory
-# assumptions made by this script:
+# Run from base tornettools directory.
+# Assumptions made by this script:
 #   - you have installed libevent and openssl libraries and header files
 #   - you have installed the build tools needed to build tor
 #   - python, git, tar, wget, xz-tools are accessible
+# Your machine should have ~30GiB of free RAM to run the simulate command
+# at the end of this script.
 
 python -m venv build/tornettoolsenv
 source build/tornettoolsenv/bin/activate
