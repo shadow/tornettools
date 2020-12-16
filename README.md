@@ -6,12 +6,12 @@ tornettools is a utility to guide you through the Tor network
 experimentation process using Shadow, by assisting with the
 following experimentation steps:
 
-  - stage:     Process Tor metrics data for staging network generation
-  - generate:  Generate TorNet network configurations
-  - simulate:  Run a TorNet simulation in Shadow
-  - parse:     Parse useful data from simulation log files
-  - plot:      Plot previously parsed data to visualize results
-  - archive:   Cleanup and compress Shadow simulation data
+  - **stage**:     Process Tor metrics data for staging network generation
+  - **generate**:  Generate TorNet network configurations
+  - **simulate**:  Run a TorNet simulation in Shadow
+  - **parse**:     Parse useful data from simulation log files
+  - **plot**:      Plot previously parsed data to visualize results
+  - **archive**:   Cleanup and compress Shadow simulation data
 
 The configuration files that are generated can be run in the
 [Shadow network simulator](https://github.com/shadow/shadow);
@@ -87,25 +87,27 @@ for the collection of information from Tor throughout an experiment.
 
 ### now we can used the staged files to generate many times
 
-For example, use '-n 0.1' to generate a private Tor network at '10%' the scale of public Tor:
+For example, use '--network_scale 0.01' to generate a private Tor network at '1%' the scale of public Tor:
 
     tornettools generate \
         relayinfo_staging_2020-11-01--2020-12-01.json \
         userinfo_staging_2020-11-01--2020-12-01.json \
         tmodel-ccs2018.github.io \
-        --network_scale 0.1 \
-        --prefix tornet-0.1
+        --network_scale 0.01 \
+        --prefix tornet-0.01
 
 ### now you can run a simulation and process the results
 
 Make sure you have already installed [shadow](https://github.com/shadow/shadow), [tgen](https://github.com/shadow/tgen), and [oniontrace](https://github.com/shadow/oniontrace).
 
-    tornettools simulate tornet-0.1
-    tornettools parse tornet-0.1
+Note that simulating a '1%' Tor network for 60 simulation minutes can take as much as 30GiB of RAM.
+
+    tornettools simulate tornet-0.01
+    tornettools parse tornet-0.01
     tornettools plot \
-        tornet-0.1 \
+        tornet-0.01 \
         --tor_metrics_path tor_metrics_2020-11-01--2020-11-30.json \
         --prefix pdfs
-    tornettools archive tornet-0.1
+    tornettools archive tornet-0.01
 
 Performance metrics are plotted in the graph files in the pdfs directory.
