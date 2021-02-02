@@ -105,15 +105,31 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
     with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'wb') as configfile:
         configfile.write(xml_str)
 
+def __get_scaled_tgen_client_bandwidth_kib(args):
+    # 10 Mbit/s per "user" that a tgen client simulates
+    n_users_per_tgen = round(1.0 / args.process_scale)
+    scaled_bw = n_users_per_tgen * 10 * BW_1MBIT_KIB
+    return scaled_bw
+
+def __get_scaled_tgen_server_bandwidth_kib(args):
+    scaled_client_bw = __get_scaled_tgen_client_bandwidth_kib(args)
+    n_clients_per_server = round(1.0 / args.process_scale)
+    scaled_bw = scaled_client_bw * n_clients_per_server
+    return scaled_bw
+
 def __add_xml_server(args, root, server):
+    # Make sure we have enough bandwidth for the expected number of clients
+    scaled_bw = __get_scaled_tgen_server_bandwidth_kib(args)
+    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+
     # this should be a relative path
     tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_SERVER_FILENAME)
 
     host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
     host.set("id", server['name'])
     host.set("countrycodehint", server['country_code'])
-    host.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
-    host.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+    host.set("bandwidthup", "{}".format(host_bw))
+    host.set("bandwidthdown", "{}".format(host_bw))
 
     process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
     process.set("plugin", "tgen")
@@ -135,11 +151,15 @@ def __add_xml_markovclient(args, root, client):
     __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
 
 def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
+    # Make sure we have enough bandwidth for the simulated number of users
+    scaled_bw = __get_scaled_tgen_client_bandwidth_kib(args)
+    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+
     host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
     host.set("id", name)
     host.set("countrycodehint", country)
-    host.set("bandwidthup", "{}".format(BW_1GBIT_KIB))
-    host.set("bandwidthdown", "{}".format(BW_1GBIT_KIB))
+    host.set("bandwidthup", "{}".format(host_bw))
+    host.set("bandwidthdown", "{}".format(host_bw))
 
     process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
     process.set("plugin", "tor")

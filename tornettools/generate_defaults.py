@@ -35,6 +35,9 @@ DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
 
 TOR_ARGS_FMT = "--Address {0} --Nickname {0} --DataDirectory "+SHADOW_DATA_PATH+"/"+SHADOW_HOSTS_PATH+"/{0} --GeoIPFile "+SHADOW_INSTALL_PREFIX+"/share/geoip --defaults-torrc "+CONFIG_DIRPATH+"/"+TORRC_COMMON_FILENAME+" -f {1}"
 
+# this number of data equals 1 MBit
+BW_1MBIT_BYTES = int(round(1000*1000/8))
+BW_1MBIT_KIB = int(round(BW_1MBIT_BYTES/1024))
 # this number of data equals 1 GBit
 BW_1GBIT_BYTES = int(round(1000*1000*1000/8))
 BW_1GBIT_KIB = int(round(BW_1GBIT_BYTES/1024))
