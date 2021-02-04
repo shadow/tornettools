@@ -159,7 +159,7 @@ def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
 def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset'])]
+        tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset']) if bytes_key in tornet_db['dataset'][i]]
     for torperf_db in torperf_dbs:
         torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
 
@@ -172,7 +172,7 @@ def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
 def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = [tornet_db['dataset'][i][error_key] for i, _ in enumerate(tornet_db['dataset'])]
+        tornet_db['data'] = [tornet_db['dataset'][i][error_key] for i, _ in enumerate(tornet_db['dataset']) if error_key in tornet_db['dataset'][i]]
     for torperf_db in torperf_dbs:
         err_rates = __compute_torperf_error_rates(torperf_db['dataset']['daily_counts'])
         torperf_db['data'] = [err_rates]
@@ -216,6 +216,9 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
         else:
             plot_func, d = draw_cdf_ci, db['data']
 
+        if len(d) < 1:
+            continue
+
         line = plot_func(pyplot, d,
             label=db['label'],
             color=db['color'] or next(color_cycle),
@@ -245,7 +248,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     # (this is usually only a problem if using the 'taillog' yscale)
     x_visible_max = None
     for db in dbs:
-        if len(db['data']) >= 1:
+        if len(db['data']) >= 1 and len(db['data'][0]) >= 1:
             q = quantile(db['data'][0], 0.99)
             x_visible_max = q if x_visible_max == None else max(x_visible_max, q)
     if x_visible_max != None:
