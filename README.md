@@ -63,7 +63,7 @@ for the collection of information from Tor throughout an experiment.
 
 ### we also need tor
 
-    sudo apt-get install openssl openssl-dev libevent libevent-dev
+    sudo apt-get install openssl libssl-dev libevent-dev build-essential automake zlib1g zlib1g-dev
     git clone https://git.torproject.org/tor.git
     cd tor
     ./autogen.sh
