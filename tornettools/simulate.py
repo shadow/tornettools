@@ -32,7 +32,7 @@ def run(args):
         logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
 
 def __run_shadow(args):
-    shadow_exe_path = which('shadow')
+    shadow_exe_path = args.shadowexe
     if shadow_exe_path == None:
         logging.warning("Cannot find shadow in your PATH. Do you have shadow installed (e.g., in ~/.shadow/bin)? Did you update your PATH?")
         logging.warning("Unable to run simulation without shadow.")
