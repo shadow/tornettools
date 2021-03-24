@@ -58,7 +58,7 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
     root = etree.Element("shadow")
     root.set("bootstraptime", "{}".format(BOOTSTRAP_LENGTH_SECONDS)) # disable bandwidth limits and packet loss for first 5 minutes
     root.set("stoptime", "{}".format(SIMULATION_LENGTH_SECONDS)) # stop after 1 hour of simulated time
-    root.set("preload", "{}/lib/libshadow-interpose.so".format(SHADOW_INSTALL_PREFIX))
+    root.set("preload", "{}/lib/libshadow-shim.so".format(SHADOW_INSTALL_PREFIX))
     root.set("environment", "OPENSSL_ia32cap=~0x200000200000000;EVENT_NOSELECT=1;EVENT_NOPOLL=1;EVENT_NOKQUEUE=1;EVENT_NODEVPOLL=1;EVENT_NOEVPORT=1;EVENT_NOWIN32=1")
 
     topology = etree.SubElement(root, "topology")
@@ -69,7 +69,7 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
 
     plugin = etree.SubElement(root, "plugin")
     plugin.set("id", "tor")
-    plugin.set("path", "{}/lib/libshadow-plugin-tor.so".format(SHADOW_INSTALL_PREFIX))
+    plugin.set("path", "{}/bin/tor".format(SHADOW_INSTALL_PREFIX))
 
     plugin = etree.SubElement(root, "plugin")
     plugin.set("id", "tor-preload")
