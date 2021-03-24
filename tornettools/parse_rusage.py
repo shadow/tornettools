@@ -65,7 +65,7 @@ def __parse_shadow_rusage(args):
         return False
 
     rusage = {}
-    heartbeat = re.compile("_slave_heartbeat")
+    heartbeat = re.compile("_manager_heartbeat")
     with open_readable_file(shadow_filepath) as inf:
         for line in inf:
             if heartbeat.search(line) != None:
