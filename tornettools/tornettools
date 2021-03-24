@@ -383,6 +383,26 @@ def main():
         action="store", dest="nprocesses",
         default=0)
 
+    parse_parser.add_argument('-c', '--converge-time',
+        help="""The number of seconds after the beginning of the simulation that we
+            should ignore in the tgen and oniontrace log files, i.e., so we don't
+            track network performance before the network has reached steady-state.
+            Log messages during the interval [0, converge_time) will be ignored.""",
+        metavar="N", type=__type_nonnegative_integer,
+        action="store", dest="converge_time",
+        default=1200)
+
+    parse_parser.add_argument('-r', '--run-time',
+        help="""The number of seconds after the converge-time is reached that we should
+            consider the tgen and oniontrace log files valid for the purpose of
+            extracting performance stats. Log messages during the interval
+            [converge_time, converge_time + run_time) will be parsed. A negative value
+            indicates that we should parse all available data, i.e, during the
+            interval [converge_time, ∞).""",
+        metavar="N", type=int,
+        action="store", dest="run_time",
+        default=-1)
+
     ########
     # plot #
     ########
