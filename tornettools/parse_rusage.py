@@ -123,7 +123,13 @@ def __extract_resource_usage(args, free_data, shadow_data):
     dump_json_data(rusage, outpath, compress=False)
 
 def __get_ram_usage(data):
-    used = {float(ts): data[ts]["mem_used"] for ts in data}
+    # get the ram used by the os during the simulation.
+    # the best estimate is total-avail, but free may not always provide avail.
+    some_key = next(iter(data))
+    if "mem_available" in data[some_key]:
+        used = {float(ts): data[ts]["mem_total"] - data[ts]["mem_available"] for ts in data}
+    else:
+        used = {float(ts): data[ts]["mem_used"] for ts in data}
 
     ts_start = min(used.keys())
     mem_start = used[ts_start] # mem used by OS, i.e., before starting shadow
