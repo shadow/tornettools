@@ -6,7 +6,7 @@ SIMULATION_LENGTH_SECONDS=3600
 
 SHADOW_DATA_PATH="shadow.data"
 SHADOW_TEMPLATE_PATH="{}.template".format(SHADOW_DATA_PATH)
-CONFIG_DIRPATH="conf"
+CONFIG_DIRNAME="conf"
 SHADOW_INSTALL_PREFIX="~/.shadow"
 SHADOW_HOSTS_PATH="hosts"
 SHADOW_CONFIG_FILENAME="shadow.config.xml"
@@ -33,8 +33,6 @@ TOR_GUARD_MIN_CONSBW=2000
 # country codes where we can place directory authority tor hosts
 DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
 
-TOR_ARGS_FMT = "--Address {0} --Nickname {0} --DataDirectory "+SHADOW_DATA_PATH+"/"+SHADOW_HOSTS_PATH+"/{0} --GeoIPFile "+SHADOW_INSTALL_PREFIX+"/share/geoip --defaults-torrc "+CONFIG_DIRPATH+"/"+TORRC_COMMON_FILENAME+" -f {1}"
-
 # this number of data equals 1 MBit
 BW_1MBIT_BYTES = int(round(1000*1000/8))
 BW_1MBIT_KIB = int(round(BW_1MBIT_BYTES/1024))
@@ -59,3 +57,9 @@ TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
 TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
 TMODEL_TOPOLOGY_FILENAME="atlas-lossless.201801.shadow113.graphml.xml"
+
+def get_host_rel_conf_path(rc_filename, rc_subdirname=None):
+    if rc_subdirname == None:
+        return f"../../../{CONFIG_DIRNAME}/{rc_filename}"
+    else:
+        return f"../../../{CONFIG_DIRNAME}/{rc_subdirname}/{rc_filename}"

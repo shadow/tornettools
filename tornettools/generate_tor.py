@@ -134,7 +134,7 @@ def generate_tor_keys(args, relays):
 
 def generate_tor_config(args, authorities, relays):
     # make sure the config directory exists
-    abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRPATH)
+    abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRNAME)
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
 
@@ -200,7 +200,7 @@ def __generate_torrc_common(conf_path, authorities):
         auth_names.append(nickname)
 
     torrc_file.write('TestingTorNetwork 1\n')
-    torrc_file.write('ServerDNSResolvConfFile {}/{}\n'.format(CONFIG_DIRPATH, RESOLV_FILENAME))
+    torrc_file.write('ServerDNSResolvConfFile ../../../{}/{}\n'.format(CONFIG_DIRNAME, RESOLV_FILENAME))
     torrc_file.write('ServerDNSTestAddresses {}\n'.format(','.join(auth_names)))
     torrc_file.write('ServerDNSAllowBrokenConfig 1\n')
     torrc_file.write('ServerDNSDetectHijacking 0\n')
@@ -248,7 +248,7 @@ def __generate_torrc_authority(conf_path, relays):
     torrc_file.write('\n')
     torrc_file.write('AuthoritativeDirectory 1\n')
     torrc_file.write('V3AuthoritativeDirectory 1\n')
-    torrc_file.write('V3BandwidthsFile {}/{}/{}/v3bw\n'.format(SHADOW_DATA_PATH, SHADOW_HOSTS_PATH, BW_AUTHORITY_NAME))
+    torrc_file.write('V3BandwidthsFile ../{}/v3bw\n'.format(BW_AUTHORITY_NAME))
     torrc_file.write('\n')
     torrc_file.write('TestingDirAuthVoteGuard {}\n'.format(','.join(guard_fps)))
     torrc_file.write('TestingDirAuthVoteGuardIsStrict 1\n')

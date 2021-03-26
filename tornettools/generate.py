@@ -50,7 +50,7 @@ def run(args):
     if args.atlas_path is None:
         logging.info("Copying atlas topology file (use the '-a/--atlas' option to disable)")
         topology_src_path = "{}/data/shadow/network/{}.xz".format(args.tmodel_git_path, TMODEL_TOPOLOGY_FILENAME)
-        topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME)
+        topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRNAME, TMODEL_TOPOLOGY_FILENAME)
         copy_and_extract_file(topology_src_path, topology_dst_path)
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
@@ -63,7 +63,7 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
 
     topology = etree.SubElement(root, "topology")
     if args.atlas_path is None:
-        topology.set("path", "{}/{}".format(CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME))
+        topology.set("path", "{}/{}".format(CONFIG_DIRNAME, TMODEL_TOPOLOGY_FILENAME))
     else:
         topology.set("path", "{}".format(args.atlas_path))
 
@@ -122,9 +122,6 @@ def __add_xml_server(args, root, server):
     scaled_bw = __get_scaled_tgen_server_bandwidth_kib(args)
     host_bw = max(BW_1GBIT_KIB, scaled_bw)
 
-    # this should be a relative path
-    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_SERVER_FILENAME)
-
     host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
     host.set("id", server['name'])
     host.set("countrycodehint", server['country_code'])
@@ -135,22 +132,30 @@ def __add_xml_server(args, root, server):
     process.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase
     process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    process.set("arguments", tgenrc)
+    process.set("arguments", get_host_rel_conf_path(TGENRC_SERVER_FILENAME))
 
 def __add_xml_perfclient(args, root, client):
-    # these should be relative paths
-    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_PERFCLIENT_FILENAME)
-    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_PERFCLIENT_FILENAME)
-    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
+    __add_xml_tgen_client(args, root, client['name'], client['country_code'], \
+        TORRC_PERFCLIENT_FILENAME, TGENRC_PERFCLIENT_FILENAME)
 
 def __add_xml_markovclient(args, root, client):
     # these should be relative paths
-    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_MARKOVCLIENT_FILENAME)
     tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(client['name'])
-    tgenrc = "{}/{}/{}".format(CONFIG_DIRPATH, TGENRC_MARKOVCLIENT_DIRNAME, tgenrc_filename)
-    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
+    __add_xml_tgen_client(args, root, client['name'], client['country_code'], \
+        TORRC_MARKOVCLIENT_FILENAME, tgenrc_filename, tgenrc_subdirname=TGENRC_MARKOVCLIENT_DIRNAME)
 
-def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
+def __format_tor_args(name, torrc_fname):
+    args = [
+        f"--Address {name}",
+        f"--Nickname {name}",
+        f"--DataDirectory .",
+        f"--GeoIPFile {SHADOW_INSTALL_PREFIX}/share/geoip",
+        f"--defaults-torrc {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}",
+        f"-f {get_host_rel_conf_path(torrc_fname)}",
+    ]
+    return ' '.join(args)
+
+def __add_xml_tgen_client(args, root, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirname=None):
     # Make sure we have enough bandwidth for the simulated number of users
     scaled_bw = __get_scaled_tgen_client_bandwidth_kib(args)
     host_bw = max(BW_1GBIT_KIB, scaled_bw)
@@ -165,7 +170,7 @@ def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
     process.set("plugin", "tor")
     process.set("preload", "tor-preload")
     process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
-    process.set("arguments", TOR_ARGS_FMT.format(name, torrc))
+    process.set("arguments", __format_tor_args(name, torrc_fname))
 
     oniontrace_start_time = BOOTSTRAP_LENGTH_SECONDS-60+1
     __add_xml_oniontrace(args, host, oniontrace_start_time, name)
@@ -174,7 +179,7 @@ def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
     process.set("plugin", "tgen")
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
     process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    process.set("arguments", tgenrc)
+    process.set("arguments", get_host_rel_conf_path(tgenrc_fname, rc_subdirname=tgenrc_subdirname))
 
 def __add_xml_tor_relay(args, root, relay, orig_fp, is_authority=False):
     # prepare items for the host element
@@ -195,21 +200,21 @@ def __add_xml_tor_relay(args, root, relay, orig_fp, is_authority=False):
     # prepare items for the tor process element
     if is_authority:
         starttime = 1
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_AUTHORITY_FILENAME)
+        torrc_fname = TORRC_AUTHORITY_FILENAME
     elif "exitguard" in relay['nickname']:
         starttime = 2
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_EXITRELAY_FILENAME)
+        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "exit" in relay['nickname']:
         starttime = 3
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_EXITRELAY_FILENAME)
+        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "guard" in relay['nickname']:
         starttime = 4
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_NONEXITRELAY_FILENAME)
+        torrc_fname = TORRC_NONEXITRELAY_FILENAME
     else:
         starttime = 5
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_NONEXITRELAY_FILENAME)
+        torrc_fname = TORRC_NONEXITRELAY_FILENAME
 
-    tor_args = TOR_ARGS_FMT.format(relay['nickname'], torrc)
+    tor_args = __format_tor_args(relay['nickname'], torrc_fname)
     if not is_authority:
         # Tor enforces a min rate for relays
         rate = max(BW_RATE_MIN, relay['bandwidth_rate'])
@@ -239,5 +244,4 @@ def __add_xml_oniontrace(args, parent_elm, start_time, name):
         process.set("plugin", "oniontrace")
         process.set("starttime", "{}".format(start_time))
         run_time = SIMULATION_LENGTH_SECONDS-start_time-1
-        tracefile_path = "{}/{}/{}/oniontrace.csv".format(SHADOW_DATA_PATH, SHADOW_HOSTS_PATH, name)
-        process.set("arguments", "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile={}".format(TOR_CONTROL_PORT, run_time, tracefile_path))
+        process.set("arguments", "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile=oniontrace.csv".format(TOR_CONTROL_PORT, run_time))

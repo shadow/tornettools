@@ -12,7 +12,7 @@ from tornettools.util import load_json_data
 
 def generate_tgen_config(args, tgen_clients, tgen_servers):
     # make sure the config directory exists
-    abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRPATH)
+    abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRNAME)
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
 
@@ -88,9 +88,9 @@ def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
     markovmodelseed = "{}".format(randrange(1,1000000000))
 
     # we use the following paths in the tgenrc, they should be relative
-    flowmodel_relpath = "{}/{}/{}".format(CONFIG_DIRPATH, TGENRC_MARKOVCLIENT_DIRNAME, flowmodelname)
-    streammodelpath = "{}/{}".format(CONFIG_DIRPATH, TMODEL_STREAMMODEL_FILENAME)
-    packetmodelpath = "{}/{}".format(CONFIG_DIRPATH, TMODEL_PACKETMODEL_FILENAME)
+    fmodel_relpath = get_host_rel_conf_path(flowmodelname, rc_subdirname=TGENRC_MARKOVCLIENT_DIRNAME)
+    smodel_relpath = get_host_rel_conf_path(TMODEL_STREAMMODEL_FILENAME)
+    pmodel_relpath = get_host_rel_conf_path(TMODEL_PACKETMODEL_FILENAME)
 
     # at startup, delay walking the tgen graph for a random period in the range [1,60] seconds
     startup_delay = "{}".format(randrange(60)+1)
@@ -102,8 +102,22 @@ def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
 
     # use a absolute timeout of 10 minutes (the default circuit lifetime)
     # idle streams stallout after 5 minutes (the default timeout in apache)
-    G.add_node("start", loglevel=tgen_client['log_level'], time=startup_delay, socksproxy=proxy, peers=peers, stallout="5 minutes", timeout="10 minutes")
-    G.add_node("traffic", socksauthseed=socksauthseed, flowmodelpath=flowmodel_relpath, streammodelpath=streammodelpath, packetmodelpath=packetmodelpath, packetmodelmode="path", markovmodelseed=markovmodelseed)
+    G.add_node("start", \
+        loglevel=tgen_client['log_level'], \
+        time=startup_delay, \
+        socksproxy=proxy, \
+        peers=peers, \
+        stallout="5 minutes", \
+        timeout="10 minutes" \
+    )
+    G.add_node("traffic", \
+        socksauthseed=socksauthseed, \
+        flowmodelpath=fmodel_relpath, \
+        streammodelpath=smodel_relpath, \
+        packetmodelpath=pmodel_relpath, \
+        packetmodelmode="path", \
+        markovmodelseed=markovmodelseed \
+    )
 
     # we loop generating traffic until the experiment ends
     G.add_edge("start", "traffic")
