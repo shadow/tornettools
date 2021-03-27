@@ -16,6 +16,7 @@ from random import randint
 from random import seed as stdseed
 from numpy.random import seed as numpyseed
 from multiprocessing import cpu_count
+from platform import platform, uname
 
 from tornettools.util import which, make_directories
 from tornettools._version import __version__
@@ -516,6 +517,8 @@ def main():
     logging.info("Seeded standard and numpy PRNGs with seed={}".format(args.seed))
 
     logging.info("The argument namespace is: {}".format(str(args)))
+    logging.info("The platform is: {}".format(str(platform())))
+    logging.info("System info: {}".format(str(uname())))
 
     # now run the configured mode
     args.func(args)
