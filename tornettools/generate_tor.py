@@ -146,6 +146,7 @@ def generate_tor_config(args, authorities, relays):
     __generate_torrc_nonexit(abs_conf_path)
     __generate_torrc_markovclient(abs_conf_path)
     __generate_torrc_perfclient(abs_conf_path)
+    __generate_torrc_hiddenservice(abs_conf_path)
 
 def __generate_resolv_file(args, conf_path):
     with open("{}/{}".format(conf_path, RESOLV_FILENAME), "w") as resolvfile:
@@ -301,6 +302,19 @@ def __generate_torrc_perfclient(conf_path):
     torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
     torrc_file.write('MaxCircuitDirtiness 10 seconds\n')
+
+    torrc_file.close()
+
+def __generate_torrc_hiddenservice(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_HIDDENSERVICE_FILENAME), 'w')
+
+    torrc_file.write('ORPort 0\n')
+    torrc_file.write('DirPort 0\n')
+    torrc_file.write('ClientOnly 1\n')
+    torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
+    torrc_file.write('SocksListenAddress 127.0.0.1\n')
+    #torrc_file.write('HiddenServiceDir shadow.data/hosts/hiddenservice/hs\n') # we set this via args, because we need the serever nickname to build the actual path
+    #torrc_file.write('HiddenServicePort 80 127.0.0.1:8080\n')
 
     torrc_file.close()
 

@@ -23,6 +23,7 @@ TORRC_EXITRELAY_FILENAME="tor.exitrelay.torrc"
 TORRC_NONEXITRELAY_FILENAME="tor.nonexitrelay.torrc"
 TORRC_MARKOVCLIENT_FILENAME="tor.markovclient.torrc"
 TORRC_PERFCLIENT_FILENAME="tor.perfclient.torrc"
+TORRC_HIDDENSERVICE_FILENAME="tor.hiddenservice.torrc"
 
 TOR_SOCKS_PORT=9050
 TOR_CONTROL_PORT=9051
