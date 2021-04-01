@@ -23,7 +23,10 @@ def generate_tgen_config(args, tgen_clients, tgen_servers):
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
 
-    server_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers]
+    if args.hidden:
+        server_peers = ["{}:{}".format(server['hs_onion_url'], TGEN_SERVER_PORT) for server in tgen_servers]
+    else:
+        server_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers]
 
     __generate_tgenrc_server(abs_conf_path)
     __generate_tgenrc_perfclient(abs_conf_path, server_peers)
