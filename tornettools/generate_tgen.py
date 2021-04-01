@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import os
 import json
 import logging
@@ -9,6 +11,11 @@ from networkx import DiGraph, write_graphml
 
 from tornettools.generate_defaults import *
 from tornettools.util import load_json_data
+
+from Crypto.PublicKey import RSA
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 def generate_tgen_config(args, tgen_clients, tgen_servers):
     # make sure the config directory exists
@@ -232,6 +239,42 @@ def __convert_privcount_key_to_tgen_key(str):
     else:
         return str
 
+def __calculate_hiddeen_service_onion_url(pem_key):
+    # load key
+    key = RSA.importKey(pem_key)
+    if key.has_private():
+        key = key.publickey()
+
+    # calculate onion address
+    onion_address = hashlib.sha1(key.exportKey('DER')[22:]).digest()[:10]
+
+    # and b32 encode it
+    return base64.b32encode(onion_address).decode('utf-8').lower()+'.onion'
+
+def __generate_hidden_service_private_key():
+    # generate private/public key pair
+    key = rsa.generate_private_key(backend=default_backend(), public_exponent=65537, \
+        key_size=1024)
+
+    # get private key in PEM container format
+    pem = key.private_bytes(encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+
+    # decode to printable strings
+    private_key_str = pem.decode('utf-8')
+
+    return private_key_str
+
+def __get_hidden_service_privkey_and_url():
+    # generate RSA 1024 privkey
+    privkey = __generate_hidden_service_private_key()
+
+    # calculate onion url based on key
+    onion_url = __calculate_hiddeen_service_onion_url(privkey)
+
+    return (privkey, onion_url)
+
 def get_servers(args, n_clients):
     tgen_servers = []
 
@@ -245,13 +288,29 @@ def get_servers(args, n_clients):
         n_servers = TGEN_SERVER_MIN_COUNT
     for i in range(n_servers):
         chosen_country_code = choice(country_codes, p=country_probs)
-        server = {
-            'name': 'server{}'.format(i+1),
-            'country_code': chosen_country_code,
-        }
+
+        if args.hidden:
+            server = {
+                'name': 'hiddenservice{}'.format(i+1),
+                'country_code': chosen_country_code,
+            }
+        else:
+            server = {
+                'name': 'server{}'.format(i+1),
+                'country_code': chosen_country_code,
+            }
+
         tgen_servers.append(server)
 
-    logging.info("We will use {} TGen servers to serve {} TGen clients".format(n_servers, n_clients))
+    if args.hidden:
+        # also generate privkey and calculate onion_url
+        for tgen_server in tgen_servers:
+            (privkey, onion_url) = __get_hidden_service_privkey_and_url()
+            tgen_server['hs_private_key'] = privkey
+            tgen_server['hs_onion_url'] = onion_url
+        logging.info("We will use {} TGen hidden servers to serve {} TGen clients".format(n_servers, n_clients))
+    else:
+        logging.info("We will use {} TGen servers to serve {} TGen clients".format(n_servers, n_clients))
 
     return tgen_servers
 
