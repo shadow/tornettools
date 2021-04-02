@@ -28,14 +28,17 @@ def generate_tgen_config(args, tgen_clients, tgen_servers):
     else:
         server_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers]
 
-    __generate_tgenrc_server(abs_conf_path)
+    __generate_tgenrc_server(args, abs_conf_path)
     __generate_tgenrc_perfclient(abs_conf_path, server_peers)
     __generate_tgenrc_markovclients(abs_conf_path, tgen_clients, server_peers)
     __generate_tgen_traffic_models(args, abs_conf_path)
 
-def __generate_tgenrc_server(abs_conf_path):
+def __generate_tgenrc_server(args, abs_conf_path):
     G = DiGraph()
-    G.add_node("start", serverport="{}".format(TGEN_SERVER_PORT), loglevel="message", stallout="0 seconds", timeout="0 seconds")
+    if args.hidden:
+        G.add_node("start", serverport="{}".format(TGEN_HIDDENSERVICE_PORT), loglevel="message", stallout="0 seconds", timeout="0 seconds")
+    else:
+        G.add_node("start", serverport="{}".format(TGEN_SERVER_PORT), loglevel="message", stallout="0 seconds", timeout="0 seconds")
     path = "{}/{}".format(abs_conf_path, TGENRC_SERVER_FILENAME)
     write_graphml(G, path)
 
