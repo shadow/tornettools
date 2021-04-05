@@ -38,14 +38,12 @@ def __run_shadow(args):
         logging.warning("Unable to run simulation without shadow.")
         return None
 
-    if '--data-template' in args.shadow_args:
-        shadow_args = f"{args.shadow_args}"
-    else:
-        shadow_args = f"{args.shadow_args} --data-template=shadow.data.template"
+    cmd_prefix = "/usr/bin/chrt -f 1 " if args.use_realtime else ""
+    args_suffix = " --data-template=shadow.data.template" if '--data-template' not in args.shadow_args else ""
 
     shadow_args = args.shadow_args
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = cmdsplit(f"{shadow_exe_path} {shadow_args} shadow.config.xml")
+        shadow_cmd = cmdsplit(f"{cmd_prefix}{shadow_exe_path} {shadow_args}{args_suffix} shadow.config.xml")
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc

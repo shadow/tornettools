@@ -364,6 +364,11 @@ def main():
         action="store_true", dest="do_compress",
         default=False)
 
+    simulate_parser.add_argument('--use-realtime',
+        help="""Use realtime scheduling by running shadow under chrt.""",
+        action="store_true", dest="use_realtime",
+        default=False)
+
     #########
     # parse #
     #########
