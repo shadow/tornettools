@@ -38,8 +38,14 @@ def __run_shadow(args):
         logging.warning("Unable to run simulation without shadow.")
         return None
 
+    if '--data-template' in args.shadow_args:
+        shadow_args = f"{args.shadow_args}"
+    else:
+        shadow_args = f"{args.shadow_args} --data-template=shadow.data.template"
+
+    shadow_args = args.shadow_args
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = cmdsplit(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
+        shadow_cmd = cmdsplit(f"{shadow_exe_path} {shadow_args} shadow.config.xml")
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc
