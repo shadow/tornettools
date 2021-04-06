@@ -169,7 +169,7 @@ def __add_xml_server(args, root, server):
         arguments = TOR_ARGS_FMT.format(server['name'], torrc)
 
         # set hiddenservicedir and hiddenserviceport too
-        arguments = f'{arguments} --HiddenServiceDir {hs_prefix} --HiddenServicePort 80 127.0.0.1:8080'
+        arguments = f'{arguments} --HiddenServiceDir {hs_prefix} --HiddenServicePort "80 127.0.0.1:8080"'
 
         process.set("arguments", arguments)
 
