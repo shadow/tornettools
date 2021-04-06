@@ -157,7 +157,7 @@ def __add_xml_server(args, root, server):
         if not os.path.exists(server_prefix):
             os.makedirs(server_prefix)
         if not os.path.exists(hs_prefix):
-            os.makedirs(hs_prefix)
+            os.makedirs(hs_prefix, 0o700)
 
         with open("{}/{}".format(hs_prefix, HIDDENSERVICE_HOSTNAME_FILENAME), 'w') as outf:
             outf.write(f"{server['hs_onion_url']}\n")
