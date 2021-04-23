@@ -129,6 +129,9 @@ def __get_ram_usage(data):
     if "mem_available" in data[some_key]:
         used = {float(ts): data[ts]["mem_total"] - data[ts]["mem_available"] for ts in data}
     else:
+        logging.warning(f"The available memory data is missing, so we are computing memory usage "\
+                         "with the used memory data instead (which is less precise and may not "\
+                         "match the way usage was calculated for other experiments).")
         used = {float(ts): data[ts]["mem_used"] for ts in data}
 
     ts_start = min(used.keys())
