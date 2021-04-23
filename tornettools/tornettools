@@ -16,6 +16,7 @@ from random import randint
 from random import seed as stdseed
 from numpy.random import seed as numpyseed
 from multiprocessing import cpu_count
+from platform import platform, uname
 
 from tornettools.util import which, make_directories
 from tornettools._version import __version__
@@ -346,6 +347,12 @@ def main():
         help="Path to a tornet configuration directory produced with the 'generate' command",
         type=__type_str_dir_path_in)
 
+    simulate_parser.add_argument('-s', '--shadow',
+        help="""Path to a compile 'shadow' executable to use when running the simulation.""",
+        metavar="PATH", type=__type_str_file_path_in,
+        action="store", dest="shadowexe",
+        default=which("shadow"))
+
     simulate_parser.add_argument('-a', '--args',
         help="""The argument string to pass to Shadow when running the simulation.""",
         type=str,
@@ -355,6 +362,11 @@ def main():
     simulate_parser.add_argument('-c', '--compress',
         help="""Compress output with lzma.""",
         action="store_true", dest="do_compress",
+        default=False)
+
+    simulate_parser.add_argument('--use-realtime',
+        help="""Use realtime scheduling by running shadow under chrt.""",
+        action="store_true", dest="use_realtime",
         default=False)
 
     #########
@@ -376,6 +388,26 @@ def main():
         metavar="N", type=__type_nonnegative_integer,
         action="store", dest="nprocesses",
         default=0)
+
+    parse_parser.add_argument('-c', '--converge-time',
+        help="""The number of seconds after the beginning of the simulation that we
+            should ignore in the tgen and oniontrace log files, i.e., so we don't
+            track network performance before the network has reached steady-state.
+            Log messages during the interval [0, converge_time) will be ignored.""",
+        metavar="N", type=__type_nonnegative_integer,
+        action="store", dest="converge_time",
+        default=1200)
+
+    parse_parser.add_argument('-r', '--run-time',
+        help="""The number of seconds after the converge-time is reached that we should
+            consider the tgen and oniontrace log files valid for the purpose of
+            extracting performance stats. Log messages during the interval
+            [converge_time, converge_time + run_time) will be parsed. A negative value
+            indicates that we should parse all available data, i.e, during the
+            interval [converge_time, ∞).""",
+        metavar="N", type=int,
+        action="store", dest="run_time",
+        default=-1)
 
     ########
     # plot #
@@ -490,6 +522,8 @@ def main():
     logging.info("Seeded standard and numpy PRNGs with seed={}".format(args.seed))
 
     logging.info("The argument namespace is: {}".format(str(args)))
+    logging.info("The platform is: {}".format(str(platform())))
+    logging.info("System info: {}".format(str(uname())))
 
     # now run the configured mode
     args.func(args)

@@ -65,7 +65,7 @@ def __parse_shadow_rusage(args):
         return False
 
     rusage = {}
-    heartbeat = re.compile("_slave_heartbeat")
+    heartbeat = re.compile("_manager_heartbeat")
     with open_readable_file(shadow_filepath) as inf:
         for line in inf:
             if heartbeat.search(line) != None:
@@ -123,7 +123,16 @@ def __extract_resource_usage(args, free_data, shadow_data):
     dump_json_data(rusage, outpath, compress=False)
 
 def __get_ram_usage(data):
-    used = {float(ts): data[ts]["mem_used"] for ts in data}
+    # get the ram used by the os during the simulation.
+    # the best estimate is total-avail, but free may not always provide avail.
+    some_key = next(iter(data))
+    if "mem_available" in data[some_key]:
+        used = {float(ts): data[ts]["mem_total"] - data[ts]["mem_available"] for ts in data}
+    else:
+        logging.warning(f"The available memory data is missing, so we are computing memory usage "\
+                         "with the used memory data instead (which is less precise and may not "\
+                         "match the way usage was calculated for other experiments).")
+        used = {float(ts): data[ts]["mem_used"] for ts in data}
 
     ts_start = min(used.keys())
     mem_start = used[ts_start] # mem used by OS, i.e., before starting shadow

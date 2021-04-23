@@ -32,14 +32,18 @@ def run(args):
         logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
 
 def __run_shadow(args):
-    shadow_exe_path = which('shadow')
+    shadow_exe_path = args.shadowexe
     if shadow_exe_path == None:
         logging.warning("Cannot find shadow in your PATH. Do you have shadow installed (e.g., in ~/.shadow/bin)? Did you update your PATH?")
         logging.warning("Unable to run simulation without shadow.")
         return None
 
+    cmd_prefix = "/usr/bin/chrt -f 1 " if args.use_realtime else ""
+    args_suffix = " --data-template=shadow.data.template" if '--data-template' not in args.shadow_args else ""
+
+    shadow_args = args.shadow_args
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = cmdsplit(f"{shadow_exe_path} {args.shadow_args} shadow.config.xml")
+        shadow_cmd = cmdsplit(f"{cmd_prefix}{shadow_exe_path} {shadow_args}{args_suffix} shadow.config.xml")
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc

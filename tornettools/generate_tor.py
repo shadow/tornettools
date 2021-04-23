@@ -204,6 +204,7 @@ def __generate_torrc_common(conf_path, authorities):
     torrc_file.write('ServerDNSTestAddresses {}\n'.format(','.join(auth_names)))
     torrc_file.write('ServerDNSAllowBrokenConfig 1\n')
     torrc_file.write('ServerDNSDetectHijacking 0\n')
+    torrc_file.write('AssumeReachable 1\n')
     torrc_file.write('NumCPUs 1\n')
     torrc_file.write('Log notice stdout\n')
     torrc_file.write('SafeLogging 0\n')
@@ -239,7 +240,7 @@ def __generate_torrc_authority(conf_path, relays):
 
     torrc_file = open("{}/{}".format(conf_path, TORRC_AUTHORITY_FILENAME), 'w')
 
-    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
     torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('Log info stdout\n')
@@ -260,7 +261,7 @@ def __generate_torrc_exit(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_EXITRELAY_FILENAME), 'w')
 
     torrc_file.write('#Log info stdout\n')
-    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
     torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "accept *:*"\n')
@@ -271,7 +272,7 @@ def __generate_torrc_nonexit(conf_path):
     torrc_file = open("{}/{}".format(conf_path, TORRC_NONEXITRELAY_FILENAME), 'w')
 
     torrc_file.write('#Log info stdout\n')
-    torrc_file.write('ORPort {}\n'.format(TOR_OR_PORT))
+    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
     torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
     torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "reject *:*"\n')

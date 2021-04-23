@@ -35,7 +35,8 @@ def __plot_tornet(args):
 
     logging.info("Loading tornet resource usage data")
     tornet_dbs = __load_tornet_datasets(args, "resource_usage.json")
-    __plot_memory_usage(args, tornet_dbs)
+    __plot_memory_usage_real_time(args, tornet_dbs)
+    __plot_memory_usage_sim_time(args, tornet_dbs)
     __plot_run_time(args, tornet_dbs)
 
     logging.info("Loading Tor metrics data")
@@ -76,23 +77,68 @@ def __plot_tornet(args):
 
     args.pdfpages.close()
 
-def __plot_memory_usage(args, tornet_dbs):
+def __plot_memory_usage_real_time(args, tornet_dbs):
     for tornet_db in tornet_dbs:
         xy = {}
         for i, d in enumerate(tornet_db['dataset']):
             if 'ram' not in d or 'gib_used_per_minute' not in d['ram']:
                 continue
-            timed = d['ram']['gib_used_per_minute']
-            for sim_minute in timed:
-                s = int(sim_minute)*60.0 # to seconds
-                xy.setdefault(s, []).append(timed[sim_minute])
+            ramd = d['ram']['gib_used_per_minute']
+            for real_minute in ramd:
+                s = int(real_minute)*60.0 # to seconds
+                xy.setdefault(s, []).append(ramd[real_minute])
         tornet_db['data'] = xy
 
     dbs_to_plot = tornet_dbs
 
-    __plot_timeseries_figure(args, dbs_to_plot, "ram",
+    __plot_timeseries_figure(args, dbs_to_plot, "ram_realtime",
         xtime=True,
         xlabel="Real Time",
+        ylabel="RAM Used (GiB)")
+
+def __get_ram_per_sim_time(timed, ramd):
+    d = {}
+    time_iter = iter(sorted(timed.keys(), key=float))
+
+    try:
+        for real_minute in sorted(ramd.keys(), key=int):
+            ram = float(ramd[real_minute])
+            # we have ram at a real time, convert the real time to sim time
+            real_sec_ram = int(round(int(real_minute)*60.0)) # to seconds
+            real_sec_time, sim_sec_time = 0, 0
+            while real_sec_time < real_sec_ram:
+                k = next(time_iter)
+                v = timed[k]
+                sim_sec_time = float(k)
+                real_sec_time = int(round(float(v)))
+            # now we have ram at sim time
+            d[sim_sec_time] = ram
+    except StopIteration:
+        pass
+
+    return d
+
+def __plot_memory_usage_sim_time(args, tornet_dbs):
+    for tornet_db in tornet_dbs:
+        xy = {}
+        for i, d in enumerate(tornet_db['dataset']):
+            if 'run_time' not in d or 'real_seconds_per_sim_second' not in d['run_time']:
+                continue
+            if 'ram' not in d or 'gib_used_per_minute' not in d['ram']:
+                continue
+            timed = d['run_time']['real_seconds_per_sim_second']
+            ramd = d['ram']['gib_used_per_minute']
+            simd = __get_ram_per_sim_time(timed, ramd)
+            for sim_secs in sorted(simd.keys()):
+                s = int(round(float(sim_secs)))
+                xy.setdefault(s, []).append(simd[sim_secs])
+        tornet_db['data'] = xy
+
+    dbs_to_plot = tornet_dbs
+
+    __plot_timeseries_figure(args, dbs_to_plot, "ram_simtime",
+        xtime=True,
+        xlabel="Simulation Time",
         ylabel="RAM Used (GiB)")
 
 def __plot_run_time(args, tornet_dbs):

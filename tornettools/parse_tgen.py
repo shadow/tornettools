@@ -37,8 +37,8 @@ def extract_tgen_plot_data(args):
 
     data = load_json_data(json_path)
 
-    # skip the first 20 minutes to allow the network to reach steady state
-    startts, stopts = 1200, -1
+    # parse performance stats only after the network has reached steady state
+    startts, stopts = args.converge_time, -1 if args.run_time < 0 else args.converge_time + args.run_time
 
     __extract_round_trip_time(args, data, startts, stopts)
     __extract_download_time(args, data, startts, stopts)
