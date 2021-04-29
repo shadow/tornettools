@@ -108,7 +108,7 @@ def __server(args, server):
 
     host = {}
     host["options"] = {}
-    host["options"]["country_code_hint"] = str(server['country_code'])
+    host["options"]["country_code_hint"] = str(server['country_code']).upper()
     host["options"]["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
     host["options"]["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
 
@@ -152,7 +152,7 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirn
 
     host = {}
     host["options"] = {}
-    host["options"]["country_code_hint"] = str(country)
+    host["options"]["country_code_hint"] = str(country).upper()
     host["options"]["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
     host["options"]["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
 
@@ -190,7 +190,7 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     host = {}
     host["options"] = {}
     host["options"]["ip_hint"] = relay['address']
-    host["options"]["country_code_hint"] = str(relay['country_code'])
+    host["options"]["country_code_hint"] = str(relay['country_code']).upper()
     host["options"]["bandwidth_down"] = "{} kilobit".format(kbits)
     host["options"]["bandwidth_up"] = "{} kilobit".format(kbits)
 
