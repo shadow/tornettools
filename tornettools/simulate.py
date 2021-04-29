@@ -43,7 +43,7 @@ def __run_shadow(args):
 
     shadow_args = args.shadow_args
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = cmdsplit(f"{cmd_prefix}{shadow_exe_path} {shadow_args}{args_suffix} shadow.config.xml")
+        shadow_cmd = cmdsplit(f"{cmd_prefix}{shadow_exe_path} {shadow_args}{args_suffix} shadow.config.yaml")
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc
