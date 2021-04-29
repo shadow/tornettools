@@ -89,28 +89,28 @@ def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clien
     with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'w') as configfile:
         yaml.dump(config, configfile, sort_keys=False)
 
-def __get_scaled_tgen_client_bandwidth_kib(args):
+def __get_scaled_tgen_client_bandwidth_kbit(args):
     # 10 Mbit/s per "user" that a tgen client simulates
     n_users_per_tgen = round(1.0 / args.process_scale)
-    scaled_bw = n_users_per_tgen * 10 * BW_1MBIT_KIB
+    scaled_bw = n_users_per_tgen * 10 * BW_1MBIT_KBIT
     return scaled_bw
 
-def __get_scaled_tgen_server_bandwidth_kib(args):
-    scaled_client_bw = __get_scaled_tgen_client_bandwidth_kib(args)
+def __get_scaled_tgen_server_bandwidth_kbit(args):
+    scaled_client_bw = __get_scaled_tgen_client_bandwidth_kbit(args)
     n_clients_per_server = round(1.0 / args.process_scale)
     scaled_bw = scaled_client_bw * n_clients_per_server
     return scaled_bw
 
 def __server(args, server):
     # Make sure we have enough bandwidth for the expected number of clients
-    scaled_bw = __get_scaled_tgen_server_bandwidth_kib(args)
-    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+    scaled_bw_kbit = __get_scaled_tgen_server_bandwidth_kbit(args)
+    host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
 
     host = {}
     host["options"] = {}
     host["options"]["country_code_hint"] = str(server['country_code'])
-    host["options"]["bandwidth_up"] = host_bw
-    host["options"]["bandwidth_down"] = host_bw
+    host["options"]["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
+    host["options"]["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
 
     host["processes"] = []
 
@@ -147,14 +147,14 @@ def __format_tor_args(name, torrc_fname):
 
 def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirname=None):
     # Make sure we have enough bandwidth for the simulated number of users
-    scaled_bw = __get_scaled_tgen_client_bandwidth_kib(args)
-    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+    scaled_bw_kbit = __get_scaled_tgen_client_bandwidth_kbit(args)
+    host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
 
     host = {}
     host["options"] = {}
     host["options"]["country_code_hint"] = str(country)
-    host["options"]["bandwidth_up"] = host_bw
-    host["options"]["bandwidth_down"] = host_bw
+    host["options"]["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
+    host["options"]["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
 
     host["processes"] = []
 
@@ -180,7 +180,7 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirn
 
 def __tor_relay(args, relay, orig_fp, is_authority=False):
     # prepare items for the host element
-    kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
+    kbits = 8 * int(round(int(relay['bandwidth_capacity']) / 1000.0))
 
     hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
     with open("{}/{}/fingerprint-public-tor".format(hosts_prefix, relay['nickname']), 'w') as outf:
@@ -191,8 +191,8 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     host["options"] = {}
     host["options"]["ip_hint"] = relay['address']
     host["options"]["country_code_hint"] = str(relay['country_code'])
-    host["options"]["bandwidth_down"] = kib
-    host["options"]["bandwidth_up"] = kib
+    host["options"]["bandwidth_down"] = "{} kilobit".format(kbits)
+    host["options"]["bandwidth_up"] = "{} kilobit".format(kbits)
 
     # prepare items for the tor process element
     if is_authority:
