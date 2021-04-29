@@ -39,7 +39,7 @@ def __run_shadow(args):
         return None
 
     cmd_prefix = "/usr/bin/chrt -f 1 " if args.use_realtime else ""
-    args_suffix = " --data-template=shadow.data.template" if '--data-template' not in args.shadow_args else ""
+    args_suffix = " --template-directory=shadow.data.template" if '--template-directory' not in args.shadow_args else ""
 
     shadow_args = args.shadow_args
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
