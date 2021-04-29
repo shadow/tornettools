@@ -35,9 +35,11 @@ DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
 # this number of data equals 1 MBit
 BW_1MBIT_BYTES = int(round(1000*1000/8))
 BW_1MBIT_KIB = int(round(BW_1MBIT_BYTES/1024))
+BW_1MBIT_KBIT = 1000
 # this number of data equals 1 GBit
 BW_1GBIT_BYTES = int(round(1000*1000*1000/8))
 BW_1GBIT_KIB = int(round(BW_1GBIT_BYTES/1024))
+BW_1GBIT_KBIT = 1000*1000
 BW_RATE_MIN = 102400
 
 # country codes where we can place onionperf client hosts
