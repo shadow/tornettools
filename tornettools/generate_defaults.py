@@ -9,10 +9,7 @@ SHADOW_TEMPLATE_PATH="{}.template".format(SHADOW_DATA_PATH)
 CONFIG_DIRNAME="conf"
 SHADOW_INSTALL_PREFIX="~/.shadow"
 SHADOW_HOSTS_PATH="hosts"
-SHADOW_CONFIG_FILENAME="shadow.config.xml"
-
-SHADOW_XML_HOST_KEY="host"
-SHADOW_XML_PROCESS_KEY="process"
+SHADOW_CONFIG_FILENAME="shadow.config.yaml"
 
 RESOLV_FILENAME="shadowresolv.conf"
 BW_AUTHORITY_NAME="bwauthority"

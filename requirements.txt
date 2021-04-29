@@ -1,6 +1,6 @@
-lxml
 matplotlib
 networkx
 numpy
+pyyaml
 scipy
 stem
