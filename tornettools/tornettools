@@ -357,7 +357,7 @@ def main():
         help="""The argument string to pass to Shadow when running the simulation.""",
         type=str,
         action="store", dest="shadow_args",
-        default="--workers={} --seed=666".format(cpu_count()))
+        default="--parallelism={} --seed=666".format(cpu_count()))
 
     simulate_parser.add_argument('-c', '--compress',
         help="""Compress output with lzma.""",
