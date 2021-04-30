@@ -13,7 +13,7 @@ def parse_oniontrace_logs(args):
         logging.warning("Unable to parse oniontrace simulation data.")
         return
 
-    cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e 'oniontrace.*\.log' shadow.data/hosts"
+    cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e '.*\.oniontrace\.[0-9]+.stdout' shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")

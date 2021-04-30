@@ -13,7 +13,7 @@ def parse_tgen_logs(args):
         logging.warning("Unable to parse tgen simulation data.")
         return
 
-    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient.*tgen.*\.log' --complete shadow.data/hosts"
+    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient[0-9]+\.tgen\.[0-9]+.stdout' --complete shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
