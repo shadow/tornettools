@@ -2,5 +2,6 @@ lxml
 matplotlib
 networkx
 numpy
+pycrypto
 scipy
 stem

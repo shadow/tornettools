@@ -137,6 +137,42 @@ def __add_xml_server(args, root, server):
     process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
     process.set("arguments", tgenrc)
 
+    if args.hidden:
+        # this should be a relative path
+        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_HIDDENSERVICE_FILENAME)
+
+        # tor plugin for hidden service
+        process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+        process.set("plugin", "tor")
+        process.set("preload", "tor-preload")
+        process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
+
+        # prepare hostname and private_key for the hiddenservice
+        hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
+        server_prefix = "{}/{}".format(hosts_prefix, server['name'])
+        hs_prefix = "{}/{}".format(server_prefix, SHADOW_HIDDENSERVICE_PATH)
+
+        if not os.path.exists(hosts_prefix):
+            os.makedirs(hosts_prefix)
+        if not os.path.exists(server_prefix):
+            os.makedirs(server_prefix)
+        if not os.path.exists(hs_prefix):
+            os.makedirs(hs_prefix, 0o700)
+
+        with open("{}/{}".format(hs_prefix, HIDDENSERVICE_HOSTNAME_FILENAME), 'w') as outf:
+            outf.write(f"{server['hs_onion_url']}\n")
+
+        with open("{}/{}".format(hs_prefix, HIDDENSERVICE_PRIVATEKEY_FILENAME), 'w') as outf:
+            outf.write(f"{server['hs_private_key']}\n")
+
+        # base arguments
+        arguments = TOR_ARGS_FMT.format(server['name'], torrc)
+
+        # set hiddenservicedir and hiddenserviceport too
+        arguments = f'{arguments} --HiddenServiceDir {hs_prefix} --HiddenServicePort "80 127.0.0.1:8080"'
+
+        process.set("arguments", arguments)
+
 def __add_xml_perfclient(args, root, client):
     # these should be relative paths
     torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_PERFCLIENT_FILENAME)

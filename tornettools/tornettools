@@ -224,6 +224,12 @@ def main():
         formatter_class=my_formatter_class)
     generate_parser.set_defaults(func=generate, formatter_class=my_formatter_class)
 
+    generate_parser.add_argument('--hidden',
+        help="""Servers will be generated as hidden services rather than clearnet servers,
+            and client traffic will be directed accordingly""",
+        action="store_true", dest="hidden",
+        default=False)
+
     generate_parser.add_argument('relay_info_path',
         help="Path to a relay-info-staging.json file produced with the 'stage' command",
         type=__type_str_file_path_in)
