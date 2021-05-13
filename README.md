@@ -26,6 +26,26 @@ for the generation of realistic background traffic, and
 [OnionTrace](https://github.com/shadow/oniontrace)
 for the collection of information from Tor throughout an experiment.
 
+### Citation
+
+This tool was initially created as part of the following research publication. Please cite this paper if you use this tool in your work:
+
+[Once is Never Enough: Foundations for Sound Statistical Inference in Tor Network Experimentation](https://www.robgjansen.com/publications/neverenough-sec2021.pdf)  
+_Proceedings of [the 30th USENIX Security Symposium](https://www.usenix.org/conference/usenixsecurity21) (Sec 2021)_  
+by [Rob Jansen](https://www.robgjansen.com), Justin Tracey, and [Ian Goldberg](https://cs.uwaterloo.ca/~iang)  
+
+Here is a bibtex entry for latex users:
+
+```bibtex
+@inproceedings{neverenough-sec2021,
+  author = {Rob Jansen and Justin Tracey and Ian Goldberg},
+  title = {Once is Never Enough: Foundations for Sound Statistical Inference in {Tor} Network Experimentation},
+  booktitle = {30th USENIX Security Symposium (Sec)},
+  year = {2021},
+  note = {See also \url{https://neverenough-sec2021.github.io}},
+}
+```
+
 ### setup is easy with virtualenv and pip
 
     python3 -m venv toolsenv
