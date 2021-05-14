@@ -16,11 +16,13 @@ from tornettools.util import load_json_data
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
     with open(pwpath, 'r') as pwin:
-        retcode = subprocess.call(shlex.split(cmd), stdin=pwin, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc = subprocess.run(shlex.split(cmd), stdin=pwin, capture_output=True)
 
-    if retcode != 0:
-        logging.critical("Error generating authority identity key using command line '{}'".format(cmd))
-    assert retcode == 0
+    if proc.returncode != 0:
+        err = proc.stderr.decode('utf-8')
+        logging.critical("Error generating authority identity key using command line '{}': {}".format(cmd, err))
+
+    proc.check_returncode()
 
     v3ident = ""
     with open("authority_certificate", 'r') as certf:
