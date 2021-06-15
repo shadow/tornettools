@@ -1,10 +1,9 @@
 import sys
 import os
 import json
+import yaml
 import logging
 import shlex
-
-from lxml import etree
 
 from tornettools.generate_defaults import *
 from tornettools.generate_tgen import *
@@ -43,201 +42,221 @@ def run(args):
     logging.info("Generating TGen configuration files")
     generate_tgen_config(args, tgen_clients, tgen_servers)
 
-    logging.info("Constructing Shadow config XML file")
+    logging.info("Constructing Shadow config YAML file")
     __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients)
 
     # only copy the atlas file if the user did not tell us where it has the atlas stored
     if args.atlas_path is None:
         logging.info("Copying atlas topology file (use the '-a/--atlas' option to disable)")
         topology_src_path = "{}/data/shadow/network/{}.xz".format(args.tmodel_git_path, TMODEL_TOPOLOGY_FILENAME)
-        topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME)
+        topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRNAME, TMODEL_TOPOLOGY_FILENAME)
         copy_and_extract_file(topology_src_path, topology_dst_path)
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
-    # create the XML for the shadow.config.xml file
-    root = etree.Element("shadow")
-    root.set("bootstraptime", "{}".format(BOOTSTRAP_LENGTH_SECONDS)) # disable bandwidth limits and packet loss for first 5 minutes
-    root.set("stoptime", "{}".format(SIMULATION_LENGTH_SECONDS)) # stop after 1 hour of simulated time
-    root.set("preload", "{}/lib/libshadow-interpose.so".format(SHADOW_INSTALL_PREFIX))
-    root.set("environment", "OPENSSL_ia32cap=~0x200000200000000;EVENT_NOSELECT=1;EVENT_NOPOLL=1;EVENT_NOKQUEUE=1;EVENT_NODEVPOLL=1;EVENT_NOEVPORT=1;EVENT_NOWIN32=1")
+    # create the YAML for the shadow.config.yaml file
 
-    topology = etree.SubElement(root, "topology")
+    config = {}
+    config["general"] = {}
+    config["network"] = {}
+    config["hosts"] = {}
+
+    config["general"]["bootstrap_end_time"] = BOOTSTRAP_LENGTH_SECONDS # disable bandwidth limits and packet loss for first 5 minutes
+    config["general"]["stop_time"] = SIMULATION_LENGTH_SECONDS # stop after 1 hour of simulated time
+
+    # the atlas topology is complete, so we can use only direct edges
+    config["network"]["use_shortest_path"] = False
+
+    config["network"]["graph"] = {}
+    config["network"]["graph"]["type"] = "gml"
+
     if args.atlas_path is None:
-        topology.set("path", "{}/{}".format(CONFIG_DIRPATH, TMODEL_TOPOLOGY_FILENAME))
+        config["network"]["graph"]["path"] = "{}/{}".format(CONFIG_DIRNAME, TMODEL_TOPOLOGY_FILENAME)
     else:
-        topology.set("path", "{}".format(args.atlas_path))
-
-    plugin = etree.SubElement(root, "plugin")
-    plugin.set("id", "tor")
-    plugin.set("path", "{}/lib/libshadow-plugin-tor.so".format(SHADOW_INSTALL_PREFIX))
-
-    plugin = etree.SubElement(root, "plugin")
-    plugin.set("id", "tor-preload")
-    plugin.set("path", "{}/lib/libshadow-preload-tor.so".format(SHADOW_INSTALL_PREFIX))
-
-    if args.events_csv is not None or args.do_trace:
-        plugin = etree.SubElement(root, "plugin")
-        plugin.set("id", "oniontrace")
-        plugin.set("path", "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX))
-
-    plugin = etree.SubElement(root, "plugin")
-    plugin.set("id", "tgen")
-    plugin.set("path", "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX))
+        config["network"]["graph"]["path"] = str(args.atlas_path)
 
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
-        __add_xml_tor_relay(args, root, authority, fp, is_authority=True)
+        config["hosts"].update(__tor_relay(args, authority, fp, is_authority=True))
 
     for pos in ['ge', 'e', 'g', 'm']:
         # use reverse to sort each class from fastest to slowest when assigning the id counter
         for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-            __add_xml_tor_relay(args, root, relay, fp, is_authority=False)
+            config["hosts"].update(__tor_relay(args, relay, fp, is_authority=False))
 
     for server in tgen_servers:
-        __add_xml_server(args, root, server)
+        config["hosts"].update(__server(args, server))
 
     for client in perf_clients:
-        __add_xml_perfclient(args, root, client)
+        config["hosts"].update(__perfclient(args, client))
 
     for client in tgen_clients:
-        __add_xml_markovclient(args, root, client)
+        config["hosts"].update(__markovclient(args, client))
 
-    xml_str = etree.tostring(root, pretty_print=True, xml_declaration=False)
-    with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'wb') as configfile:
-        configfile.write(xml_str)
+    with open("{}/{}".format(args.prefix, SHADOW_CONFIG_FILENAME), 'w') as configfile:
+        yaml.dump(config, configfile, sort_keys=False)
 
-def __get_scaled_tgen_client_bandwidth_kib(args):
+def __get_scaled_tgen_client_bandwidth_kbit(args):
     # 10 Mbit/s per "user" that a tgen client simulates
     n_users_per_tgen = round(1.0 / args.process_scale)
-    scaled_bw = n_users_per_tgen * 10 * BW_1MBIT_KIB
+    scaled_bw = n_users_per_tgen * 10 * BW_1MBIT_KBIT
     return scaled_bw
 
-def __get_scaled_tgen_server_bandwidth_kib(args):
-    scaled_client_bw = __get_scaled_tgen_client_bandwidth_kib(args)
+def __get_scaled_tgen_server_bandwidth_kbit(args):
+    scaled_client_bw = __get_scaled_tgen_client_bandwidth_kbit(args)
     n_clients_per_server = round(1.0 / args.process_scale)
     scaled_bw = scaled_client_bw * n_clients_per_server
     return scaled_bw
 
-def __add_xml_server(args, root, server):
+def __server(args, server):
     # Make sure we have enough bandwidth for the expected number of clients
-    scaled_bw = __get_scaled_tgen_server_bandwidth_kib(args)
-    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+    scaled_bw_kbit = __get_scaled_tgen_server_bandwidth_kbit(args)
+    host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
 
-    # this should be a relative path
-    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_SERVER_FILENAME)
+    host = {}
+    host["options"] = {}
+    host["options"]["country_code_hint"] = str(server['country_code']).upper()
 
-    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
-    host.set("id", server['name'])
-    host.set("countrycodehint", server['country_code'])
-    host.set("bandwidthup", "{}".format(host_bw))
-    host.set("bandwidthdown", "{}".format(host_bw))
+    host["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
+    host["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
 
-    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
-    process.set("plugin", "tgen")
+    host["processes"] = []
+
+    process = {}
+    process["path"] = "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX)
+    process["args"] = get_host_rel_conf_path(TGENRC_SERVER_FILENAME)
     # tgen starts at the end of shadow's "bootstrap" phase
-    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    process.set("arguments", tgenrc)
+    process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
-def __add_xml_perfclient(args, root, client):
-    # these should be relative paths
-    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_PERFCLIENT_FILENAME)
-    tgenrc = "{}/{}".format(CONFIG_DIRPATH, TGENRC_PERFCLIENT_FILENAME)
-    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
+    host["processes"].append(process)
 
-def __add_xml_markovclient(args, root, client):
+    return {server['name']: host}
+
+def __perfclient(args, client):
+    return __tgen_client(args, client['name'], client['country_code'], \
+        TORRC_PERFCLIENT_FILENAME, TGENRC_PERFCLIENT_FILENAME)
+
+def __markovclient(args, client):
     # these should be relative paths
-    torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_MARKOVCLIENT_FILENAME)
     tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(client['name'])
-    tgenrc = "{}/{}/{}".format(CONFIG_DIRPATH, TGENRC_MARKOVCLIENT_DIRNAME, tgenrc_filename)
-    __add_xml_tgen_client(args, root, client['name'], client['country_code'], torrc, tgenrc)
+    return __tgen_client(args, client['name'], client['country_code'], \
+        TORRC_MARKOVCLIENT_FILENAME, tgenrc_filename, tgenrc_subdirname=TGENRC_MARKOVCLIENT_DIRNAME)
 
-def __add_xml_tgen_client(args, root, name, country, torrc, tgenrc):
+def __format_tor_args(name, torrc_fname):
+    args = [
+        f"--Address {name}",
+        f"--Nickname {name}",
+        f"--DataDirectory .",
+        f"--GeoIPFile {SHADOW_INSTALL_PREFIX}/share/geoip",
+        f"--defaults-torrc {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}",
+        f"-f {get_host_rel_conf_path(torrc_fname)}",
+    ]
+    return ' '.join(args)
+
+def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirname=None):
     # Make sure we have enough bandwidth for the simulated number of users
-    scaled_bw = __get_scaled_tgen_client_bandwidth_kib(args)
-    host_bw = max(BW_1GBIT_KIB, scaled_bw)
+    scaled_bw_kbit = __get_scaled_tgen_client_bandwidth_kbit(args)
+    host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
 
-    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
-    host.set("id", name)
-    host.set("countrycodehint", country)
-    host.set("bandwidthup", "{}".format(host_bw))
-    host.set("bandwidthdown", "{}".format(host_bw))
+    host = {}
+    host["options"] = {}
+    host["options"]["country_code_hint"] = str(country).upper()
 
-    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
-    process.set("plugin", "tor")
-    process.set("preload", "tor-preload")
-    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS-60)) # start before boostrapping ends
-    process.set("arguments", TOR_ARGS_FMT.format(name, torrc))
+    host["bandwidth_up"] = "{} kilobit".format(host_bw_kbit)
+    host["bandwidth_down"] = "{} kilobit".format(host_bw_kbit)
+
+    host["processes"] = []
+
+    process = {}
+    process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+    process["args"] = __format_tor_args(name, torrc_fname)
+    process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
+
+    host["processes"].append(process)
 
     oniontrace_start_time = BOOTSTRAP_LENGTH_SECONDS-60+1
-    __add_xml_oniontrace(args, host, oniontrace_start_time, name)
+    host["processes"].extend(__oniontrace(args, oniontrace_start_time, name))
 
-    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
-    process.set("plugin", "tgen")
+    process = {}
+    process["path"] = "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX)
+    process["args"] = get_host_rel_conf_path(tgenrc_fname, rc_subdirname=tgenrc_subdirname)
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
-    process.set("starttime", "{}".format(BOOTSTRAP_LENGTH_SECONDS))
-    process.set("arguments", tgenrc)
+    process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
-def __add_xml_tor_relay(args, root, relay, orig_fp, is_authority=False):
+    host["processes"].append(process)
+
+    return {name: host}
+
+def __tor_relay(args, relay, orig_fp, is_authority=False):
     # prepare items for the host element
-    kib = int(round(int(relay['bandwidth_capacity']) / 1024.0))
+    kbits = 8 * int(round(int(relay['bandwidth_capacity']) / 1000.0))
 
     hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
     with open("{}/{}/fingerprint-public-tor".format(hosts_prefix, relay['nickname']), 'w') as outf:
         outf.write(f"{orig_fp}\n")
 
     # add the host element and attributes
-    host = etree.SubElement(root, SHADOW_XML_HOST_KEY)
-    host.set("id", relay['nickname'])
-    host.set("iphint", relay['address'])
-    host.set("countrycodehint", relay['country_code'])
-    host.set("bandwidthdown", "{}".format(kib))
-    host.set("bandwidthup", "{}".format(kib))
+    host = {}
+    host["options"] = {}
+    host["options"]["ip_address_hint"] = relay['address']
+    host["options"]["country_code_hint"] = str(relay['country_code']).upper()
+
+    host["bandwidth_down"] = "{} kilobit".format(kbits)
+    host["bandwidth_up"] = "{} kilobit".format(kbits)
 
     # prepare items for the tor process element
     if is_authority:
         starttime = 1
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_AUTHORITY_FILENAME)
+        torrc_fname = TORRC_AUTHORITY_FILENAME
     elif "exitguard" in relay['nickname']:
         starttime = 2
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_EXITRELAY_FILENAME)
+        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "exit" in relay['nickname']:
         starttime = 3
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_EXITRELAY_FILENAME)
+        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "guard" in relay['nickname']:
         starttime = 4
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_NONEXITRELAY_FILENAME)
+        torrc_fname = TORRC_NONEXITRELAY_FILENAME
     else:
         starttime = 5
-        torrc = "{}/{}".format(CONFIG_DIRPATH, TORRC_NONEXITRELAY_FILENAME)
+        torrc_fname = TORRC_NONEXITRELAY_FILENAME
 
-    tor_args = TOR_ARGS_FMT.format(relay['nickname'], torrc)
+    tor_args = __format_tor_args(relay['nickname'], torrc_fname)
     if not is_authority:
         # Tor enforces a min rate for relays
         rate = max(BW_RATE_MIN, relay['bandwidth_rate'])
         burst = max(BW_RATE_MIN, relay['bandwidth_burst'])
         tor_args += " --BandwidthRate {} --BandwidthBurst {}".format(rate, burst)
 
-    process = etree.SubElement(host, SHADOW_XML_PROCESS_KEY)
+    host['processes'] = []
 
-    process.set("plugin", "tor")
-    process.set("preload", "tor-preload")
-    process.set("starttime", "{}".format(starttime))
-    process.set("arguments", "{}".format(tor_args))
+    process = {}
+    process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+    process["args"] = str(tor_args)
+    process["start_time"] = starttime
+
+    host['processes'].append(process)
 
     oniontrace_start_time = starttime+1
-    __add_xml_oniontrace(args, host, oniontrace_start_time, relay['nickname'])
+    host['processes'].extend(__oniontrace(args, oniontrace_start_time, relay['nickname']))
 
-def __add_xml_oniontrace(args, parent_elm, start_time, name):
+    return {relay['nickname']: host}
+
+def __oniontrace(args, start_time, name):
+    processes = []
+
     if args.events_csv is not None:
-        process = etree.SubElement(parent_elm, SHADOW_XML_PROCESS_KEY)
-        process.set("plugin", "oniontrace")
-        process.set("starttime", "{}".format(start_time))
-        process.set("arguments", "Mode=log TorControlPort={} LogLevel=info Events={}".format(TOR_CONTROL_PORT, args.events_csv))
+        process = {}
+        process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
+        process["args"] = "Mode=log TorControlPort={} LogLevel=info Events={}".format(TOR_CONTROL_PORT, args.events_csv)
+        process["start_time"] = start_time
+        processes.append(process)
 
     if args.do_trace:
         start_time = max(start_time, BOOTSTRAP_LENGTH_SECONDS)
-        process = etree.SubElement(parent_elm, SHADOW_XML_PROCESS_KEY)
-        process.set("plugin", "oniontrace")
-        process.set("starttime", "{}".format(start_time))
+        process = {}
+        process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
         run_time = SIMULATION_LENGTH_SECONDS-start_time-1
-        tracefile_path = "{}/{}/{}/oniontrace.csv".format(SHADOW_DATA_PATH, SHADOW_HOSTS_PATH, name)
-        process.set("arguments", "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile={}".format(TOR_CONTROL_PORT, run_time, tracefile_path))
+        process["args"] = "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile=oniontrace.csv".format(TOR_CONTROL_PORT, run_time)
+        process["start_time"] = start_time
+        processes.append(process)
+
+    return processes

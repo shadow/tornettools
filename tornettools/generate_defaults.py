@@ -6,13 +6,10 @@ SIMULATION_LENGTH_SECONDS=3600
 
 SHADOW_DATA_PATH="shadow.data"
 SHADOW_TEMPLATE_PATH="{}.template".format(SHADOW_DATA_PATH)
-CONFIG_DIRPATH="conf"
-SHADOW_INSTALL_PREFIX="~/.shadow"
+CONFIG_DIRNAME="conf"
+SHADOW_INSTALL_PREFIX="~/.local"
 SHADOW_HOSTS_PATH="hosts"
-SHADOW_CONFIG_FILENAME="shadow.config.xml"
-
-SHADOW_XML_HOST_KEY="host"
-SHADOW_XML_PROCESS_KEY="process"
+SHADOW_CONFIG_FILENAME="shadow.config.yaml"
 
 RESOLV_FILENAME="shadowresolv.conf"
 BW_AUTHORITY_NAME="bwauthority"
@@ -33,14 +30,14 @@ TOR_GUARD_MIN_CONSBW=2000
 # country codes where we can place directory authority tor hosts
 DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
 
-TOR_ARGS_FMT = "--Address {0} --Nickname {0} --DataDirectory "+SHADOW_DATA_PATH+"/"+SHADOW_HOSTS_PATH+"/{0} --GeoIPFile "+SHADOW_INSTALL_PREFIX+"/share/geoip --defaults-torrc "+CONFIG_DIRPATH+"/"+TORRC_COMMON_FILENAME+" -f {1}"
-
 # this number of data equals 1 MBit
 BW_1MBIT_BYTES = int(round(1000*1000/8))
 BW_1MBIT_KIB = int(round(BW_1MBIT_BYTES/1024))
+BW_1MBIT_KBIT = 1000
 # this number of data equals 1 GBit
 BW_1GBIT_BYTES = int(round(1000*1000*1000/8))
 BW_1GBIT_KIB = int(round(BW_1GBIT_BYTES/1024))
+BW_1GBIT_KBIT = 1000*1000
 BW_RATE_MIN = 102400
 
 # country codes where we can place onionperf client hosts
@@ -58,4 +55,10 @@ TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
 
 TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
-TMODEL_TOPOLOGY_FILENAME="atlas-lossless.201801.shadow113.graphml.xml"
+TMODEL_TOPOLOGY_FILENAME="atlas_v201801.shadow_v2.gml"
+
+def get_host_rel_conf_path(rc_filename, rc_subdirname=None):
+    if rc_subdirname == None:
+        return f"../../../{CONFIG_DIRNAME}/{rc_filename}"
+    else:
+        return f"../../../{CONFIG_DIRNAME}/{rc_subdirname}/{rc_filename}"
