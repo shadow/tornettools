@@ -57,7 +57,7 @@ TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
 
 TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
-TMODEL_TOPOLOGY_FILENAME="atlas-lossless.201801.shadow113.graphml.xml"
+TMODEL_TOPOLOGY_FILENAME="atlas_v201801.shadow_v2.gml"
 
 def get_host_rel_conf_path(rc_filename, rc_subdirname=None):
     if rc_subdirname == None:
