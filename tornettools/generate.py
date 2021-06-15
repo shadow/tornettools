@@ -123,7 +123,6 @@ def __server(args, server):
     process = {}
     process["path"] = "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX)
     process["args"] = get_host_rel_conf_path(TGENRC_SERVER_FILENAME)
-    process["environment"] = PROC_ENV
     # tgen starts at the end of shadow's "bootstrap" phase
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
@@ -169,7 +168,6 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirn
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
     process["args"] = __format_tor_args(name, torrc_fname)
-    process["environment"] = PROC_ENV
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
 
     host["processes"].append(process)
@@ -180,7 +178,6 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirn
     process = {}
     process["path"] = "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX)
     process["args"] = get_host_rel_conf_path(tgenrc_fname, rc_subdirname=tgenrc_subdirname)
-    process["environment"] = PROC_ENV
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
@@ -234,7 +231,6 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
     process["args"] = str(tor_args)
-    process["environment"] = PROC_ENV
     process["start_time"] = starttime
 
     host['processes'].append(process)
@@ -251,7 +247,6 @@ def __oniontrace(args, start_time, name):
         process = {}
         process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
         process["args"] = "Mode=log TorControlPort={} LogLevel=info Events={}".format(TOR_CONTROL_PORT, args.events_csv)
-        process["environment"] = PROC_ENV
         process["start_time"] = start_time
         processes.append(process)
 
@@ -261,7 +256,6 @@ def __oniontrace(args, start_time, name):
         process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
         run_time = SIMULATION_LENGTH_SECONDS-start_time-1
         process["args"] = "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile=oniontrace.csv".format(TOR_CONTROL_PORT, run_time)
-        process["environment"] = PROC_ENV
         process["start_time"] = start_time
         processes.append(process)
 
