@@ -15,8 +15,14 @@ from tornettools.util import load_json_data
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
-    with open(pwpath, 'r') as pwin:
-        proc = subprocess.run(shlex.split(cmd), stdin=pwin, capture_output=True)
+
+    # capture_output is only added in python 3.7 or later
+    try:
+        with open(pwpath, 'r') as pwin:
+            proc = subprocess.run(shlex.split(cmd), stdin=pwin, capture_output=True)
+    except:
+        with open(pwpath, 'r') as pwin:
+            proc = subprocess.run(shlex.split(cmd), stdin=pwin)
 
     if proc.returncode != 0:
         err = proc.stderr.decode('utf-8')
