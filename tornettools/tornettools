@@ -81,7 +81,7 @@ DESC_PLOT = """
 Visualizes various performance metrics that were extracted and
 stored with the parse command by producing graphical plots.
 
-This command should be used after running plot.
+This command should be used after running parse.
 """
 
 HELP_ARCHIVE = """
