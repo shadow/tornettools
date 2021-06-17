@@ -304,7 +304,7 @@ def main():
             if this option is unspecified, then we will copy the atlas from the tmodel_git_path repo
             into the config directory that we generate.
             (A compressed version of the file is normally available at
-            'tmodel_git_path/data/shadow/network/atlas.201801.shadow113.graphml.xml.xz'.)""",
+            'tmodel_git_path/data/shadow/network/atlas_v201801.shadow_v2.gml.xz'.)""",
         metavar="PATH", type=__type_str_file_path_in,
         action="store", dest="atlas_path",
         default=None)
