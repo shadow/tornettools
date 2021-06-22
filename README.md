@@ -88,7 +88,7 @@ Here is a bibtex entry for latex users:
     cd tor
     ./autogen.sh
     ./configure --disable-asciidoc --disable-unittests --disable-manpage --disable-html-manual
-    make
+    make -j$(nproc)
     cd ..
 
 ### in order to generate, we need a tor and tor-gencert binaries (to generate relay keys)
