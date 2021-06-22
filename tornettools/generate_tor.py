@@ -60,8 +60,6 @@ def generate_tor_keys(args, relays):
     keygen_pw = "{}/keygen.pw".format(template_prefix)
 
     # create directories that do not exist
-    if not os.path.exists(template_prefix):
-        os.makedirs(template_prefix)
     if not os.path.exists(hosts_prefix):
         os.makedirs(hosts_prefix)
 
