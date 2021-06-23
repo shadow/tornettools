@@ -149,11 +149,13 @@ def generate_tor_config(args, authorities, relays, host_torrc_defaults):
     __generate_resolv_file(args, abs_conf_path)
     __generate_tor_v3bw_file(args, authorities, relays)
     __generate_torrc_common(abs_conf_path, authorities)
-    __generate_torrc_authority(abs_conf_path, relays)
-    __generate_torrc_exit(abs_conf_path)
-    __generate_torrc_nonexit(abs_conf_path)
-    __generate_torrc_markovclient(abs_conf_path)
-    __generate_torrc_perfclient(abs_conf_path)
+    __generate_torrc_relay(abs_conf_path)
+    __generate_torrc_relay_authority(abs_conf_path, relays)
+    __generate_torrc_relay_exit(abs_conf_path)
+    __generate_torrc_relay_nonexit(abs_conf_path)
+    __generate_torrc_client(abs_conf_path)
+    __generate_torrc_client_markov(abs_conf_path)
+    __generate_torrc_client_perf(abs_conf_path)
 
     for hostname in host_torrc_defaults:
         host_path = "{}/{}".format(hosts_prefix, hostname)
@@ -247,7 +249,17 @@ def __generate_torrc_common(conf_path, authorities):
 
     torrc_file.close()
 
-def __generate_torrc_authority(conf_path, relays):
+def __generate_torrc_relay(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_FILENAME), 'w')
+
+    torrc_file.write('#Log info stdout\n')
+    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
+    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
+    torrc_file.write('SocksPort 0\n')
+
+    torrc_file.close()
+
+def __generate_torrc_relay_authority(conf_path, relays):
     tornet_fps_g = [relays['g'][fp]['tornet_fingerprint'] for fp in relays['g']]
     tornet_fps_e = [relays['e'][fp]['tornet_fingerprint'] for fp in relays['e']]
     tornet_fps_ge = [relays['ge'][fp]['tornet_fingerprint'] for fp in relays['ge']]
@@ -255,11 +267,8 @@ def __generate_torrc_authority(conf_path, relays):
     guard_fps = tornet_fps_g + tornet_fps_ge
     exit_fps = tornet_fps_e + tornet_fps_ge
 
-    torrc_file = open("{}/{}".format(conf_path, TORRC_AUTHORITY_FILENAME), 'w')
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_AUTHORITY_FILENAME), 'w')
 
-    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
-    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
-    torrc_file.write('SocksPort 0\n')
     torrc_file.write('Log info stdout\n')
     torrc_file.write('ExitPolicy "reject *:*"\n')
     torrc_file.write('\n')
@@ -274,61 +283,55 @@ def __generate_torrc_authority(conf_path, relays):
 
     torrc_file.close()
 
-def __generate_torrc_exit(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_EXITRELAY_FILENAME), 'w')
+def __generate_torrc_relay_exit(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_EXIT_FILENAME), 'w')
 
-    torrc_file.write('#Log info stdout\n')
-    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
-    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
-    torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "accept *:*"\n')
 
     torrc_file.close()
 
-def __generate_torrc_nonexit(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_NONEXITRELAY_FILENAME), 'w')
+def __generate_torrc_relay_nonexit(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_NONEXIT_FILENAME), 'w')
 
-    torrc_file.write('#Log info stdout\n')
-    torrc_file.write('# for tor v0.4.4.x or earlier\n#ORPort {0}\n# for tor v0.4.5.x or later\nORPort {0} IPv4Only\n'.format(TOR_OR_PORT))
-    torrc_file.write('DirPort {}\n'.format(TOR_DIR_PORT))
-    torrc_file.write('SocksPort 0\n')
     torrc_file.write('ExitPolicy "reject *:*"\n')
 
     torrc_file.close()
 
-def __generate_torrc_markovclient(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_MARKOVCLIENT_FILENAME), 'w')
+def __generate_torrc_client(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_CLIENT_FILENAME), 'w')
 
     torrc_file.write('ClientOnly 1\n')
     torrc_file.write('ORPort 0\n')
     torrc_file.write('DirPort 0\n')
     torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
     torrc_file.write('UseEntryGuards 0\n')
+
+    torrc_file.close()
+
+def __generate_torrc_client_markov(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_CLIENT_MARKOV_FILENAME), 'w')
+
     torrc_file.write('SocksTimeout 120\n') # we didnt get a circuit for the socks request
     torrc_file.write('CircuitStreamTimeout 120\n') # we didnt finish the BEGIN/CONNECTED handshake
     torrc_file.write('MaxClientCircuitsPending 1024\n') # markov clients build lots of circuits
 
     torrc_file.close()
 
-def __generate_torrc_perfclient(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_PERFCLIENT_FILENAME), 'w')
+def __generate_torrc_client_perf(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_CLIENT_PERF_FILENAME), 'w')
 
-    torrc_file.write('ClientOnly 1\n')
-    torrc_file.write('ORPort 0\n')
-    torrc_file.write('DirPort 0\n')
-    torrc_file.write('SocksPort {}\n'.format(TOR_SOCKS_PORT))
-    torrc_file.write('UseEntryGuards 0\n')
     torrc_file.write('MaxCircuitDirtiness 10 seconds\n')
 
     torrc_file.close()
 
-def __generate_host_torrc(host_path, include_conf_torrc_fname):
+def __generate_host_torrc(host_path, include_conf_torrc_fnames):
     with open(f"{host_path}/{TORRC_HOST_FILENAME}", "w") as outf:
         pass
 
     with open(f"{host_path}/{TORRC_DEFAULTS_HOST_FILENAME}", "w") as outf:
         outf.write(f"%include {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}\n")
-        outf.write(f"%include {get_host_rel_conf_path(include_conf_torrc_fname)}\n")
+        for fname in include_conf_torrc_fnames:
+            outf.write(f"%include {get_host_rel_conf_path(fname)}\n")
 
 def get_relays(args):
     data = load_json_data(args.relay_info_path)

@@ -18,11 +18,13 @@ TORRC_HOST_FILENAME="torrc"
 TORRC_DEFAULTS_HOST_FILENAME="torrc-defaults"
 
 TORRC_COMMON_FILENAME="tor.common.torrc"
-TORRC_AUTHORITY_FILENAME="tor.authority.torrc"
-TORRC_EXITRELAY_FILENAME="tor.exitrelay.torrc"
-TORRC_NONEXITRELAY_FILENAME="tor.nonexitrelay.torrc"
-TORRC_MARKOVCLIENT_FILENAME="tor.markovclient.torrc"
-TORRC_PERFCLIENT_FILENAME="tor.perfclient.torrc"
+TORRC_RELAY_FILENAME="tor.relay.torrc"
+TORRC_RELAY_AUTHORITY_FILENAME="tor.relay.authority.torrc"
+TORRC_RELAY_EXIT_FILENAME="tor.relay.exit.torrc"
+TORRC_RELAY_NONEXIT_FILENAME="tor.relay.nonexit.torrc"
+TORRC_CLIENT_FILENAME="tor.client.torrc"
+TORRC_CLIENT_MARKOV_FILENAME="tor.client.markov.torrc"
+TORRC_CLIENT_PERF_FILENAME="tor.client.perf.torrc"
 
 TOR_SOCKS_PORT=9050
 TOR_CONTROL_PORT=9051

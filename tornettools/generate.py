@@ -38,10 +38,10 @@ def run(args):
 
     # a map from hostnames to the conf directory torrc files that should be included by the host's torrc-defaults
     host_torrc_defaults = {}
-    host_torrc_defaults.update({x['nickname']: TORRC_AUTHORITY_FILENAME for x in authorities.values()})
-    host_torrc_defaults.update({x['nickname']: __relay_to_torrc_default_include(x) for y in relays.values() for x in y.values()})
-    host_torrc_defaults.update({x['name']: TORRC_PERFCLIENT_FILENAME for x in perf_clients})
-    host_torrc_defaults.update({x['name']: TORRC_MARKOVCLIENT_FILENAME for x in tgen_clients})
+    host_torrc_defaults.update({x['nickname']: [TORRC_RELAY_FILENAME, TORRC_RELAY_AUTHORITY_FILENAME] for x in authorities.values()})
+    host_torrc_defaults.update({x['nickname']: [TORRC_RELAY_FILENAME, __relay_to_torrc_default_include(x)] for y in relays.values() for x in y.values()})
+    host_torrc_defaults.update({x['name']: [TORRC_CLIENT_FILENAME, TORRC_CLIENT_PERF_FILENAME] for x in perf_clients})
+    host_torrc_defaults.update({x['name']: [TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME] for x in tgen_clients})
 
     logging.info("Generating Tor configuration files")
     generate_tor_config(args, authorities, relays, host_torrc_defaults)
@@ -61,13 +61,13 @@ def run(args):
 
 def __relay_to_torrc_default_include(relay):
     if "exitguard" in relay['nickname']:
-        return TORRC_EXITRELAY_FILENAME
+        return TORRC_RELAY_EXIT_FILENAME
     elif "exit" in relay['nickname']:
-        return TORRC_EXITRELAY_FILENAME
+        return TORRC_RELAY_EXIT_FILENAME
     elif "guard" in relay['nickname']:
-        return TORRC_NONEXITRELAY_FILENAME
+        return TORRC_RELAY_NONEXIT_FILENAME
     else:
-        return TORRC_NONEXITRELAY_FILENAME
+        return TORRC_RELAY_NONEXIT_FILENAME
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the YAML for the shadow.config.yaml file
