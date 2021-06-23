@@ -206,6 +206,7 @@ def __generate_torrc_common(conf_path, authorities):
         auth_names.append(nickname)
 
     torrc_file.write('TestingTorNetwork 1\n')
+    torrc_file.write('DataDirectory .\n')
     torrc_file.write('ServerDNSResolvConfFile ../../../{}/{}\n'.format(CONFIG_DIRNAME, RESOLV_FILENAME))
     torrc_file.write('ServerDNSTestAddresses {}\n'.format(','.join(auth_names)))
     torrc_file.write('ServerDNSAllowBrokenConfig 1\n')
@@ -233,6 +234,7 @@ def __generate_torrc_common(conf_path, authorities):
     torrc_file.write('DoSConnectionEnabled 0\n')
     torrc_file.write('DoSRefuseSingleHopClientRendezvous 0\n')
     torrc_file.write('ControlPort {}\n'.format(TOR_CONTROL_PORT))
+    torrc_file.write('GeoIPFile {}/share/geoip\n'.format(SHADOW_INSTALL_PREFIX))
 
     torrc_file.close()
 

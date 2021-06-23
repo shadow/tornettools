@@ -143,8 +143,6 @@ def __format_tor_args(name, torrc_fname):
     args = [
         f"--Address {name}",
         f"--Nickname {name}",
-        f"--DataDirectory .",
-        f"--GeoIPFile {SHADOW_INSTALL_PREFIX}/share/geoip",
         f"--defaults-torrc {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}",
         f"-f {get_host_rel_conf_path(torrc_fname)}",
     ]
