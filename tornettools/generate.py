@@ -30,14 +30,21 @@ def run(args):
     logging.info("Generating Tor key material now, this may take awhile...")
     authorities, relays = generate_tor_keys(args, relays)
 
-    logging.info("Generating Tor configuration files")
-    generate_tor_config(args, authorities, relays)
-
     logging.info("Generating Clients")
     tgen_clients, perf_clients = get_clients(args)
 
     logging.info("Generating Servers")
     tgen_servers = get_servers(args, len(tgen_clients))
+
+    # a map from hostnames to the conf directory torrc files that should be included by the host's torrc-defaults
+    host_torrc_defaults = {}
+    host_torrc_defaults.update({x['nickname']: TORRC_AUTHORITY_FILENAME for x in authorities.values()})
+    host_torrc_defaults.update({x['nickname']: __relay_to_torrc_default_include(x) for y in relays.values() for x in y.values()})
+    host_torrc_defaults.update({x['name']: TORRC_PERFCLIENT_FILENAME for x in perf_clients})
+    host_torrc_defaults.update({x['name']: TORRC_MARKOVCLIENT_FILENAME for x in tgen_clients})
+
+    logging.info("Generating Tor configuration files")
+    generate_tor_config(args, authorities, relays, host_torrc_defaults)
 
     logging.info("Generating TGen configuration files")
     generate_tgen_config(args, tgen_clients, tgen_servers)
@@ -51,6 +58,16 @@ def run(args):
         topology_src_path = "{}/data/shadow/network/{}.xz".format(args.tmodel_git_path, TMODEL_TOPOLOGY_FILENAME)
         topology_dst_path = "{}/{}/{}.xz".format(args.prefix, CONFIG_DIRNAME, TMODEL_TOPOLOGY_FILENAME)
         copy_and_extract_file(topology_src_path, topology_dst_path)
+
+def __relay_to_torrc_default_include(relay):
+    if "exitguard" in relay['nickname']:
+        return TORRC_EXITRELAY_FILENAME
+    elif "exit" in relay['nickname']:
+        return TORRC_EXITRELAY_FILENAME
+    elif "guard" in relay['nickname']:
+        return TORRC_NONEXITRELAY_FILENAME
+    else:
+        return TORRC_NONEXITRELAY_FILENAME
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the YAML for the shadow.config.yaml file
@@ -132,23 +149,23 @@ def __server(args, server):
 
 def __perfclient(args, client):
     return __tgen_client(args, client['name'], client['country_code'], \
-        TORRC_PERFCLIENT_FILENAME, get_host_rel_conf_path(TGENRC_PERFCLIENT_FILENAME))
+        get_host_rel_conf_path(TGENRC_PERFCLIENT_FILENAME))
 
 def __markovclient(args, client):
     # these should be relative paths
     return __tgen_client(args, client['name'], client['country_code'], \
-        TORRC_MARKOVCLIENT_FILENAME, TGENRC_MARKOVCLIENT_FILENAME)
+        TGENRC_MARKOVCLIENT_FILENAME)
 
-def __format_tor_args(name, torrc_fname):
+def __format_tor_args(name):
     args = [
         f"--Address {name}",
         f"--Nickname {name}",
-        f"--defaults-torrc {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}",
-        f"-f {get_host_rel_conf_path(torrc_fname)}",
+        f"--defaults-torrc {TORRC_DEFAULTS_HOST_FILENAME}",
+        f"-f {TORRC_HOST_FILENAME}",
     ]
     return ' '.join(args)
 
-def __tgen_client(args, name, country, torrc_fname, tgenrc_fname):
+def __tgen_client(args, name, country, tgenrc_fname):
     # Make sure we have enough bandwidth for the simulated number of users
     scaled_bw_kbit = __get_scaled_tgen_client_bandwidth_kbit(args)
     host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
@@ -164,7 +181,7 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname):
 
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
-    process["args"] = __format_tor_args(name, torrc_fname)
+    process["args"] = __format_tor_args(name)
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
 
     host["processes"].append(process)
@@ -202,21 +219,16 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     # prepare items for the tor process element
     if is_authority:
         starttime = 1
-        torrc_fname = TORRC_AUTHORITY_FILENAME
     elif "exitguard" in relay['nickname']:
         starttime = 2
-        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "exit" in relay['nickname']:
         starttime = 3
-        torrc_fname = TORRC_EXITRELAY_FILENAME
     elif "guard" in relay['nickname']:
         starttime = 4
-        torrc_fname = TORRC_NONEXITRELAY_FILENAME
     else:
         starttime = 5
-        torrc_fname = TORRC_NONEXITRELAY_FILENAME
 
-    tor_args = __format_tor_args(relay['nickname'], torrc_fname)
+    tor_args = __format_tor_args(relay['nickname'])
     if not is_authority:
         # Tor enforces a min rate for relays
         rate = max(BW_RATE_MIN, relay['bandwidth_rate'])

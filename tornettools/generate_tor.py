@@ -138,11 +138,13 @@ def generate_tor_keys(args, relays):
 
     return authorities, relays
 
-def generate_tor_config(args, authorities, relays):
+def generate_tor_config(args, authorities, relays, host_torrc_defaults):
     # make sure the config directory exists
     abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRNAME)
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
+
+    hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
 
     __generate_resolv_file(args, abs_conf_path)
     __generate_tor_v3bw_file(args, authorities, relays)
@@ -152,6 +154,13 @@ def generate_tor_config(args, authorities, relays):
     __generate_torrc_nonexit(abs_conf_path)
     __generate_torrc_markovclient(abs_conf_path)
     __generate_torrc_perfclient(abs_conf_path)
+
+    for hostname in host_torrc_defaults:
+        host_path = "{}/{}".format(hosts_prefix, hostname)
+        if not os.path.exists(host_path):
+            os.makedirs(host_path)
+
+        __generate_host_torrc(host_path, host_torrc_defaults[hostname])
 
 def __generate_resolv_file(args, conf_path):
     with open("{}/{}".format(conf_path, RESOLV_FILENAME), "w") as resolvfile:
@@ -312,6 +321,14 @@ def __generate_torrc_perfclient(conf_path):
     torrc_file.write('MaxCircuitDirtiness 10 seconds\n')
 
     torrc_file.close()
+
+def __generate_host_torrc(host_path, include_conf_torrc_fname):
+    with open(f"{host_path}/{TORRC_HOST_FILENAME}", "w") as outf:
+        pass
+
+    with open(f"{host_path}/{TORRC_DEFAULTS_HOST_FILENAME}", "w") as outf:
+        outf.write(f"%include {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}\n")
+        outf.write(f"%include {get_host_rel_conf_path(include_conf_torrc_fname)}\n")
 
 def get_relays(args):
     data = load_json_data(args.relay_info_path)

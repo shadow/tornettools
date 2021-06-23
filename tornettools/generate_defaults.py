@@ -14,6 +14,9 @@ SHADOW_CONFIG_FILENAME="shadow.config.yaml"
 RESOLV_FILENAME="shadowresolv.conf"
 BW_AUTHORITY_NAME="bwauthority"
 
+TORRC_HOST_FILENAME="torrc"
+TORRC_DEFAULTS_HOST_FILENAME="torrc-defaults"
+
 TORRC_COMMON_FILENAME="tor.common.torrc"
 TORRC_AUTHORITY_FILENAME="tor.authority.torrc"
 TORRC_EXITRELAY_FILENAME="tor.exitrelay.torrc"
