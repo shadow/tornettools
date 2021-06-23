@@ -61,13 +61,13 @@ def run(args):
 
 def __relay_to_torrc_default_include(relay):
     if "exitguard" in relay['nickname']:
-        return TORRC_RELAY_EXIT_FILENAME
+        return TORRC_RELAY_EXITGUARD_FILENAME
     elif "exit" in relay['nickname']:
-        return TORRC_RELAY_EXIT_FILENAME
+        return TORRC_RELAY_EXITONLY_FILENAME
     elif "guard" in relay['nickname']:
-        return TORRC_RELAY_NONEXIT_FILENAME
+        return TORRC_RELAY_GUARDONLY_FILENAME
     else:
-        return TORRC_RELAY_NONEXIT_FILENAME
+        return TORRC_RELAY_OTHER_FILENAME
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the YAML for the shadow.config.yaml file

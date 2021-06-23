@@ -152,7 +152,9 @@ def generate_tor_config(args, authorities, relays, host_torrc_defaults):
     __generate_torrc_relay(abs_conf_path)
     __generate_torrc_relay_authority(abs_conf_path, relays)
     __generate_torrc_relay_exit(abs_conf_path)
-    __generate_torrc_relay_nonexit(abs_conf_path)
+    __generate_torrc_relay_exitguard(abs_conf_path)
+    __generate_torrc_relay_guard(abs_conf_path)
+    __generate_torrc_relay_other(abs_conf_path)
     __generate_torrc_client(abs_conf_path)
     __generate_torrc_client_markov(abs_conf_path)
     __generate_torrc_client_perf(abs_conf_path)
@@ -284,14 +286,28 @@ def __generate_torrc_relay_authority(conf_path, relays):
     torrc_file.close()
 
 def __generate_torrc_relay_exit(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_EXIT_FILENAME), 'w')
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_EXITONLY_FILENAME), 'w')
 
     torrc_file.write('ExitPolicy "accept *:*"\n')
 
     torrc_file.close()
 
-def __generate_torrc_relay_nonexit(conf_path):
-    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_NONEXIT_FILENAME), 'w')
+def __generate_torrc_relay_exitguard(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_EXITGUARD_FILENAME), 'w')
+
+    torrc_file.write('ExitPolicy "accept *:*"\n')
+
+    torrc_file.close()
+
+def __generate_torrc_relay_guard(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_GUARDONLY_FILENAME), 'w')
+
+    torrc_file.write('ExitPolicy "reject *:*"\n')
+
+    torrc_file.close()
+
+def __generate_torrc_relay_other(conf_path):
+    torrc_file = open("{}/{}".format(conf_path, TORRC_RELAY_OTHER_FILENAME), 'w')
 
     torrc_file.write('ExitPolicy "reject *:*"\n')
 
