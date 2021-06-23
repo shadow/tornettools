@@ -132,13 +132,12 @@ def __server(args, server):
 
 def __perfclient(args, client):
     return __tgen_client(args, client['name'], client['country_code'], \
-        TORRC_PERFCLIENT_FILENAME, TGENRC_PERFCLIENT_FILENAME)
+        TORRC_PERFCLIENT_FILENAME, get_host_rel_conf_path(TGENRC_PERFCLIENT_FILENAME))
 
 def __markovclient(args, client):
     # these should be relative paths
-    tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(client['name'])
     return __tgen_client(args, client['name'], client['country_code'], \
-        TORRC_MARKOVCLIENT_FILENAME, tgenrc_filename, tgenrc_subdirname=TGENRC_MARKOVCLIENT_DIRNAME)
+        TORRC_MARKOVCLIENT_FILENAME, TGENRC_MARKOVCLIENT_FILENAME)
 
 def __format_tor_args(name, torrc_fname):
     args = [
@@ -151,7 +150,7 @@ def __format_tor_args(name, torrc_fname):
     ]
     return ' '.join(args)
 
-def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirname=None):
+def __tgen_client(args, name, country, torrc_fname, tgenrc_fname):
     # Make sure we have enough bandwidth for the simulated number of users
     scaled_bw_kbit = __get_scaled_tgen_client_bandwidth_kbit(args)
     host_bw_kbit = max(BW_1GBIT_KBIT, scaled_bw_kbit)
@@ -177,7 +176,7 @@ def __tgen_client(args, name, country, torrc_fname, tgenrc_fname, tgenrc_subdirn
 
     process = {}
     process["path"] = "{}/bin/tgen".format(SHADOW_INSTALL_PREFIX)
-    process["args"] = get_host_rel_conf_path(tgenrc_fname, rc_subdirname=tgenrc_subdirname)
+    process["args"] = tgenrc_fname
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
