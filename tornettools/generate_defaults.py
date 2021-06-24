@@ -57,7 +57,7 @@ TGEN_SERVER_PORT=80
 TGENRC_SERVER_FILENAME="tgen-server.tgenrc.graphml"
 TGENRC_PERFCLIENT_FILENAME="tgen-perf.tgenrc.graphml"
 TGENRC_MARKOVCLIENT_FILENAME="tgenrc.graphml"
-TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
+TGENRC_FLOWMODEL_FILENAME_FMT="tgen.tor-flowmodel-{}usec.graphml"
 
 TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
