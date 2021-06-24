@@ -16,11 +16,15 @@ def generate_tgen_config(args, tgen_clients, tgen_servers):
     if not os.path.exists(abs_conf_path):
         os.makedirs(abs_conf_path)
 
+    hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
+    if not os.path.exists(hosts_prefix):
+        os.makedirs(hosts_prefix)
+
     server_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers]
 
     __generate_tgenrc_server(abs_conf_path)
     __generate_tgenrc_perfclient(abs_conf_path, server_peers)
-    __generate_tgenrc_markovclients(abs_conf_path, tgen_clients, server_peers)
+    __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients, server_peers)
     __generate_tgen_traffic_models(args, abs_conf_path)
 
 def __generate_tgenrc_server(abs_conf_path):
@@ -61,17 +65,13 @@ def __generate_tgenrc_perfclient(abs_conf_path, server_peers):
     path = "{}/{}".format(abs_conf_path, TGENRC_PERFCLIENT_FILENAME)
     write_graphml(G, path)
 
-def __generate_tgenrc_markovclients(abs_conf_path, tgen_clients, server_peers):
-    path = "{}/{}".format(abs_conf_path, TGENRC_MARKOVCLIENT_DIRNAME)
-    if not os.path.exists(path):
-        os.makedirs(path)
-
+def __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients, server_peers):
     peers = ','.join(server_peers)
 
     for tgen_client in tgen_clients:
-        __generate_tgenrc_markovclient(path, tgen_client, peers)
+        __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client, peers)
 
-def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
+def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client, peers):
     circuit_rate_exp = float(tgen_client['circuit_rate_exp'])
     usec_per_circ = int(round(1.0/circuit_rate_exp))
 
@@ -88,7 +88,7 @@ def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
     markovmodelseed = "{}".format(randrange(1,1000000000))
 
     # we use the following paths in the tgenrc, they should be relative
-    fmodel_relpath = get_host_rel_conf_path(flowmodelname, rc_subdirname=TGENRC_MARKOVCLIENT_DIRNAME)
+    fmodel_relpath = get_host_rel_conf_path(flowmodelname)
     smodel_relpath = get_host_rel_conf_path(TMODEL_STREAMMODEL_FILENAME)
     pmodel_relpath = get_host_rel_conf_path(TMODEL_PACKETMODEL_FILENAME)
 
@@ -123,8 +123,11 @@ def __generate_tgenrc_markovclient(abs_conf_path, tgen_client, peers):
     G.add_edge("start", "traffic")
     G.add_edge("traffic", "traffic")
 
-    tgenrc_filename = TGENRC_MARKOVCLIENT_FILENAME_FMT.format(tgen_client['name'])
-    tgenrc_path = "{}/{}".format(abs_conf_path, tgenrc_filename)
+    host_dir = "{}/{}".format(hosts_prefix, tgen_client['name'])
+    if not os.path.exists(host_dir):
+        os.makedirs(host_dir)
+
+    tgenrc_path = "{}/{}".format(host_dir, TGENRC_MARKOVCLIENT_FILENAME)
     write_graphml(G, tgenrc_path)
 
 def __generate_tgen_flowmodel(path, rate):

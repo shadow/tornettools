@@ -14,12 +14,19 @@ SHADOW_CONFIG_FILENAME="shadow.config.yaml"
 RESOLV_FILENAME="shadowresolv.conf"
 BW_AUTHORITY_NAME="bwauthority"
 
+TORRC_HOST_FILENAME="torrc"
+TORRC_DEFAULTS_HOST_FILENAME="torrc-defaults"
+
 TORRC_COMMON_FILENAME="tor.common.torrc"
-TORRC_AUTHORITY_FILENAME="tor.authority.torrc"
-TORRC_EXITRELAY_FILENAME="tor.exitrelay.torrc"
-TORRC_NONEXITRELAY_FILENAME="tor.nonexitrelay.torrc"
-TORRC_MARKOVCLIENT_FILENAME="tor.markovclient.torrc"
-TORRC_PERFCLIENT_FILENAME="tor.perfclient.torrc"
+TORRC_RELAY_FILENAME="tor.relay.torrc"
+TORRC_RELAY_AUTHORITY_FILENAME="tor.relay.authority.torrc"
+TORRC_RELAY_EXITONLY_FILENAME="tor.relay.exitonly.torrc"
+TORRC_RELAY_EXITGUARD_FILENAME="tor.relay.exitguard.torrc"
+TORRC_RELAY_GUARDONLY_FILENAME="tor.relay.guardonly.torrc"
+TORRC_RELAY_OTHER_FILENAME="tor.relay.other.torrc"
+TORRC_CLIENT_FILENAME="tor.client.torrc"
+TORRC_CLIENT_MARKOV_FILENAME="tor.client.markov.torrc"
+TORRC_CLIENT_PERF_FILENAME="tor.client.perf.torrc"
 
 TOR_SOCKS_PORT=9050
 TOR_CONTROL_PORT=9051
@@ -49,9 +56,8 @@ TGEN_SERVER_PORT=80
 
 TGENRC_SERVER_FILENAME="tgen-server.tgenrc.graphml"
 TGENRC_PERFCLIENT_FILENAME="tgen-perf.tgenrc.graphml"
-TGENRC_MARKOVCLIENT_DIRNAME="tgen-markov"
-TGENRC_MARKOVCLIENT_FILENAME_FMT="{}.tgenrc.graphml"
-TGENRC_FLOWMODEL_FILENAME_FMT="flowmodel.{}usec.graphml"
+TGENRC_MARKOVCLIENT_FILENAME="tgenrc.graphml"
+TGENRC_FLOWMODEL_FILENAME_FMT="tgen.tor-flowmodel-{}usec.graphml"
 
 TMODEL_STREAMMODEL_FILENAME="tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME="tgen.tor-packetmodel-ccs2018.graphml"
