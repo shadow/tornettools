@@ -353,11 +353,14 @@ def main():
         action="store", dest="shadowexe",
         default=which("shadow"))
 
+    # We set parallelism to cpu_count / 2 since we observed that this can run up to 3 times
+    # faster on machines with Intel hyperthreading enabled.
+    # Non-hyperthreaded CPUs may perform better with cpu_count instead.
     simulate_parser.add_argument('-a', '--args',
         help="""The argument string to pass to Shadow when running the simulation.""",
         type=str,
         action="store", dest="shadow_args",
-        default="--parallelism={} --seed=666".format(cpu_count()))
+        default="--parallelism={} --seed=666".format(cpu_count()/2))
 
     simulate_parser.add_argument('-c', '--compress',
         help="""Compress output with lzma.""",
