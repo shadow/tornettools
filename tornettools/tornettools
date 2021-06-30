@@ -348,7 +348,7 @@ def main():
         type=__type_str_dir_path_in)
 
     simulate_parser.add_argument('-s', '--shadow',
-        help="""Path to a compile 'shadow' executable to use when running the simulation.""",
+        help="""Path to a compiled 'shadow' executable to use when running the simulation.""",
         metavar="PATH", type=__type_str_file_path_in,
         action="store", dest="shadowexe",
         default=which("shadow"))
@@ -360,10 +360,10 @@ def main():
         help="""The argument string to pass to Shadow when running the simulation.""",
         type=str,
         action="store", dest="shadow_args",
-        default="--parallelism={} --seed=666".format(cpu_count()//2))
+        default="--parallelism={} --seed=666 --template-directory=shadow.data.template shadow.config.yaml".format(cpu_count()//2))
 
     simulate_parser.add_argument('-c', '--compress',
-        help="""Compress output with lzma.""",
+        help="""Compress log output from Shadow using lzma.""",
         action="store_true", dest="do_compress",
         default=False)
 

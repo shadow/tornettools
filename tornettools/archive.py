@@ -19,7 +19,8 @@ def run(args):
     logging.info("Compressing consensus.")
     __xz_parallel(args, "consensus")
     logging.info("Compressing shadow config.")
-    __xz_parallel(args, "shadow.config.yaml")
+    __xz_parallel(args, "shadow.config.xml") # for shadow v1.15.x
+    __xz_parallel(args, "shadow.config.yaml") # for shadow v2.x.x
     logging.info("Compressing dstat log.")
     __xz_parallel(args, "dstat.log")
     logging.info("Compressing free log.")
