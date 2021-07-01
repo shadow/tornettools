@@ -32,17 +32,27 @@ def run(args):
         logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
 
 def __run_shadow(args):
-    shadow_exe_path = args.shadowexe
-    if shadow_exe_path == None:
+    if args.shadow_exe == None:
         logging.warning("Cannot find shadow in your PATH. Do you have shadow installed? Did you update your PATH?")
         logging.warning("Unable to run simulation without shadow.")
         return None
 
-    cmd_prefix = "/usr/bin/chrt -f 1 " if args.use_realtime else ""
+    shadow_cmd_str = f"{args.shadow_exe} {args.shadow_args} {args.shadow_config}"
 
-    shadow_args = args.shadow_args
+    if args.use_realtime:
+        # chrt manipulates the real-time attributes of a process (see `man chrt`)
+        chrt_exe_path = which('chrt')
+
+        if chrt_exe_path == None:
+            logging.warning("Cannot find chrt in your PATH. Do you have chrt installed?")
+            logging.warning("Unable to run simulation with realtime scheduling without chrt.")
+            return None
+
+        # --fifo sets realtime scheduling policy to SCHED_FIFO
+        shadow_cmd_str = f"{chrt_exe_path} --fifo 1 {shadow_cmd_str}"
+
     with open_writeable_file(f"{args.prefix}/shadow.log", compress=args.do_compress) as outf:
-        shadow_cmd = cmdsplit(f"{cmd_prefix}{shadow_exe_path} {shadow_args}")
+        shadow_cmd = cmdsplit(shadow_cmd_str)
         comproc = subprocess.run(shadow_cmd, cwd=args.prefix, stdout=outf)
 
     return comproc

@@ -350,17 +350,25 @@ def main():
     simulate_parser.add_argument('-s', '--shadow',
         help="""Path to a compiled 'shadow' executable to use when running the simulation.""",
         metavar="PATH", type=__type_str_file_path_in,
-        action="store", dest="shadowexe",
+        action="store", dest="shadow_exe",
         default=which("shadow"))
 
     # We set parallelism to cpu_count / 2 since we observed that this can run up to 3 times
     # faster on machines with Intel hyperthreading enabled.
     # Non-hyperthreaded CPUs may perform better with cpu_count instead.
     simulate_parser.add_argument('-a', '--args',
-        help="""The argument string to pass to Shadow when running the simulation.""",
+        help="""The Shadow options to use when running the simulation.""",
         type=str,
         action="store", dest="shadow_args",
-        default="--parallelism={} --seed=666 --template-directory=shadow.data.template shadow.config.yaml".format(cpu_count()//2))
+        default="--parallelism={} --seed=666 --template-directory=shadow.data.template".format(cpu_count()//2))
+
+    # This option allows us to swap the filename with shadow.config.xml in Shadow v1.15.x.
+    # Once we no longer care about supporting Shadow v1.15.x, we could remove this option.
+    simulate_parser.add_argument('-f', '--filename',
+        help="""The Shadow config filename to use when running the simulation.""",
+        type=str,
+        action="store", dest="shadow_config",
+        default="shadow.config.yaml")
 
     simulate_parser.add_argument('-c', '--compress',
         help="""Compress log output from Shadow using lzma.""",
