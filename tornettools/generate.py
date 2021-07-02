@@ -61,6 +61,7 @@ def run(args):
     host_torrc_defaults.update({x['nickname']: __relay_host_torrc_defaults(x) for y in relays.values() for x in y.values()})
     host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_PERF_FILENAME]} for x in perf_clients})
     host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME]} for x in tgen_clients})
+    host_torrc_defaults.update({x['name']: {'includes': [TORRC_HIDDENSERVICE_FILENAME]} for x in tgen_servers if 'hs_hostname' in x})
 
     logging.info("Generating Tor configuration files")
     generate_tor_config(args, authorities, relays, host_torrc_defaults)
@@ -236,6 +237,34 @@ def __server(args, network, server):
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
     host["processes"].append(process)
+
+    if 'hs_hostname' in server:
+        # prepare hostname, hs_ed25519_secret_key, and hs_ed25519_public_key files for the hidden service
+        hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
+        server_prefix = "{}/{}".format(hosts_prefix, server['name'])
+        hs_prefix = "{}/hs".format(server_prefix)
+
+        if not os.path.exists(hosts_prefix):
+            os.makedirs(hosts_prefix)
+        if not os.path.exists(server_prefix):
+            os.makedirs(server_prefix)
+        if not os.path.exists(hs_prefix):
+            os.makedirs(hs_prefix, 0o700)
+
+        with open("{}/{}".format(hs_prefix, 'hostname'), 'w') as outf:
+            outf.write(server['hs_hostname']+'\n')
+        with open("{}/{}".format(hs_prefix, 'hs_ed25519_secret_key'), 'wb') as outf:
+            outf.write(b"== ed25519v1-secret: type0 ==\x00\x00\x00" + server['hs_ed25519_secret_key'])
+        with open("{}/{}".format(hs_prefix, 'hs_ed25519_public_key'), 'wb') as outf:
+            outf.write(b"== ed25519v1-public: type0 ==\x00\x00\x00" + server['hs_ed25519_public_key'])
+
+        # tor process for the hidden service
+        process = {}
+        process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+        process["args"] = __format_tor_args(server['name'])
+        process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
+
+        host["processes"].append(process)
 
     return {server['name']: host}
 

@@ -229,6 +229,14 @@ def main():
         formatter_class=my_formatter_class)
     generate_parser.set_defaults(func=generate, formatter_class=my_formatter_class)
 
+    generate_parser.add_argument('--hidden',
+        help="""A factional number representing the portion of servers that
+            will be generated as hidden services rather than clearnet servers,
+            and client traffic will be directed accordingly""",
+        metavar="N", type=__type_fractional_float,
+        action="store", dest="hidden",
+        default=0.0)
+
     generate_parser.add_argument('relay_info_path',
         help="Path to a relay-info-staging.json file produced with the 'stage' command",
         type=__type_str_file_path_in)

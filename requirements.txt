@@ -1,3 +1,4 @@
+ed25519
 matplotlib
 networkx
 numpy

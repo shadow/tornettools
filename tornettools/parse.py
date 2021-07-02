@@ -74,11 +74,13 @@ def __parse_tornettools_log(args):
                  l = len(parts)
                  if l >= 9:
                      info['num_tgen_perf_clients'] = int(parts[8])
-            elif "TGen servers to serve" in line:
+            elif "TGen clearnet servers" in line:
                  parts = line.strip().split()
                  l = len(parts)
                  if l >= 9:
                      info['num_tgen_servers'] = int(parts[8])
+                 if l >= 14:
+                     info['num_tgen_hiddenservices'] = int(parts[13])
 
     outpath = f"{args.prefix}/tornet.plot.data/simulation_info.json"
     dump_json_data(info, outpath, compress=False)

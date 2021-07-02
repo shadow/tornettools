@@ -11,6 +11,11 @@ from networkx import DiGraph, write_graphml
 from tornettools.generate_defaults import *
 from tornettools.util import load_json_data
 
+from base64 import b32encode
+from ed25519 import SigningKey
+from hashlib import sha3_256
+from hashlib import sha512
+
 def __round_or_ceil(x):
     """Round to the nearest integer, except don't round down to zero.
 
@@ -38,7 +43,12 @@ def generate_tgen_config(args, tgen_clients, tgen_servers):
     if not os.path.exists(hosts_prefix):
         os.makedirs(hosts_prefix)
 
-    server_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers]
+    server_peers = [
+        "{}:{}".format(server['hs_hostname'], TGEN_HIDDENSERVICE_PORT) if 'hs_hostname' in server
+        else
+        "{}:{}".format(server['name'], TGEN_SERVER_PORT)
+        for server in tgen_servers
+    ]
 
     __generate_tgenrc_server(abs_conf_path)
     __generate_tgenrc_perfclient(abs_conf_path, server_peers)
@@ -267,6 +277,57 @@ def __convert_privcount_key_to_tgen_key(str):
     else:
         return str
 
+def __generate_hidden_service_private_and_public_keys():
+    # Generate a Tor ed25519 expanded key
+
+    # More info on how ed25519-v3 are stored by Tor can be found here:
+    # - https://gitlab.torproject.org/legacy/trac/-/issues/28123
+    # - https://gitlab.torproject.org/tpo/core/torspec/-/blob/master/rend-spec-v3.txt
+    # - https://github.com/torproject/torspec/blob/1850a1ebe730f206dd05557cf81461d9613c26b9/control-spec.txt#L1777
+    # - https://www.reddit.com/r/TOR/comments/cxtooe/help_converting_ed25519_private_key_to_public_key/
+    # Here for how it is implemented in Tor:
+    # - https://github.com/torproject/tor/blob/45b5987115b526b1966985db77eb5783670ac536/src/lib/crypt_ops/crypto_ed25519.c#L214
+    # And also here for other implementations:
+    # - https://gist.github.com/wybiral/8f737644fc140c97b6b26c13b1409837
+    # - https://github.com/cmehay/pytor/blob/1352bf22e01a1f4b657b9454f10cf1c05ebc3028/pytor/onion.py#L209
+
+    # Generate a new seed
+    random = os.urandom(32)
+    # Hash it and then clamp it
+    key = bytearray(sha512(random).digest())
+    key[0] &= 248
+    key[31] &= 63
+    key[31] |= 64
+    # Tor stores the priv key in expanded form, i.e. the whole hash
+    _priv = key
+
+    # Load our private key as a SigningKey
+    sk = SigningKey(random)
+    # Now derive the VerifyingKey
+    vk = sk.get_verifying_key()
+    # That's our public key
+    _pub = vk.to_bytes()
+
+    return (_priv, _pub)
+
+def __compute_hidden_service_onion_url(pubkey):
+    # See https://gitlab.torproject.org/tpo/core/torspec/-/blob/master/rend-spec-v3.txt#L2136
+    version_byte = b"\x03"
+    checksum_str = ".onion checksum".encode("ascii")
+    checksum = sha3_256(checksum_str + pubkey + version_byte).digest()[:2]
+    onion_str = b32encode(pubkey + checksum + version_byte).decode().lower()
+
+    return onion_str + ".onion"
+
+def __get_hidden_service_keys_and_url():
+    # generate ed25519 private and public keys
+    (privkey, pubkey) = __generate_hidden_service_private_and_public_keys()
+
+    # compute onion url based on public key
+    onion_url = __compute_hidden_service_onion_url(pubkey)
+
+    return (privkey, pubkey, onion_url)
+
 def get_servers(args, n_clients):
     tgen_servers = []
 
@@ -278,7 +339,22 @@ def get_servers(args, n_clients):
     n_servers = round(n_clients * args.server_scale)
     if n_servers < TGEN_SERVER_MIN_COUNT:
         n_servers = TGEN_SERVER_MIN_COUNT
-    for i in range(n_servers):
+
+    n_hiddenservices = round(n_servers * args.hidden)
+    for i in range(n_hiddenservices):
+        (privkey, pubkey, onion_url) = __get_hidden_service_keys_and_url()
+        chosen_country_code = choice(country_codes, p=country_probs)
+        server = {
+            'name': 'hiddenservice{}'.format(i+1),
+            'country_code': chosen_country_code,
+            'hs_ed25519_secret_key': privkey,
+            'hs_ed25519_public_key': pubkey,
+            'hs_hostname': onion_url
+        }
+        tgen_servers.append(server)
+
+    n_clearnetservers = n_servers-n_hiddenservices
+    for i in range(n_clearnetservers):
         chosen_country_code = choice(country_codes, p=country_probs)
         server = {
             'name': 'server{}'.format(i+1),
@@ -286,7 +362,7 @@ def get_servers(args, n_clients):
         }
         tgen_servers.append(server)
 
-    logging.info("We will use {} TGen servers to serve {} TGen clients".format(n_servers, n_clients))
+    logging.info("We will use {} TGen clearnet servers and {} TGen hidden services to serve {} TGen clients".format(n_clearnetservers, n_hiddenservices, n_clients))
 
     return tgen_servers
 
