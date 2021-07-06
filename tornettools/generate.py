@@ -36,12 +36,12 @@ def run(args):
     logging.info("Generating Servers")
     tgen_servers = get_servers(args, len(tgen_clients))
 
-    # a map from hostnames to the conf directory torrc files that should be included by the host's torrc-defaults
+    # a map from hostnames to the host's torrc-defaults
     host_torrc_defaults = {}
-    host_torrc_defaults.update({x['nickname']: [TORRC_RELAY_FILENAME, TORRC_RELAY_AUTHORITY_FILENAME] for x in authorities.values()})
-    host_torrc_defaults.update({x['nickname']: [TORRC_RELAY_FILENAME, __relay_to_torrc_default_include(x)] for y in relays.values() for x in y.values()})
-    host_torrc_defaults.update({x['name']: [TORRC_CLIENT_FILENAME, TORRC_CLIENT_PERF_FILENAME] for x in perf_clients})
-    host_torrc_defaults.update({x['name']: [TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME] for x in tgen_clients})
+    host_torrc_defaults.update({x['nickname']: {'includes': [TORRC_RELAY_FILENAME, TORRC_RELAY_AUTHORITY_FILENAME]} for x in authorities.values()})
+    host_torrc_defaults.update({x['nickname']: __relay_host_torrc_defaults(x) for y in relays.values() for x in y.values()})
+    host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_PERF_FILENAME]} for x in perf_clients})
+    host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME]} for x in tgen_clients})
 
     logging.info("Generating Tor configuration files")
     generate_tor_config(args, authorities, relays, host_torrc_defaults)
@@ -68,6 +68,16 @@ def __relay_to_torrc_default_include(relay):
         return TORRC_RELAY_GUARDONLY_FILENAME
     else:
         return TORRC_RELAY_OTHER_FILENAME
+
+def __relay_host_torrc_defaults(relay):
+    includes = [TORRC_RELAY_FILENAME, __relay_to_torrc_default_include(relay)]
+
+    # only non-authority relays should have bandwidth config options set
+    rate = max(BW_RATE_MIN, relay['bandwidth_rate'])
+    burst = max(BW_RATE_MIN, relay['bandwidth_burst'])
+
+    return {'includes': includes, 'bandwidth_rate': rate, 'bandwidth_burst': burst}
+
 
 def __generate_shadow_config(args, authorities, relays, tgen_servers, perf_clients, tgen_clients):
     # create the YAML for the shadow.config.yaml file
@@ -228,18 +238,11 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     else:
         starttime = 5
 
-    tor_args = __format_tor_args(relay['nickname'])
-    if not is_authority:
-        # Tor enforces a min rate for relays
-        rate = max(BW_RATE_MIN, relay['bandwidth_rate'])
-        burst = max(BW_RATE_MIN, relay['bandwidth_burst'])
-        tor_args += " --BandwidthRate {} --BandwidthBurst {}".format(rate, burst)
-
     host['processes'] = []
 
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
-    process["args"] = str(tor_args)
+    process["args"] = str(__format_tor_args(relay['nickname']))
     process["start_time"] = starttime
 
     host['processes'].append(process)
