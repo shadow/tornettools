@@ -54,7 +54,7 @@ def copy_and_extract_file(src, dst):
     xz_cmd = "xz -d {}".format(dst)
     completed_proc = subprocess.run(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if completed_proc.returncode != 0:
-        logging.critical("Error extracting file {} using command {}".format(dst, cmd))
+        logging.critical("Error extracting file {} using command {}".format(dst, xz_cmd))
     assert completed_proc.returncode == 0
 
 def find_matching_files_in_dir(search_dir, filename):
