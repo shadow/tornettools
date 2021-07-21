@@ -190,7 +190,7 @@ def __tgen_client(args, name, country, tgenrc_fname):
     host["processes"] = []
 
     process = {}
-    process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+    process["path"] = args.torexe
     process["args"] = __format_tor_args(name)
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
 
@@ -241,7 +241,7 @@ def __tor_relay(args, relay, orig_fp, is_authority=False):
     host['processes'] = []
 
     process = {}
-    process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+    process["path"] = args.torexe
     process["args"] = str(__format_tor_args(relay['nickname']))
     process["start_time"] = starttime
 
