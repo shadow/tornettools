@@ -20,13 +20,15 @@ def run(args):
     free_thread = threading.Thread(target=__run_free_loop, args=(args, free_stop_event))
     free_thread.start()
 
-    logging.info("Starting shadow")
-    comproc = __run_shadow(args)
+    try:
+        logging.info("Starting shadow")
+        comproc = __run_shadow(args)
 
-    logging.info("Cleaning up")
-    __cleanup_subprocess(dstat_subp)
-    free_stop_event.set()
-    free_thread.join()
+        logging.info("Cleaning up")
+        __cleanup_subprocess(dstat_subp)
+    finally:
+        free_stop_event.set()
+        free_thread.join()
 
     if comproc != None:
         logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
