@@ -48,15 +48,6 @@ def load_json_data(infile_path):
         data = json.load(infile)
     return data
 
-def copy_and_extract_file(src, dst):
-    shutil.copy2(src, dst)
-
-    xz_cmd = "xz -d {}".format(dst)
-    completed_proc = subprocess.run(shlex.split(xz_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if completed_proc.returncode != 0:
-        logging.critical("Error extracting file {} using command {}".format(dst, xz_cmd))
-    assert completed_proc.returncode == 0
-
 def find_matching_files_in_dir(search_dir, filename):
     logging.info(f"Searching for files with name {filename} in directory tree at {search_dir}")
     found = []

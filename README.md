@@ -101,17 +101,19 @@ Here is a bibtex entry for latex users:
         consensuses-2020-11 \
         server-descriptors-2020-11 \
         userstats-relay-country.csv \
+        tmodel-ccs2018.github.io \
         --onionperf_data_path onionperf-2020-11 \
         --bandwidth_data_path bandwidth-2020-11.csv \
         --geoip_path tor/src/config/geoip
 
 ### now we can used the staged files to generate many times
 
-For example, use '--network_scale 0.01' to generate a private Tor network at '1%' the scale of public Tor:
+For example, use `--network_scale 0.01` to generate a private Tor network at '1%' the scale of public Tor:
 
     tornettools generate \
         relayinfo_staging_2020-11-01--2020-11-30.json \
         userinfo_staging_2020-11-01--2020-11-30.json \
+        networkinfo_staging.gml \
         tmodel-ccs2018.github.io \
         --network_scale 0.01 \
         --prefix tornet-0.01
