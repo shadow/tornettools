@@ -83,8 +83,15 @@ class TailLog(mscale.ScaleBase):
 
 mscale.register_scale(TailLog)
 
+# The scipy t.ppf distribution is for one-sided hypothesis tests.
+# If we want to compute a two-sided error, then we must convert a two-sided
+# confidence level to an equivalent one-side confidence level for scipy.
+def __two_to_one_sided_confidence_level(two_sided_level):
+    return two_sided_level / 2 + 0.5
+
 def __get_error_factor(k, confidence):
-    return t.ppf(confidence/2 + 0.5, k-1)/sqrt(k-1)
+    level = __two_to_one_sided_confidence_level(confidence)
+    return t.ppf(level, k-1)/sqrt(k-1)
 
 def __compute_sample_mean_and_error(bucket_list, confidence):
     means, mins, maxs = [], [], []
