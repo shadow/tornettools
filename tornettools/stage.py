@@ -1,9 +1,11 @@
 import sys
 import os
 import logging
+import lzma
 import datetime
 import json
 
+from tornettools.generate_defaults import TMODEL_TOPOLOGY_FILENAME
 from tornettools.util import dump_json_data
 from tornettools.util_geoip import GeoIP
 
@@ -13,6 +15,8 @@ from datetime import datetime
 
 from stem import Flag
 from stem.descriptor import parse_file
+
+import networkx as nx
 
 # this is parsed from the consensus files
 class Relay():
@@ -39,6 +43,7 @@ class Bandwidths():
 def run(args):
     min_unix_time, max_unix_time = stage_relays(args)
     stage_users(args, min_unix_time, max_unix_time)
+    stage_graph(args)
 
 # this function parses a userstats-relay-country.csv file from
 # https://metrics.torproject.org/userstats-relay-country.csv
@@ -161,6 +166,22 @@ def stage_relays(args):
     dump_json_data(output, relay_info_path, compress=False)
 
     return min_unix_time, max_unix_time
+
+def stage_graph(args):
+    atlas_path = os.path.join(args.tmodel_git_path, "data/shadow/network/", TMODEL_TOPOLOGY_FILENAME + ".xz")
+
+    with lzma.open(atlas_path) as f:
+        logging.info(f"Reading compressed network graph {atlas_path}")
+        network = nx.readwrite.gml.read_gml(f, label='id')
+        logging.info("Finished reading network graph")
+
+    # create new graph and copy only the nodes
+    network = nx.classes.function.create_empty_copy(network)
+
+    # it takes networkx a few minutes to read the atlas graph, so we save a smaller graph containing
+    # only the atlas graph nodes so that the 'generate' step can read these nodes much quicker
+    network_info_path = f"{args.prefix}/networkinfo_staging.gml"
+    nx.readwrite.gml.write_gml(network, network_info_path)
 
 def get_file_list(dir_path):
     file_paths = []

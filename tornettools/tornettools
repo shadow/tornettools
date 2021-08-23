@@ -176,6 +176,11 @@ def main():
         help="Path to a Tor user stats file (https://metrics.torproject.org/userstats-relay-country.csv)",
         type=__type_str_file_path_in)
 
+    stage_parser.add_argument("tmodel_git_path",
+        help="Path to a local directory that contains a git clone of the repo: \
+            'https://github.com/tmodel-ccs2018/tmodel-ccs2018.github.io.git'",
+        type=__type_str_dir_path_in)
+
     stage_parser.add_argument('-o', '--onionperf_data_path',
         help="Path to a directory of onionperf performance data",
         type=__type_str_dir_path_in,
@@ -230,6 +235,10 @@ def main():
 
     generate_parser.add_argument("user_info_path",
         help="Path to a user-info-staging.json file produced with the 'stage' command",
+        type=__type_str_file_path_in)
+
+    generate_parser.add_argument("network_info_path",
+        help="Path to a network-info-staging.json file produced with the 'stage' command",
         type=__type_str_file_path_in)
 
     generate_parser.add_argument("tmodel_git_path",
