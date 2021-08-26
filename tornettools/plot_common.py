@@ -136,8 +136,10 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
     quantile_buckets = {q:[] for q in y}
 
     # we should have one empirical value for each simulation (ie data) for each quantile
+    total_num_items = 0
     for data in dataset:
         num_items = len(data)
+        total_num_items += num_items
         if num_items == 0:
             continue
 
@@ -147,9 +149,13 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
             val_at_q = data[int((num_items-1) * q)]
             quantile_buckets[q].append(val_at_q)
 
-    # compute the confidence intervals for each quantile
-    bucket_list = [quantile_buckets[q] for _, q in enumerate(y)]
-    x, x_min, x_max = __compute_sample_mean_and_error(bucket_list, confidence)
+    if total_num_items == 0:
+        # No data; avoid divide-by-zero in __compute_sample_mean_and_error
+        x, y, x_min, x_max = [], [], [], []
+    else:
+        # compute the confidence intervals for each quantile
+        bucket_list = [quantile_buckets[q] for _, q in enumerate(y)]
+        x, x_min, x_max = __compute_sample_mean_and_error(bucket_list, confidence)
 
     # for debugging
     #axis.plot(x_min, y, label=f"k={k}", color=colors[l%len(colors)], linestyle=linestyle)
