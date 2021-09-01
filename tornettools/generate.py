@@ -50,11 +50,22 @@ def run(args):
     logging.info("Generating Tor key material now, this may take awhile...")
     authorities, relays = generate_tor_keys(args, relays)
 
+    # each client and server operates as either an onion-service client/server, or
+    # a non-onion-service (public) client/server (never both)
     logging.info("Generating Clients")
     tgen_clients, perf_clients = get_clients(args)
 
     logging.info("Generating Servers")
-    tgen_servers = get_servers(args, len(tgen_clients))
+    tgen_servers = get_servers(args, tgen_clients)
+
+    # onion-service clients should only connect to onion-service servers, and non-onion-service clients should only
+    # connect to non-onion-service servers
+    public_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers if not server['is_hs_server']]
+    hs_peers = ["{}:{}".format(server['hs_hostname'], TGEN_ONIONSERVICE_PORT) for server in tgen_servers if server['is_hs_server']]
+
+    # perf-clients do not have host-specific tgen configs, so we can't set individual peer lists
+    for client in tgen_clients:
+        client['peers'] = public_peers if not client['is_hs_client'] else hs_peers
 
     # a map from hostnames to the host's torrc-defaults
     host_torrc_defaults = {}
@@ -62,13 +73,13 @@ def run(args):
     host_torrc_defaults.update({x['nickname']: __relay_host_torrc_defaults(x) for y in relays.values() for x in y.values()})
     host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_PERF_FILENAME]} for x in perf_clients})
     host_torrc_defaults.update({x['name']: {'includes': [TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME]} for x in tgen_clients})
-    host_torrc_defaults.update({x['name']: {'includes': [TORRC_HIDDENSERVICE_FILENAME]} for x in tgen_servers if 'hs_hostname' in x})
+    host_torrc_defaults.update({x['name']: {'includes': [TORRC_ONIONSERVICE_FILENAME]} for x in tgen_servers if x['is_hs_server']})
 
     logging.info("Generating Tor configuration files")
     generate_tor_config(args, authorities, relays, host_torrc_defaults)
 
     logging.info("Generating TGen configuration files")
-    generate_tgen_config(args, tgen_clients, tgen_servers)
+    generate_tgen_config(args, tgen_clients, public_peers, hs_peers)
 
     logging.info("Constructing Shadow config YAML file")
     __generate_shadow_config(args, network, authorities, relays, tgen_servers, perf_clients, tgen_clients)
@@ -237,13 +248,18 @@ def __server(args, network, server):
     # tgen starts at the end of shadow's "bootstrap" phase
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
 
+    if server['is_hs_server']:
+        # this is an onion service, so tgen should only listen on localhost so that we catch errors if we accidentally
+        # try connecting to the onion service from "public" clients
+        process["environment"] = "TGENIP=127.0.0.1"
+
     host["processes"].append(process)
 
-    if 'hs_hostname' in server:
+    if server['is_hs_server']:
         # prepare the hostname and hs_ed25519_secret_key files for the onion service
         hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
         server_prefix = "{}/{}".format(hosts_prefix, server['name'])
-        hs_prefix = "{}/hs".format(server_prefix)
+        hs_prefix = "{}/{}".format(server_prefix, TOR_ONIONSERVICE_DIR)
 
         if not os.path.exists(hs_prefix):
             os.makedirs(hs_prefix, 0o700)
@@ -253,19 +269,26 @@ def __server(args, network, server):
         with open("{}/{}".format(hs_prefix, 'hs_ed25519_secret_key'), 'wb') as outf:
             outf.write(b"== ed25519v1-secret: type0 ==\x00\x00\x00" + base64.b64decode(server['hs_ed25519_secret_key']))
 
-        # tor process for the hidden service
+        # tor process for the onion service
         process = {}
         process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+        # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
         process["args"] = __format_tor_args(None)
-        process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
+        process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS-60) # start before boostrapping ends
 
         host["processes"].append(process)
 
     return {server['name']: host}
 
 def __perfclient(args, network, client):
+    # a perfclient can have one of two tgen configurations which specifies which servers it connects to
+    if not client['is_hs_client']:
+        tgenrc_fname = TGENRC_PERFCLIENT_PUBLIC_FILENAME
+    else:
+        tgenrc_fname = TGENRC_PERFCLIENT_HS_FILENAME
+
     return __tgen_client(args, network, client['name'], client['country_code'], \
-        get_host_rel_conf_path(TGENRC_PERFCLIENT_FILENAME))
+        get_host_rel_conf_path(tgenrc_fname))
 
 def __markovclient(args, network, client):
     # these should be relative paths
@@ -309,12 +332,13 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
 
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
+    # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
     process["args"] = __format_tor_args(None)
-    process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
+    process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS-60) # start before boostrapping ends
 
     host["processes"].append(process)
 
-    oniontrace_start_time = BOOTSTRAP_LENGTH_SECONDS-60+1
+    oniontrace_start_time = max(2, BOOTSTRAP_LENGTH_SECONDS-60+1)
     host["processes"].extend(__oniontrace(args, oniontrace_start_time, name))
 
     process = {}

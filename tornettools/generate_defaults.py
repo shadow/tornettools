@@ -1,6 +1,7 @@
 # a relay must have been running longer than this to be considered
 RUN_FREQ_THRESH=0.01
 
+# the bootstrap length should be greater than 60 seconds
 BOOTSTRAP_LENGTH_SECONDS=300
 SIMULATION_LENGTH_SECONDS=3600
 
@@ -27,13 +28,14 @@ TORRC_RELAY_OTHER_FILENAME="tor.relay.other.torrc"
 TORRC_CLIENT_FILENAME="tor.client.torrc"
 TORRC_CLIENT_MARKOV_FILENAME="tor.client.markov.torrc"
 TORRC_CLIENT_PERF_FILENAME="tor.client.perf.torrc"
-TORRC_HIDDENSERVICE_FILENAME="tor.hiddenservice.torrc"
+TORRC_ONIONSERVICE_FILENAME="tor.onionservice.torrc"
 
 TOR_SOCKS_PORT=9050
 TOR_CONTROL_PORT=9051
 TOR_OR_PORT=9001
 TOR_DIR_PORT=8080
 TOR_GUARD_MIN_CONSBW=2000
+TOR_ONIONSERVICE_DIR="hs"
 
 # country codes where we can place directory authority tor hosts
 DIRAUTH_COUNTRY_CODES=["US", "DE", "NL", "FR", "SE"]
@@ -54,10 +56,11 @@ TGEN_CLIENT_MIN_COUNT=100
 TGEN_SERVER_MIN_COUNT=10
 PRIVCOUNT_PERIODS_PER_DAY=144.0
 TGEN_SERVER_PORT=80
-TGEN_HIDDENSERVICE_PORT=8080
+TGEN_ONIONSERVICE_PORT=8080
 
 TGENRC_SERVER_FILENAME="tgen-server.tgenrc.graphml"
-TGENRC_PERFCLIENT_FILENAME="tgen-perf.tgenrc.graphml"
+TGENRC_PERFCLIENT_PUBLIC_FILENAME="tgen-perf-public.tgenrc.graphml"
+TGENRC_PERFCLIENT_HS_FILENAME="tgen-perf-hs.tgenrc.graphml"
 TGENRC_MARKOVCLIENT_FILENAME="tgenrc.graphml"
 TGENRC_FLOWMODEL_FILENAME_FMT="tgen.tor-flowmodel-{}usec.graphml"
 

@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import math
 import stem.process
 import stem.connection
 import tempfile
@@ -31,7 +32,7 @@ def __round_or_ceil(x):
         res = ceil(x)
     return res
 
-def generate_tgen_config(args, tgen_clients, tgen_servers):
+def generate_tgen_config(args, tgen_clients, public_peers, hs_peers):
     # make sure the config directory exists
     abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRNAME)
     if not os.path.exists(abs_conf_path):
@@ -41,16 +42,10 @@ def generate_tgen_config(args, tgen_clients, tgen_servers):
     if not os.path.exists(hosts_prefix):
         os.makedirs(hosts_prefix)
 
-    server_peers = [
-        "{}:{}".format(server['hs_hostname'], TGEN_HIDDENSERVICE_PORT) if 'hs_hostname' in server
-        else
-        "{}:{}".format(server['name'], TGEN_SERVER_PORT)
-        for server in tgen_servers
-    ]
-
     __generate_tgenrc_server(abs_conf_path)
-    __generate_tgenrc_perfclient(abs_conf_path, server_peers)
-    __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients, server_peers)
+    __generate_tgenrc_perfclient(public_peers, os.path.join(abs_conf_path, TGENRC_PERFCLIENT_PUBLIC_FILENAME))
+    __generate_tgenrc_perfclient(hs_peers, os.path.join(abs_conf_path, TGENRC_PERFCLIENT_HS_FILENAME))
+    __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients)
     __generate_tgen_traffic_models(args, abs_conf_path)
 
 def __generate_tgenrc_server(abs_conf_path):
@@ -59,15 +54,15 @@ def __generate_tgenrc_server(abs_conf_path):
     path = "{}/{}".format(abs_conf_path, TGENRC_SERVER_FILENAME)
     write_graphml(G, path)
 
-def __generate_tgenrc_perfclient(abs_conf_path, server_peers):
-    peers = ','.join(server_peers)
+def __generate_tgenrc_perfclient(server_peers, path):
+    server_peers = ','.join(server_peers)
     proxy = "localhost:{}".format(TOR_SOCKS_PORT)
 
     G = DiGraph()
 
     # need info level logs so we can collect incremental download times, which we
     # later use for comparing the client goodput metric with Tor metrics data
-    G.add_node("start", loglevel="info", socksproxy=proxy, peers=peers, packetmodelmode="path")
+    G.add_node("start", loglevel="info", socksproxy=proxy, peers=server_peers, packetmodelmode="path")
 
     # torperf uses 5 minute pause, but we reduce it for shadow
     G.add_node("pause", time="1 minute")
@@ -88,16 +83,14 @@ def __generate_tgenrc_perfclient(abs_conf_path, server_peers):
     G.add_edge("pause", "stream_1m", weight="2.0")
     G.add_edge("pause", "stream_5m", weight="1.0")
 
-    path = "{}/{}".format(abs_conf_path, TGENRC_PERFCLIENT_FILENAME)
     write_graphml(G, path)
 
-def __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients, server_peers):
-    peers = ','.join(server_peers)
-
+def __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients):
     for tgen_client in tgen_clients:
-        __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client, peers)
+        __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client)
 
-def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client, peers):
+def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client):
+    server_peers = ','.join(tgen_client['peers'])
     circuit_rate_exp = float(tgen_client['circuit_rate_exp'])
     usec_per_circ = int(round(1.0/circuit_rate_exp))
 
@@ -132,7 +125,7 @@ def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client, pee
         loglevel=tgen_client['log_level'], \
         time=startup_delay, \
         socksproxy=proxy, \
-        peers=peers, \
+        peers=server_peers, \
         stallout="5 minutes", \
         timeout="10 minutes" \
     )
@@ -275,42 +268,68 @@ def __convert_privcount_key_to_tgen_key(str):
     else:
         return str
 
-def get_servers(args, n_clients):
+def __calculate_number_of_servers(args, n_public_clients, n_hs_clients):
+    # the number of servers will be a fraction of the number of clients
+    n_public_servers = n_public_clients * args.server_scale
+    n_hs_servers = n_hs_clients * args.server_scale
+    n_servers = n_public_servers + n_hs_servers
+
+    # if we don't have enough servers, scale both server counts
+    if n_servers < TGEN_SERVER_MIN_COUNT:
+        n_public_servers *= TGEN_SERVER_MIN_COUNT / n_servers
+        n_hs_servers *= TGEN_SERVER_MIN_COUNT / n_servers
+
+    # round after completing calculations
+    n_public_servers = round(n_public_servers)
+    n_hs_servers = round(n_hs_servers)
+    n_servers = n_public_servers + n_hs_servers
+
+    # this should still hold after rounding, but we'll double-check
+    assert n_servers >= TGEN_SERVER_MIN_COUNT
+
+    return (n_public_servers, n_hs_servers)
+
+def get_servers(args, clients):
     tgen_servers = []
+
+    n_public_clients = len([x for x in clients if not x['is_hs_client']])
+    n_hs_clients = len([x for x in clients if x['is_hs_client']])
+
+    (n_public_servers, n_hs_servers) = __calculate_number_of_servers(args, n_public_clients, n_hs_clients)
 
     # each server will be placed in a country
     # right now we use client stats to decide where to place servers
     # we may want to update this to use server-specific country distributions
     country_codes, country_probs = __load_user_data(args)
 
-    n_servers = round(n_clients * args.server_scale)
-    if n_servers < TGEN_SERVER_MIN_COUNT:
-        n_servers = TGEN_SERVER_MIN_COUNT
+    keys = generate_onion_service_keys(args.torexe, n_hs_servers)
 
-    n_hiddenservices = round(n_servers * args.hidden)
-    keys = generate_onion_service_keys(args.torexe, n_hiddenservices)
+    server_counter = 0
 
-    for i in range(n_hiddenservices):
+    for i in range(n_public_servers):
+        chosen_country_code = choice(country_codes, p=country_probs)
+        server = {
+            'name': 'server{}public'.format(server_counter+1),
+            'country_code': chosen_country_code,
+            'is_hs_server': False,
+        }
+        tgen_servers.append(server)
+        server_counter += 1
+
+    for i in range(n_hs_servers):
         (privkey, onion_url) = keys[i]
         chosen_country_code = choice(country_codes, p=country_probs)
         server = {
-            'name': 'hiddenservice{}'.format(i+1),
+            'name': 'server{}onionservice'.format(server_counter+1),
             'country_code': chosen_country_code,
             'hs_ed25519_secret_key': privkey,
-            'hs_hostname': onion_url
+            'hs_hostname': onion_url,
+            'is_hs_server': True,
         }
         tgen_servers.append(server)
+        server_counter += 1
 
-    n_clearnetservers = n_servers-n_hiddenservices
-    for i in range(n_clearnetservers):
-        chosen_country_code = choice(country_codes, p=country_probs)
-        server = {
-            'name': 'server{}'.format(i+1),
-            'country_code': chosen_country_code,
-        }
-        tgen_servers.append(server)
-
-    logging.info("We will use {} TGen clearnet servers and {} TGen hidden services to serve {} TGen clients".format(n_clearnetservers, n_hiddenservices, n_clients))
+    logging.info("We will use {} TGen public servers and {} TGen onion-service servers to serve {} TGen public clients and {} TGen onion-service clients".format(n_public_servers, n_hs_servers, n_public_clients, n_hs_clients))
 
     return tgen_servers
 
@@ -370,12 +389,23 @@ def __get_perf_clients(args, n_users):
     perf_clients = []
 
     n_perf = __round_or_ceil(n_users * args.torperf_scale)
-    for i in range(n_perf):
+
+    # split the perf clients between onion-service clients and non-onion-service (public) clients
+    n_hs_perf = math.ceil(n_perf * args.onion_service_traffic_scale)
+    n_public_perf = n_perf - n_hs_perf
+
+    for (i, is_hs_client) in ((x, x >= n_public_perf) for x in range(n_perf)):
         chosen_country_code = choice(ONIONPERF_COUNTRY_CODES)
         client = {
-            'name': 'perfclient{}'.format(i+1),
             'country_code': chosen_country_code,
+            'is_hs_client': is_hs_client,
         }
+
+        if is_hs_client:
+            client['name'] = 'perfclient{}onionservice'.format(i+1)
+        else:
+            client['name'] = 'perfclient{}public'.format(i+1)
+
         perf_clients.append(client)
 
     return perf_clients
@@ -410,8 +440,12 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
     # can already be adjusted with args.process_scale.
     n_circuits_per_tgen = __round_or_ceil(n_circuits / n_tgen * args.load_scale)
 
+    # split the tgen clients between onion-service clients and non-onion-service (public) clients
+    n_hs_tgen = math.ceil(n_tgen * args.onion_service_traffic_scale)
+    n_public_tgen = n_tgen - n_hs_tgen
+
     total_circuits_10_mins = 0
-    for i in range(n_tgen):
+    for (i, is_hs_client) in ((x, x >= n_public_tgen) for x in range(n_tgen)):
         # where to place the tgen process
         chosen_country_code = choice(country_codes, p=country_probs)
 
@@ -430,11 +464,16 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
         exponential_rate = 1.0 / usec_per_circ
 
         client = {
-            'name': 'markovclient{}'.format(i+1),
             'circuit_rate_exp': exponential_rate,
             'country_code': chosen_country_code,
             'log_level': 'info' if i == 0 else 'message',
+            'is_hs_client': is_hs_client,
         }
+
+        if is_hs_client:
+            client['name'] = 'markovclient{}onionservice'.format(i+1)
+        else:
+            client['name'] = 'markovclient{}public'.format(i+1)
 
         tgen_clients.append(client)
 
