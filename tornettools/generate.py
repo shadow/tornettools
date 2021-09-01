@@ -7,6 +7,7 @@ import shlex
 import shutil
 import random
 from ipaddress import IPv4Address
+import base64
 
 import networkx as nx
 
@@ -239,24 +240,18 @@ def __server(args, network, server):
     host["processes"].append(process)
 
     if 'hs_hostname' in server:
-        # prepare hostname, hs_ed25519_secret_key, and hs_ed25519_public_key files for the hidden service
+        # prepare the hostname and hs_ed25519_secret_key files for the onion service
         hosts_prefix = "{}/{}/{}".format(args.prefix, SHADOW_TEMPLATE_PATH, SHADOW_HOSTS_PATH)
         server_prefix = "{}/{}".format(hosts_prefix, server['name'])
         hs_prefix = "{}/hs".format(server_prefix)
 
-        if not os.path.exists(hosts_prefix):
-            os.makedirs(hosts_prefix)
-        if not os.path.exists(server_prefix):
-            os.makedirs(server_prefix)
         if not os.path.exists(hs_prefix):
             os.makedirs(hs_prefix, 0o700)
 
         with open("{}/{}".format(hs_prefix, 'hostname'), 'w') as outf:
             outf.write(server['hs_hostname']+'\n')
         with open("{}/{}".format(hs_prefix, 'hs_ed25519_secret_key'), 'wb') as outf:
-            outf.write(b"== ed25519v1-secret: type0 ==\x00\x00\x00" + server['hs_ed25519_secret_key'])
-        with open("{}/{}".format(hs_prefix, 'hs_ed25519_public_key'), 'wb') as outf:
-            outf.write(b"== ed25519v1-public: type0 ==\x00\x00\x00" + server['hs_ed25519_public_key'])
+            outf.write(b"== ed25519v1-secret: type0 ==\x00\x00\x00" + base64.b64decode(server['hs_ed25519_secret_key']))
 
         # tor process for the hidden service
         process = {}
