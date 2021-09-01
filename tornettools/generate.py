@@ -256,7 +256,7 @@ def __server(args, network, server):
         # tor process for the hidden service
         process = {}
         process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
-        process["args"] = __format_tor_args(server['name'])
+        process["args"] = __format_tor_args(None)
         process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
 
         host["processes"].append(process)
@@ -273,12 +273,20 @@ def __markovclient(args, network, client):
         TGENRC_MARKOVCLIENT_FILENAME)
 
 def __format_tor_args(name):
-    args = [
-        f"--Address {name}",
-        f"--Nickname {name}",
-        f"--defaults-torrc {TORRC_DEFAULTS_HOST_FILENAME}",
-        f"-f {TORRC_HOST_FILENAME}",
-    ]
+    args = []
+
+    if name is not None:
+        args.append(f"--Address {name}")
+
+        # tor nicknames must be between 1 and 19 characters inclusive
+        if len(name) < 1 or len(name) > 19:
+            logging.warning(f'Nickname {name} is too long and will likely cause tor to exit')
+
+        args.append(f"--Nickname {name}")
+
+    args.append(f"--defaults-torrc {TORRC_DEFAULTS_HOST_FILENAME}")
+    args.append(f"-f {TORRC_HOST_FILENAME}")
+
     return ' '.join(args)
 
 def __tgen_client(args, network, name, country, tgenrc_fname):
@@ -301,7 +309,7 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
 
     process = {}
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
-    process["args"] = __format_tor_args(name)
+    process["args"] = __format_tor_args(None)
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS-60 # start before boostrapping ends
 
     host["processes"].append(process)
