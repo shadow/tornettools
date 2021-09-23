@@ -111,8 +111,8 @@ Here is a bibtex entry for latex users:
 For example, use `--network_scale 0.01` to generate a private Tor network at '1%' the scale of public Tor:
 
     tornettools generate \
-        relayinfo_staging_2020-11-01--2020-11-30.json \
-        userinfo_staging_2020-11-01--2020-11-30.json \
+        relayinfo_staging_2020-11-01--2020-12-01.json \
+        userinfo_staging_2020-11-01--2020-12-01.json \
         networkinfo_staging.gml \
         tmodel-ccs2018.github.io \
         --network_scale 0.01 \
