@@ -343,6 +343,14 @@ def main():
         action="store", dest="torgencertexe",
         default=which("tor-gencert"))
 
+    generate_parser.add_argument('-g', '--geoip_path',
+        help="""A file PATH to an existing geoip file (usually in TOR_SRCDIR/tor/src/config/geoip
+            or TOR_INSTALLDIR/share/tor/geoip.) Unneeded for most sims, and uses around 9 MB of RAM
+            per tor process.""",
+        metavar="PATH", type=__type_str_file_path_in,
+        action="store", dest="geoip_path",
+        default=None)
+
     ############
     # simulate #
     ############
