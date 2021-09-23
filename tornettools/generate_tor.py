@@ -148,7 +148,7 @@ def generate_tor_config(args, authorities, relays, host_torrc_defaults):
 
     __generate_resolv_file(args, abs_conf_path)
     __generate_tor_v3bw_file(args, authorities, relays)
-    __generate_torrc_common(abs_conf_path, authorities)
+    __generate_torrc_common(abs_conf_path, authorities, args.geoip_path)
     __generate_torrc_relay(abs_conf_path)
     __generate_torrc_relay_authority(abs_conf_path, relays)
     __generate_torrc_relay_exit(abs_conf_path)
@@ -201,7 +201,7 @@ def __generate_tor_v3bw_file(args, authorities, relays):
     v3bw_path = "{}/v3bw".format(bwauth_dir)
     os.symlink("v3bw.init.consensus", v3bw_path)
 
-def __generate_torrc_common(conf_path, authorities):
+def __generate_torrc_common(conf_path, authorities, geoip_path):
     auth_names = []
 
     torrc_file = open("{}/{}".format(conf_path, TORRC_COMMON_FILENAME), 'w')
@@ -247,7 +247,9 @@ def __generate_torrc_common(conf_path, authorities):
     torrc_file.write('DoSConnectionEnabled 0\n')
     torrc_file.write('DoSRefuseSingleHopClientRendezvous 0\n')
     torrc_file.write('ControlPort {}\n'.format(TOR_CONTROL_PORT))
-    torrc_file.write('GeoIPFile {}/share/geoip\n'.format(SHADOW_INSTALL_PREFIX))
+    torrc_file.write('GeoIPFile {}\n'.format(geoip_path or ''))
+    # Never load the geoipv6 file, since we don't support ipv6.
+    torrc_file.write('GeoIPV6File\n')
 
     torrc_file.close()
 
