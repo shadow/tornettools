@@ -219,6 +219,9 @@ def __generate_torrc_common(conf_path, authorities, geoip_path):
         auth_names.append(nickname)
 
     torrc_file.write('TestingTorNetwork 1\n')
+    # Gets enabled by default when we enable TestingTorNetwork.
+    # We don't need it, and it uses a lot of memory.
+    torrc_file.write('TestingEnableCellStatsEvent 0\n')
     torrc_file.write('DataDirectory .\n')
     torrc_file.write('ServerDNSResolvConfFile ../../../{}/{}\n'.format(CONFIG_DIRNAME, RESOLV_FILENAME))
     torrc_file.write('ServerDNSTestAddresses {}\n'.format(','.join(auth_names)))
