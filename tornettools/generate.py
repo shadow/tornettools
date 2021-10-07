@@ -297,7 +297,12 @@ def __tor_relay(args, network, relay, orig_fp, is_authority=False):
     host = {}
     host['network_node_id'] = chosen_node['id']
 
-    if 'address' in relay:
+    # Specify an exact IP address *only* for authorities.
+    # In particular this lets Shadow assign unique IP addresses in cases where
+    # multiple sampled relays have the same IP address.
+    # See https://github.com/shadow/tornettools/issues/38
+    if is_authority:
+        assert 'address' in relay
         host["ip_addr"] = relay['address']
 
     host["bandwidth_down"] = "{} kilobit".format(kbits)
