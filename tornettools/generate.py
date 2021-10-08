@@ -71,6 +71,16 @@ def run(args):
     logging.info("Constructing Shadow config YAML file")
     __generate_shadow_config(args, network, authorities, relays, tgen_servers, perf_clients, tgen_clients)
 
+def __assign_address(used_addresses, ip_address_hint):
+    offset = 0
+    while True:
+        candidate = ip_address_hint + offset
+        if candidate.is_global and candidate not in used_addresses:
+            break
+        offset += 1
+    used_addresses.add(candidate)
+    return candidate
+
 def __relay_to_torrc_default_include(relay):
     if "exitguard" in relay['nickname']:
         return TORRC_RELAY_EXITGUARD_FILENAME
@@ -110,13 +120,15 @@ def __generate_shadow_config(args, network, authorities, relays, tgen_servers, p
     config["network"]["graph"]["file"]["path"] = str(args.atlas_path)
     config["network"]["graph"]["file"]["compression"] = "xz"
 
+    used_addresses = set()
+
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
-        config["hosts"].update(__tor_relay(args, network, authority, fp, is_authority=True))
+        config["hosts"].update(__tor_relay(args, network, used_addresses, authority, fp, is_authority=True))
 
     for pos in ['ge', 'e', 'g', 'm']:
         # use reverse to sort each class from fastest to slowest when assigning the id counter
         for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-            config["hosts"].update(__tor_relay(args, network, relay, fp, is_authority=False))
+            config["hosts"].update(__tor_relay(args, network, used_addresses, relay, fp, is_authority=False))
 
     for server in tgen_servers:
         config["hosts"].update(__server(args, network, server))
@@ -280,7 +292,7 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
 
     return {name: host}
 
-def __tor_relay(args, network, relay, orig_fp, is_authority=False):
+def __tor_relay(args, network, used_addresses, relay, orig_fp, is_authority=False):
     # prepare items for the host element
     kbits = 8 * int(round(int(relay['bandwidth_capacity']) / 1000.0))
 
@@ -297,13 +309,8 @@ def __tor_relay(args, network, relay, orig_fp, is_authority=False):
     host = {}
     host['network_node_id'] = chosen_node['id']
 
-    # Specify an exact IP address *only* for authorities.
-    # In particular this lets Shadow assign unique IP addresses in cases where
-    # multiple sampled relays have the same IP address.
-    # See https://github.com/shadow/tornettools/issues/38
-    if is_authority:
-        assert 'address' in relay
-        host["ip_addr"] = relay['address']
+    if ip_address_hint:
+        host["ip_addr"] = str(__assign_address(used_addresses, ip_address_hint))
 
     host["bandwidth_down"] = "{} kilobit".format(kbits)
     host["bandwidth_up"] = "{} kilobit".format(kbits)
