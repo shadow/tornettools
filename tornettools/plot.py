@@ -70,6 +70,11 @@ def __plot_tornet(args):
     logging.info("Plotting client goodput")
     __plot_client_goodput(args, torperf_dbs, tornet_dbs)
 
+    logging.info("Loading tornet goodput data 5MiB")
+    tornet_dbs = __load_tornet_datasets(args, "perfclient_goodput_5MiB.json")
+    logging.info("Plotting client goodput [5 MiB]")
+    __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs)
+
     logging.info("Loading tornet transfer error rate data")
     tornet_dbs = __load_tornet_datasets(args, "error_rate.json")
     logging.info("Plotting transfer error rates")
@@ -237,8 +242,8 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
     for torperf_db in torperf_dbs:
-        # convert tor's microseconds into seconds
-        client_gput = [t/1000000.0 for t in torperf_db['dataset']["client_goodput"]]
+        # Covert to Mbps
+        client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput"]]
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
@@ -246,6 +251,23 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
     __plot_cdf_figure(args, dbs_to_plot, 'client_goodput',
         yscale="taillog",
         xlabel="Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
+
+def __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs):
+    # Computes throughput for last of 5MiB transfer
+
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        tornet_db['data'] = tornet_db['dataset']
+    for torperf_db in torperf_dbs:
+        # Covert to Mbps
+        client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput_5MiB"]]
+        torperf_db['data'] = [client_gput]
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+
+    __plot_cdf_figure(args, dbs_to_plot, 'client_goodput_5MiB',
+        yscale="taillog",
+        xlabel="Client Transfer Goodput (Mbit/s): last of 5 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)

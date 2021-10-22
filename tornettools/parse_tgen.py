@@ -13,8 +13,8 @@ def parse_tgen_logs(args):
         logging.warning("Unable to parse tgen simulation data.")
         return
 
-    # tgentools supports a list of expressions that are used to search for oniontrace log filenames                                                                                                                                                   
-    # the first -e expression matches the log file names for Shadow v2.x.x 
+    # tgentools supports a list of expressions that are used to search for oniontrace log filenames
+    # the first -e expression matches the log file names for Shadow v2.x.x
     # and the second -e expression matches the log file names for Shadow v1.x.x
     cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient[0-9]+\.tgen\.[0-9]+.stdout' -e 'stdout.*perfclient[0-9]+\.tgen\.[0-9]+.log' --complete shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
@@ -47,6 +47,7 @@ def extract_tgen_plot_data(args):
     __extract_download_time(args, data, startts, stopts)
     __extract_error_rate(args, data, startts, stopts)
     __extract_client_goodput(args, data, startts, stopts)
+    __extract_client_goodput_5MiB(args, data, startts, stopts)
 
 def __extract_round_trip_time(args, data, startts, stopts):
     rtt = __get_round_trip_time(data, startts, stopts)
@@ -70,8 +71,13 @@ def __extract_error_rate(args, data, startts, stopts):
     dump_json_data(errrate_per_client, outpath, compress=False)
 
 def __extract_client_goodput(args, data, startts, stopts):
-    client_goodput = __get_client_goodput(data, startts, stopts)
+    client_goodput = __get_client_goodput(data, startts, stopts, "1 MiB")
     outpath = f"{args.prefix}/tornet.plot.data/perfclient_goodput.json"
+    dump_json_data(client_goodput, outpath, compress=False)
+
+def __extract_client_goodput_5MiB(args, data, startts, stopts):
+    client_goodput = __get_client_goodput(data, startts, stopts, "5 MiB")
+    outpath = f"{args.prefix}/tornet.plot.data/perfclient_goodput_5MiB.json"
     dump_json_data(client_goodput, outpath, compress=False)
 
 def __get_download_time(data, startts, stopts, bytekey):
@@ -179,7 +185,7 @@ def __get_error_rate(data, startts, stopts):
 
     return errors_per_client
 
-def __get_client_goodput(data, startts, stopts):
+def __get_client_goodput(data, startts, stopts, download_size):
     # Tor computs gput based on the time between the .5 MiB byte to the 1 MiB byte.
     # Ie to cut out circuit build and other startup costs.
     # https://metrics.torproject.org/reproducible-metrics.html#performance
@@ -200,14 +206,41 @@ def __get_client_goodput(data, startts, stopts):
 
             for sid in streams:
                 stream = streams[sid]
-                if "elapsed_seconds" in stream and \
-                    "payload_bytes_recv" in stream['elapsed_seconds']:
-                    bytes_db = stream['elapsed_seconds']['payload_bytes_recv']
-                    if '512000' in bytes_db and '1048576' in bytes_db:
-                        seconds = float(bytes_db['1048576']) - float(bytes_db['512000'])
-                        bytes = 1048576 - 512000
-                        mbit = bytes/1048576.0*8.0
-                        mbit_per_second = mbit/seconds
-                        goodput.append(mbit_per_second)
+                if "elapsed_seconds" in stream:
+                    if download_size == "1 MiB":
+                        recvsize = "1048576"
+                        es_1MiB = stream['elapsed_seconds']['payload_bytes_recv']
+                        goodput = __get_client_goodput_1MiB(es_1MiB, recvsize, goodput)
+                    elif download_size == "5 MiB":
+                        recvsize = stream["stream_info"]["recvsize"]
+                        es_5MiB = stream["elapsed_seconds"]["payload_progress_recv"]
+                        goodput = __get_client_goodput_5MiB(es_5MiB, recvsize, goodput)
+                    else:
+                        continue
 
     return goodput
+
+def __get_client_goodput_1MiB(es, recvsize, goodput):
+    # Tor computs goodput based on the time between the .5 MiB byte to the 1 MiB byte.
+    # Ie to cut out circuit build and other startup costs.
+    # https://metrics.torproject.org/reproducible-metrics.html#performance
+    if recvsize in es and '512000' in es:
+        mbit_per_second = __goodput_mbps(float(es['512000']), float(es['1048576']), 512000, 1048576)
+        if mbit_per_second:
+            goodput.append(mbit_per_second)
+    return goodput
+
+def __get_client_goodput_5MiB(es, recvsize, goodput):
+    # For 5 MiB downloads we extract the time (in seconds) elapsed between
+    # receiving the 4MiB byte and 5MiB byte, which is a total amount of 1 MiB  or
+    # 8 Mib.
+    if recvsize == "5242880" and "1.0" in es:
+        mbit_per_second = __goodput_mbps(float(es["0.8"]), float(es["1.0"]), 4194304, 5242880)
+        if mbit_per_second:
+            goodput.append(mbit_per_second)
+    return goodput
+
+def __goodput_mbps(start_time, end_time, start_bytes, end_bytes):
+    if start_time > 0 and end_time > 0 and end_time > start_time:
+        return ((end_bytes - start_bytes) / 2**20) * 8.0  / (end_time - start_time)
+    return None

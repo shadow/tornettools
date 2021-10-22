@@ -12,8 +12,9 @@ from tornettools.util import dump_json_data, open_readable_file
 # see https://metrics.torproject.org/reproducible-metrics.html#performance
 
 def run(args):
-    db = {"circuit_rtt": [], "client_goodput": [], "circuit_build_times": [],
-        "download_times": {}, "daily_counts": {}, "relay_goodput": {}}
+    db = {"circuit_rtt": [], "client_goodput": [], "client_goodput_5MiB": [],
+        "circuit_build_times": [], "download_times": {}, "daily_counts": {},
+        "relay_goodput": {}}
 
     if args.bandwidth_data_path != None:
         logging.info(f"Parsing bandwidth data stored in '{args.bandwidth_data_path}'")
@@ -127,10 +128,16 @@ def __handle_stream(db, stream, day):
         rtt = (rsp - cmd) / 1000000.0 # usecs to seconds
         db['circuit_rtt'].append(rtt)
 
-    # download times, and client download 'goodput'
+    # download times, client download 'goodput' and client download 'goodput' for
+    # the last MiB of 5MiB downloads.
     # Tor computs goodput based on the time between the .5 MiB byte to the 1 MiB byte.
     # Ie to cut out circuit build and other startup costs.
     # https://metrics.torproject.org/reproducible-metrics.html#performance
+    #
+    # For 5 MiB downloads we extract the time (in seconds) elapsed between
+    # receiving the 4MiB byte and 5MiB byte, which is a total amount of 1 MiB  or
+    # 8 Mib.
+
     if 'elapsed_seconds' in stream and 'payload_bytes_recv' in stream['elapsed_seconds']:
         es = stream['elapsed_seconds']['payload_bytes_recv']
 
@@ -141,15 +148,27 @@ def __handle_stream(db, stream, day):
                 transfer_time_secs = time_to_size - (cmd / 1000000.0) # usecs to seconds
                 __store_transfer_time(db, transfer_size, transfer_time_secs)
 
-        # goodput
+        # goodput 1 MiB
         if '1048576' in es and '512000' in es:
-            start, end = float(es['512000']), float(es['1048576'])
-            if start > 0 and end > 0 and end > start:
-                tput_bits_per_second = (1048576 - 512000) * 8.0 / (end - start)
-                db['client_goodput'].append(tput_bits_per_second)
+            goodput = __goodput_bps(float(es['512000']), float(es['1048576']), 512000, 1048576)
+            if goodput:
+                db['client_goodput'].append(goodput)
+
+        # goodput 5 MiB
+        recvsize = stream["stream_info"]["recvsize"]
+        es_5MiB = stream["elapsed_seconds"]["payload_progress_recv"]
+        if recvsize == "5242880" and "1.0" in es_5MiB:
+            goodput_5Mib = __goodput_bps(float(es_5MiB["0.8"]), float(es_5MiB["1.0"]), 4194304, 5242880)
+            if goodput_5Mib:
+               db['client_goodput_5MiB'].append(goodput_5Mib)
 
     elif lb > 0 and cmd > 0:
         __store_transfer_time(db, transfer_size_target, ttlb)
+
+def __goodput_bps(start_time, end_time, start_bytes, end_bytes):
+    if start_time > 0 and end_time > 0 and end_time > start_time:
+        return (end_bytes - start_bytes) * 8.0  / (end_time - start_time)
+    return None
 
 def __store_transfer_time(db, transfer_size, transfer_time):
     db['download_times'].setdefault('ALL', [])
