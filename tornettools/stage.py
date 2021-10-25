@@ -11,7 +11,7 @@ from tornettools.util_geoip import GeoIP
 
 from multiprocessing import Pool, cpu_count
 from statistics import median
-from datetime import datetime
+from datetime import datetime, timezone
 
 from stem import Flag
 from stem.descriptor import parse_file
@@ -64,7 +64,7 @@ def stage_users(args, min_unix_time, max_unix_time):
             country_code = str(parts[1]) # like 'us'
             user_count = int(parts[2]) # like '14714'
 
-            dt = datetime.strptime(date, "%Y-%m-%d")
+            dt = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             unix_time = int(dt.strftime("%s")) # returns stamp like 1548910800
 
             if unix_time < min_unix_time or unix_time > max_unix_time:
@@ -191,8 +191,8 @@ def get_file_list(dir_path):
     return file_paths
 
 def get_time_suffix(min_unix_time, max_unix_time):
-    min_str = datetime.utcfromtimestamp(min_unix_time).strftime("%Y-%m-%d")
-    max_str = datetime.utcfromtimestamp(max_unix_time).strftime("%Y-%m-%d")
+    min_str = datetime.fromtimestamp(min_unix_time, timezone.utc).strftime("%Y-%m-%d")
+    max_str = datetime.fromtimestamp(max_unix_time, timezone.utc).strftime("%Y-%m-%d")
     return "{}--{}".format(min_str, max_str)
 
 def process(num_processes, file_paths, map_func, reduce_func):
@@ -293,7 +293,7 @@ def combine_parsed_consensus_results(results):
             continue
 
         if result['pub_dt'] is not None:
-            unix_time = result['pub_dt'].timestamp()
+            unix_time = result['pub_dt'].replace(tzinfo=timezone.utc).timestamp()
             if min_unix_time == None or unix_time < min_unix_time:
                 min_unix_time = unix_time
             if max_unix_time == None or unix_time > max_unix_time:
@@ -351,7 +351,7 @@ def parse_serverdesc(args):
     if relay == None:
         return None
 
-    pub_ts = relay.published.timestamp()
+    pub_ts = relay.published.replace(tzinfo=timezone.utc).timestamp()
     if pub_ts < min_time or pub_ts > max_time:
         return None
 
