@@ -1,0 +1,25 @@
+# Syntax reference:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+#
+# Since the run_all_steps workflow is relatively expensive, only allow one
+# instance to run at once per branch, canceling obsolete runs.
+#
+# Based on https://github.com/styfle/cancel-workflow-action#advanced-pull-requests-from-forks
+name: Cancel previous run-all-steps
+permissions: read-all
+on:
+  workflow_run:
+    workflows: ["Run all steps"]
+    types:
+      - requested
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+    # Pin to the current sha of tag 0.9.1. Being a bit extra careful here
+    # since this job gets elevated permission.
+    - uses: styfle/cancel-workflow-action@a40b8845c0683271d9f53dfcb887a7e181d3918b
+      with:
+        workflow_id: ${{ github.event.workflow.id }}
