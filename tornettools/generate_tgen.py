@@ -2,6 +2,7 @@ import os
 import json
 import logging
 
+from math import ceil
 from numpy.random import choice, uniform
 from random import randrange
 
@@ -9,6 +10,23 @@ from networkx import DiGraph, write_graphml
 
 from tornettools.generate_defaults import *
 from tornettools.util import load_json_data
+
+def __round_or_ceil(x):
+    """Round to the nearest integer, except don't round down to zero.
+
+    Useful for avoiding inadvertent 0 counts when scaling down to small networks
+    while still allowing explicit zero counts (e.g. --torperf_scale=0).
+
+    1.8 => 2
+    1.1 => 1
+    0.8 => 1
+    0.1 => 1
+    0.0 => 0
+    """
+    res = round(x)
+    if res == 0:
+        res = ceil(x)
+    return res
 
 def generate_tgen_config(args, tgen_clients, tgen_servers):
     # make sure the config directory exists
@@ -327,7 +345,7 @@ def get_clients(args):
 def __get_perf_clients(args, n_users):
     perf_clients = []
 
-    n_perf = round(n_users * args.torperf_scale)
+    n_perf = __round_or_ceil(n_users * args.torperf_scale)
     for i in range(n_perf):
         chosen_country_code = choice(ONIONPERF_COUNTRY_CODES)
         client = {
@@ -351,14 +369,14 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
     # we need a set of TGen clients generating Tor client load
     tgen_clients = []
 
-    n_users_per_tgen = round(1.0 / args.process_scale)
-    n_tgen = round(n_users / n_users_per_tgen)
+    n_users_per_tgen = __round_or_ceil(1.0 / args.process_scale)
+    n_tgen = __round_or_ceil(n_users / n_users_per_tgen)
 
     if n_tgen < TGEN_CLIENT_MIN_COUNT:
         # in this case, each tgen client will emulate fewer than requested tor users.
         # i.e., args.process_scale will be ignored
         n_tgen = TGEN_CLIENT_MIN_COUNT
-        n_users_per_tgen = round(n_users / n_tgen)
+        n_users_per_tgen = __round_or_ceil(n_users / n_tgen)
 
     # each client will be placed in a country
     country_codes, country_probs = __load_user_data(args)
@@ -366,7 +384,7 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
     # the number of circuits each tgen creates every 10 minutes.
     # we adjust by the load scale here instead of on n_tgen, because n_tgen
     # can already be adjusted with args.process_scale.
-    n_circuits_per_tgen = round(n_circuits / n_tgen * args.load_scale)
+    n_circuits_per_tgen = __round_or_ceil(n_circuits / n_tgen * args.load_scale)
 
     total_circuits_10_mins = 0
     for i in range(n_tgen):
@@ -407,9 +425,9 @@ def __get_client_counts(measurement, privcount_scale, tornet_scale):
     # we need to convert the counts at the privcount scale, to counts at our tornet scale
     scale_factor = tornet_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
 
-    total_scaled = int(round(total_count * scale_factor))
-    active_scaled = int(round(active_count * scale_factor))
-    inactive_scaled = int(round(inactive_count * scale_factor))
+    total_scaled = __round_or_ceil(total_count * scale_factor)
+    active_scaled = __round_or_ceil(active_count * scale_factor)
+    inactive_scaled = __round_or_ceil(inactive_count * scale_factor)
 
     return total_scaled, active_scaled, inactive_scaled
 
@@ -422,9 +440,9 @@ def __get_exit_circuit_counts(measurement, privcount_scale, tornet_scale):
     # we need to convert the counts at the privcount scale, to counts at our tornet scale
     scale_factor = tornet_scale / privcount_scale / PRIVCOUNT_PERIODS_PER_DAY
 
-    total_scaled = int(round(total_count * scale_factor))
-    active_scaled = int(round(active_count * scale_factor))
-    inactive_scaled = int(round(inactive_count * scale_factor))
+    total_scaled = __round_or_ceil(total_count * scale_factor)
+    active_scaled = __round_or_ceil(active_count * scale_factor)
+    inactive_scaled = __round_or_ceil(inactive_count * scale_factor)
 
     return total_scaled, active_scaled, inactive_scaled
 
@@ -436,7 +454,7 @@ def __sample_active_circuits_per_n_clients(measurement, n_clients):
         count += __sample_active_circuits_per_client(measurement)
     # exits saw ~1/10 of the circs entries see, possibly related to DoS on tor during measurement
     # note - this is hand-wavy magic
-    return int(round(count/10.0))
+    return __round_or_ceil(count/10.0)
 
 def __sample_active_circuits_per_client(measurement):
     return __sample_bins(measurement['EntryClientIPActiveCircuitCount']['bins'])
