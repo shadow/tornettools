@@ -43,5 +43,6 @@ jobs:
           mkdir build
           python3 -m venv build/tornettoolsenv
           source build/tornettoolsenv/bin/activate
+          pip3 install wheel
           pip3 install -r requirements.txt
           pip3 install -I .
