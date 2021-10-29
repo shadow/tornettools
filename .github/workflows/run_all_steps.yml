@@ -1,0 +1,231 @@
+# Syntax reference:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+
+# When changing name, also change `workflows` in
+# `.github/workflows/cancel_prev_run_all_steps.yml` to match.
+name: Run all steps
+permissions: read-all
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+  pull_request:
+    types: [opened, synchronize]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  SHADOW_COMMIT: b69cff1490ccf5f854a8beb28f0e10f9d2d6af76
+  TOR_REPO: https://git.torproject.org/tor.git
+  TOR_BRANCH: release-0.4.6
+  TOR_COMMIT: f728e09ebe611d6858e721eaa37637025bfbf259
+  # Optimization - this must be older than $TOR_COMMIT, but ideally not much
+  # older.
+  TOR_SHALLOW_SINCE: '2021-08-01'
+  TGEN_COMMIT: dc13e48b2701df771a99215754dcc2cb202c2c24
+  ONIONTRACE_COMMIT: bc26be3c4737a8a367a156f12bab2975cd811855
+  NETDATA_MONTH: '2020-11'
+  NETDATA_LAST_DAY: '30'
+  # Increment to invalidate caches
+  CACHE_VERSION: 1
+
+jobs:
+  run-all-steps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update packages
+        run: sudo apt-get update
+
+      - name: Install tornettools dependencies
+        run: sudo apt-get install -y
+          python3
+          python3-dev
+          python3-pip
+          libxml2
+          libxml2-dev
+          libxslt1.1
+          libxslt1-dev
+          libpng16-16
+          libpng-dev
+          libfreetype6
+          libfreetype6-dev
+          libblas-dev
+          liblapack-dev
+          stow
+
+      - name: Build tornettools
+        run: |
+          pip3 install wheel
+          pip3 install -r requirements.txt
+          pip3 install -I .
+
+      - name: Restore shadow build cache
+        id: restore-shadow-build-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/opt/shadow
+          key: shadow-${{ env.SHADOW_COMMIT }}-${{ env.CACHE_VERSION }}
+
+      - name: Checkout shadow
+        if: steps.restore-shadow-build-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: shadow/shadow
+          ref: ${{ env.SHADOW_COMMIT }}
+          path: shadow
+
+      - name: Build shadow
+        if: steps.restore-shadow-build-cache.outputs.cache-hit != 'true'
+        env:
+          CC: gcc
+          CXX: g++
+          CONTAINER: ubuntu:20.04
+          BUILDTYPE: release
+          RUSTPROFILE: minimal
+        run: |
+          cd shadow
+          sudo --preserve-env ci/container_scripts/install_deps.sh
+          sudo --preserve-env ci/container_scripts/install_extra_deps.sh
+          ./setup build -j`nproc` -p ~/opt/shadow
+          ./setup install
+
+      - name: Restore tor build cache
+        id: restore-tor-build-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/opt/tor
+          key: tor-${{ env.TOR_COMMIT }}-${{ env.CACHE_VERSION }}
+
+      - name: Build tor
+        if: steps.restore-tor-build-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y autoconf automake gcc libevent-dev libssl-dev make
+          git clone --shallow-since=$TOR_SHALLOW_SINCE -b $TOR_BRANCH $TOR_REPO tor
+          cd tor
+          git checkout $TOR_COMMIT
+          ./autogen.sh
+          ./configure --disable-asciidoc --disable-unittests --disable-manpage --disable-html-manual --disable-lzma --disable-zstd --prefix=$HOME/opt/tor
+          make -j$(nproc)
+          make install
+
+      - name: Checkout tgen
+        uses: actions/checkout@v2
+        with:
+          repository: shadow/tgen
+          ref: ${{ env.TGEN_COMMIT }}
+          path: tgen
+
+      - name: Build tgen
+        run: |
+          sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev libigraph0-dev libigraph0v5 make
+          cd tgen
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/opt/tgen
+          make -j`nproc`
+          make install
+          pip3 install -r ../tools/requirements.txt
+          pip3 install -I ../tools
+
+      - name: Checkout oniontrace
+        uses: actions/checkout@v2
+        with:
+          repository: shadow/oniontrace
+          ref: ${{ env.ONIONTRACE_COMMIT }}
+          path: oniontrace
+
+      - name: Build oniontrace
+        run: |
+          sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev make
+          cd oniontrace
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/opt/oniontrace
+          make -j`nproc`
+          make install
+          pip3 install -r ../tools/requirements.txt
+          pip3 install -I ../tools
+
+      - name: Restore net data cache
+        id: restore-net-data-cache
+        uses: actions/cache@v2
+        with:
+          path: netdata
+          key: netdata-${{ env.NETDATA_MONTH }}-${{ env.NETDATA_LAST_DAY}}-${{ env.CACHE_VERSION }}
+
+      - name: Download net data
+        if: steps.restore-net-data-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p netdata
+          cd netdata
+          wget -O - https://collector.torproject.org/archive/relay-descriptors/consensuses/consensuses-$NETDATA_MONTH.tar.xz | tar xJ
+          wget -O - https://collector.torproject.org/archive/relay-descriptors/server-descriptors/server-descriptors-$NETDATA_MONTH.tar.xz | tar xJ
+          wget https://metrics.torproject.org/userstats-relay-country.csv
+          wget -O - https://collector.torproject.org/archive/onionperf/onionperf-$NETDATA_MONTH.tar.xz | tar xJ
+          wget -O bandwidth-$NETDATA_MONTH.csv "https://metrics.torproject.org/bandwidth.csv?start=$NETDATA_MONTH-01&end=$NETDATA_MONTH-$NETDATA_LAST_DAY"
+          # Drop most of the consensuses. This saves about ~6m in the `stage` step on GitHub's CI runner.
+          find consensuses-2020-11/ -type f | tail -n +100 | xargs rm
+
+      - name: Checkout tmodel
+        uses: actions/checkout@v2
+        with:
+          repository: tmodel-ccs2018/tmodel-ccs2018.github.io
+          path: tmodel-ccs2018.github.io
+
+      - name: Install custom deps
+        run: |
+          stow -d ~/opt -t ~/.local shadow
+          stow -d ~/opt -t ~/.local tor
+          stow -d ~/opt -t ~/.local tgen
+          stow -d ~/opt -t ~/.local oniontrace
+
+      - name: Stage
+        run: tornettools stage
+          netdata/consensuses-2020-11
+          netdata/server-descriptors-2020-11
+          netdata/userstats-relay-country.csv
+          tmodel-ccs2018.github.io
+          --onionperf_data_path netdata/onionperf-*
+          --bandwidth_data_path netdata/bandwidth-*.csv
+          --geoip_path $HOME/opt/tor/share/tor/geoip
+
+      - name: Generate
+        run: tornettools generate
+          relayinfo_staging_*.json
+          userinfo_staging_*.json
+          networkinfo_staging.gml
+          tmodel-ccs2018.github.io
+          --network_scale 0.0001
+          --prefix tornet
+
+      - name: Simulate
+        run: |
+          # Use short simulation time
+          sed -i 's/stop_time:.*/stop_time: "10m"/' tornet/shadow.config.yaml
+          # Install runtime shadow and tor deps, in case we skipped building (and installing build deps)
+          sudo apt-get install -y libevent-2.1-7 libssl1.1 zlib1g libglib2.0-0 libigraph0v5 libprocps8 sysstat python3 python3-pip
+          tornettools simulate --args '--parallelism=2 --seed=1 --template-directory=shadow.data.template --progress=true' tornet
+
+      - name: Parse
+        # We use a relatively low convergence time (-c) since we're only
+        # simulating 10m.
+        run: tornettools parse -c 300 tornet
+
+      - name: Plot
+        run: tornettools plot tornet --tor_metrics_path tor_metrics_2020-11-*.json --prefix pdfs
+
+      - name: Archive
+        run: tornettools archive tornet
+
+      - name: Upload plots
+        uses: actions/upload-artifact@v2
+        with:
+          name: plots
+          path: pdfs/*.pdf
+
