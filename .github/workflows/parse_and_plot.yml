@@ -1,0 +1,98 @@
+# Syntax reference:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+
+name: Parse and plot
+permissions: read-all
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+  pull_request:
+    types: [opened, synchronize]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  parse-and-plot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update packages
+        run: sudo apt-get update
+
+      - name: Install tornettools dependencies
+        run: sudo apt-get install -y
+          python3
+          python3-dev
+          python3-pip
+          libxml2
+          libxml2-dev
+          libxslt1.1
+          libxslt1-dev
+          libpng16-16
+          libpng-dev
+          libfreetype6
+          libfreetype6-dev
+          libblas-dev
+          liblapack-dev
+
+      - name: Build tornettools
+        run: |
+          pip3 install wheel
+          pip3 install -r requirements.txt
+          pip3 install -I .
+
+      - name: Create output/working directory
+        run: mv .github/workflows/parse_and_plot_input parse_and_plot_output
+
+      - name: Re-parse
+        # -c must match the convergence time used to generate the golden data,
+        # in run_all_steps.yml
+        #
+        # We use --skip-raw to skip trying to parse the raw logs again, so that
+        # we don't need to check the raw logs into version control, and since
+        # the tgen and oniontrace parsing are done by those respective tools,
+        # which we're not trying to test here.
+        run: tornettools parse -c 300 --skip-raw parse_and_plot_output
+
+      # The json files in tornet.plot.data are the fully processed data used to
+      # generate graphs in the `plot` step. They should always be the same when
+      # parsing and plotting the same simulation data with a given version of
+      # tornettools.
+      #
+      # When this test fails due to an *intentional* change in processing, the
+      # golden data in `.github/workflows/parse_and_plot_output` can be updated
+      # using the actual output from this workflow's artifacts.
+      - name: Diff
+        run: for f in .github/workflows/parse_and_plot_output/tornet.plot.data/*.json;
+          do 
+            diff $f parse_and_plot_output/tornet.plot.data/$(basename $f);
+          done
+
+      - name: Plot
+        # Run even if the diff step failed. In some cases the diff may be
+        # expected, in which case it'll still be helpful to compare the plots.
+        if: always()
+        # Plot reparsed against golden
+        run: tornettools plot --prefix pdfs -l golden reparsed -- .github/workflows/parse_and_plot_output parse_and_plot_output
+
+      - name: Upload pdfs
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: pdfs
+          path: pdfs
+
+      # This artifact can be used to update
+      # .github/workflows/parse_and_plot_output to a new expected output.
+      - name: Upload plot data
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: parse_and_plot_output
+          path: parse_and_plot_output/tornet.plot.data
