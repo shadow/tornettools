@@ -125,7 +125,7 @@ def __setup_logging(args):
             # log to a file too
             prefixstr = str(args.prefix)
             funcstr = str(args.command) if args.command is not None else "none"
-            datestr = datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+            datestr = datetime.now().strftime("%Y-%m-%d.%H.%M.%S")
             logfilename = "{}/tornettools.{}.{}.log".format(prefixstr, funcstr, datestr)
         __setup_logging_helper(logfilename)
     else:
@@ -416,6 +416,16 @@ def main():
         metavar="N", type=__type_nonnegative_integer,
         action="store", dest="nprocesses",
         default=0)
+
+    parse_parser.add_argument('-s', '--skip-raw',
+        help="""Skip trying to parse raw logs from
+            <tornet_config_path>/shadow.data/hosts into
+            <tornet_config_path>/*.json.xz, continuing on to parse
+            <tornet_config_path>/*.json.xz into
+            <tornet_config_path>/tornet.plot.data/*.json. This is useful if you
+            no longer have those raw logs, but want to re-parse and/or re-plot
+            with updated post-processing. """,
+            action="store_true", dest="skip_raw", default=False)
 
     parse_parser.add_argument('-c', '--converge-time',
         help="""The number of seconds after the beginning of the simulation that we
