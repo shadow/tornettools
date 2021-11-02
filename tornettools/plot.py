@@ -267,7 +267,7 @@ def __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs):
 
     __plot_cdf_figure(args, dbs_to_plot, 'client_goodput_5MiB',
         yscale="taillog",
-        xlabel="Client Transfer Goodput (Mbit/s): last of 5 MiB")
+        xlabel="Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)

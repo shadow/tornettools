@@ -4,7 +4,7 @@ import json
 import lzma
 import logging
 
-from tornettools.util import dump_json_data, open_readable_file
+from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_stream_seconds_at_bytes
 
 # This code parses onionperf metrics data.
 # The output is in a format that the `plot` command can use to compare
@@ -138,37 +138,41 @@ def __handle_stream(db, stream, day):
     # receiving the 4MiB byte and 5MiB byte, which is a total amount of 1 MiB  or
     # 8 Mib.
 
-    if 'elapsed_seconds' in stream and 'payload_bytes_recv' in stream['elapsed_seconds']:
-        es = stream['elapsed_seconds']['payload_bytes_recv']
 
+    if 'elapsed_seconds' in stream and 'payload_bytes_recv' in stream['elapsed_seconds']:
         # download times
-        for transfer_size in es:
-            time_to_size = float(es[transfer_size])
+        for (transfer_size, time_to_size) in stream['elapsed_seconds']['payload_bytes_recv'].items():
             if time_to_size > 0 and cmd > 0:
-                transfer_time_secs = time_to_size - (cmd / 1000000.0) # usecs to seconds
+                transfer_time_secs = time_to_size - (cmd / 1e6) # usecs to seconds
                 __store_transfer_time(db, transfer_size, transfer_time_secs)
 
-        # goodput 1 MiB
-        if '1048576' in es and '512000' in es:
-            goodput = __goodput_bps(float(es['512000']), float(es['1048576']), 512000, 1048576)
-            if goodput:
-                db['client_goodput'].append(goodput)
+        # goodput between 500 kibibytes and 1 mebibyte. Old way of calcuting throughput.
+        # https://metrics.torproject.org/reproducible-metrics.html#performance
+        goodput = __goodput_bps(
+                stream, aka_int(512000, 500 * 2**10), aka_int(1048576, 2**20))
+        if goodput is not None:
+            db['client_goodput'].append(goodput)
 
-        # goodput 5 MiB
-        recvsize = stream["stream_info"]["recvsize"]
-        es_5MiB = stream["elapsed_seconds"]["payload_progress_recv"]
-        if recvsize == "5242880" and "1.0" in es_5MiB:
-            goodput_5Mib = __goodput_bps(float(es_5MiB["0.8"]), float(es_5MiB["1.0"]), 4194304, 5242880)
-            if goodput_5Mib:
-               db['client_goodput_5MiB'].append(goodput_5Mib)
+        # goodput of the 5th Mebibyte. metrics.torproject uses this as of ~ April 2021.
+        # https://gitlab.torproject.org/tpo/network-health/metrics/statistics/-/issues/40005
+        # https://gitlab.torproject.org/tpo/network-health/metrics/statistics/-/issues/40020
+        # https://metrics.torproject.org/reproducible-metrics.html#performance
+        goodput = __goodput_bps(
+                stream, aka_int(4194304, 4 * 2**20), aka_int(5242880, 5 * 2**20))
+        if goodput is not None:
+            db['client_goodput_5MiB'].append(goodput)
 
     elif lb > 0 and cmd > 0:
         __store_transfer_time(db, transfer_size_target, ttlb)
 
-def __goodput_bps(start_time, end_time, start_bytes, end_bytes):
-    if start_time > 0 and end_time > 0 and end_time > start_time:
-        return (end_bytes - start_bytes) * 8.0  / (end_time - start_time)
-    return None
+def __goodput_bps(stream, start_bytes, end_bytes):
+    start_time = tgen_stream_seconds_at_bytes(stream, start_bytes)
+    if start_time is None:
+        return None
+    end_time = tgen_stream_seconds_at_bytes(stream, end_bytes)
+    if end_time is None or end_time <= start_time:
+        return None
+    return (end_bytes - start_bytes) * 8.0  / (end_time - start_time)
 
 def __store_transfer_time(db, transfer_size, transfer_time):
     db['download_times'].setdefault('ALL', [])
