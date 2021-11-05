@@ -218,9 +218,9 @@ def __get_client_goodput(data, startts, stopts, start_bytes, end_bytes):
                 end_time = tgen_stream_seconds_at_bytes(stream, end_bytes)
                 if start_time is not None and end_time is not None and end_time > start_time:
                     bps = (end_bytes - start_bytes)  * 8.0 / (end_time - start_time)
-                    # TODO: this probably ought to be Mbps (i.e. divide by
-                    # 10**6, not 2**20).  Left as Mibps for now for
-                    # compatibility with old plot data.
+                    # We ultimately want to graph Mbps, but for compatibility
+                    # with old data sets, we record Mibi-bps. This is
+                    # converted to Mbps in the `plot` step.
                     Mibps = bps / 2**20
                     goodput.append(Mibps)
 

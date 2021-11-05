@@ -240,7 +240,9 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
 
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = tornet_db['dataset']
+        # For compatibility with legacy parsed data, the output of the parse
+        # step is in *mebi* bits per second.  Convert to *mega* here.
+        tornet_db['data'] = [[x*2**20/1e6 for x in ds] for ds in tornet_db['dataset']]
     for torperf_db in torperf_dbs:
         # Covert to Mbps
         client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput"]]
@@ -257,7 +259,9 @@ def __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs):
 
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
-        tornet_db['data'] = tornet_db['dataset']
+        # For compatibility with legacy parsed data, the output of the parse
+        # step is in *mebi* bits per second.  Convert to *mega* here.
+        tornet_db['data'] = [[x*2**20/1e6 for x in ds] for ds in tornet_db['dataset']]
     for torperf_db in torperf_dbs:
         # Covert to Mbps
         client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput_5MiB"]]
