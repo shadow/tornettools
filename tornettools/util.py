@@ -59,3 +59,34 @@ def find_matching_files_in_dir(search_dir, filename):
                 found.append(p)
     logging.info(f"Found {len(found)} total files")
     return found
+
+# Useful for spelling integer constants multiple ways.  e.g. it can be useful
+# to spell 1 Mebi as 1048576 if that's how it's spelled out in other
+# documentation, *and* as 2 ** 20 to be able to easily verify that it's really
+# exactly 1 Mebi and not something slightly different.
+# e.g.:
+#     start_bytes = aka_int(2**20, 1048576)
+def aka_int(x, y):
+    assert(x == y)
+    return x
+
+# Looks for the given data point, first in
+# stream['elapsed_seconds']['payload_bytes_recv'], and then falls back to
+# stream['elapsed_seconds']['payload_progress_recv']. Returns None if not found
+# in either.
+#
+# This is useful because, e.g., tgen data currently doesn't have 4 MiB in
+# `payload_bytes_recv`, but *does* have progress 0.8 of 5 MiB streams in
+# `payload_progress_recv`.
+def tgen_stream_seconds_at_bytes(stream, num_bytes):
+    es = stream.get('elapsed_seconds')
+    if es is None:
+        return None
+    seconds = es['payload_bytes_recv'].get(str(num_bytes))
+    if seconds is not None:
+        return float(seconds)
+    progress = num_bytes / float(stream['stream_info']['recvsize'])
+    seconds = es['payload_progress_recv'].get(str(progress))
+    if seconds is not None:
+        return float(seconds)
+    return None

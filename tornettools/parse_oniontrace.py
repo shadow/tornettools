@@ -14,7 +14,7 @@ def parse_oniontrace_logs(args):
         return
 
     # oniontracetools supports a list of expressions that are used to search for oniontrace log filenames
-    # the first -e expression matches the log file names for Shadow v2.x.x 
+    # the first -e expression matches the log file names for Shadow v2.x.x
     # and the second -e expression matches the log file names for Shadow v1.x.x
     cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e '.*\.oniontrace\.[0-9]+.stdout' -e 'stdout.*\.oniontrace\.[0-9]+.log' shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
