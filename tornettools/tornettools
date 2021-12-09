@@ -564,35 +564,46 @@ def main():
     logging.info("System info: {}".format(str(uname())))
 
     # now run the configured mode
-    args.func(args)
+    rv = args.func(args)
+
+    if rv == 0 or rv == None:
+        return 0
+    elif isinstance(rv, int):
+        return rv
+    else:
+        logging.warning(f"Unknown return value: {rv}")
+        return 1
 
 def stage(args):
     from tornettools import stage
-    stage.run(args)
+    rv = stage.run(args)
+    if rv != 0 and rv != None:
+        return rv
+
     from tornettools import parse_onionperf
-    parse_onionperf.run(args)
+    return parse_onionperf.run(args)
 
 def generate(args):
     if args.events_csv.lower() == "none":
         args.events_csv = None
     from tornettools import generate
-    generate.run(args)
+    return generate.run(args)
 
 def simulate(args):
     from tornettools import simulate
-    simulate.run(args)
+    return simulate.run(args)
 
 def parse(args):
     from tornettools import parse
-    parse.run(args)
+    return parse.run(args)
 
 def plot(args):
     from tornettools import plot
-    plot.run(args)
+    return plot.run(args)
 
 def archive(args):
     from tornettools import archive
-    archive.run(args)
+    return archive.run(args)
 
 def __type_nonnegative_integer(value):
     i = int(value)

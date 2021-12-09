@@ -30,8 +30,12 @@ def run(args):
         free_stop_event.set()
         free_thread.join()
 
-    if comproc != None:
-        logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
+    if comproc is None:
+        logging.warning("Simulation was not started")
+        return 1
+
+    logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
+    return comproc.returncode
 
 def __run_shadow(args):
     if args.shadow_exe == None:
