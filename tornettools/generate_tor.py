@@ -413,7 +413,8 @@ def __sample_relays(relays, sample_size):
     for fp in all_fingerprints:
         freq = float(relays[fp]['running_frequency'])
         weight = float(relays[fp]['weight'])
-        if freq < RUN_FREQ_THRESH or weight == 0.0:
+        bandwidth_capacity = float(relays[fp]['bandwidth_capacity'])
+        if freq < RUN_FREQ_THRESH or weight == 0.0 or bandwidth_capacity == 0.0:
             freq = 0.0
         run_freqs.append(freq)
     # normalize
