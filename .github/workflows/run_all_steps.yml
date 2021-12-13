@@ -23,7 +23,7 @@ env:
   # Optimization - this must be older than $TOR_COMMIT, but ideally not much
   # older.
   TOR_SHALLOW_SINCE: '2021-08-01'
-  TGEN_COMMIT: dc13e48b2701df771a99215754dcc2cb202c2c24
+  TGEN_COMMIT: d3acc996550334e4fafda718e74d10e1033742f3
   ONIONTRACE_COMMIT: bc26be3c4737a8a367a156f12bab2975cd811855
   NETDATA_MONTH: '2020-11'
   NETDATA_LAST_DAY: '30'
@@ -117,7 +117,8 @@ jobs:
       - name: Checkout tgen
         uses: actions/checkout@v2
         with:
-          repository: shadow/tgen
+          # DO NOT MERGE
+          repository: sporksmith/tgen
           ref: ${{ env.TGEN_COMMIT }}
           path: tgen
 
