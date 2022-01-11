@@ -111,6 +111,9 @@ def __generate_shadow_config(args, network, authorities, relays, tgen_servers, p
     config["general"]["bootstrap_end_time"] = BOOTSTRAP_LENGTH_SECONDS # disable bandwidth limits and packet loss for first 5 minutes
     config["general"]["stop_time"] = SIMULATION_LENGTH_SECONDS # stop after 1 hour of simulated time
 
+    # for compatability with old tornettools sims, this is also set as a default shadow argument in the cli
+    config["general"]["template_directory"] = "shadow.data.template"
+
     # the atlas topology is complete, so we can use only direct edges
     config["network"]["use_shortest_path"] = False
 
