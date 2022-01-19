@@ -266,6 +266,7 @@ jobs:
       # necessary - e.g. when the output of the tgen or oniontrace parsers
       # changes in some significant way.
       - name: Upload parse_and_plot input
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: parse_and_plot_input
@@ -279,6 +280,7 @@ jobs:
       # Typically this is only needed when the output changes in some
       # significant way.
       - name: Upload plot data
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: run_all_steps_output
@@ -292,6 +294,7 @@ jobs:
       # the lines from the current run are not expected to be identical to the
       # lines from the previous run.
       - name: Upload plots
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: plots
