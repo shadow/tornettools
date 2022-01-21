@@ -240,8 +240,8 @@ def set_plot_options():
     options = {
         #'backend': 'PDF',
         'font.size': 12,
-        'figure.figsize': (4,3),
-        'figure.dpi': 100.0,
+        'figure.figsize': (5,4),
+        'figure.dpi': 150.0,
         'grid.color': '0.1',
         'grid.linestyle': ':',
         'grid.linewidth': 0.5,
@@ -277,12 +277,10 @@ def set_plot_options():
         'text.latex.preamble': r'\usepackage{amsmath}',
     }
 
-    for option_key in options:
-        rcParams[option_key] = options[option_key]
+    rcParams.update(options)
 
     if which("latex") != None:
-        for option_key in options_latex:
-            rcParams[option_key] = options_latex[option_key]
+        rcParams.update(options_latex)
 
     if 'figure.max_num_figures' in rcParams:
         rcParams['figure.max_num_figures'] = 50
