@@ -65,6 +65,9 @@ def __get_perfclient_cbt(data, startts, stopts):
     if 'data' in data:
         for name in data['data']:
             if 'perfclient' not in name: continue
+            # Process only non-onionservice perfclients for now.
+            # TODO: Process onionservice perfclients separately.
+            if 'onionservice' in name: continue
 
             circ = data['data'][name]['oniontrace']['circuit']
             key = 'build_time'
