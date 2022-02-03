@@ -51,7 +51,7 @@ def run(args):
     authorities, relays = generate_tor_keys(args, relays)
 
     # each client and server operates as either an onion-service client/server, or
-    # a non-onion-service (public) client/server (never both)
+    # a non-onion-service (exit) client/server (never both)
     logging.info("Generating Clients")
     tgen_clients, perf_clients = get_clients(args)
 
@@ -60,12 +60,12 @@ def run(args):
 
     # onion-service clients should only connect to onion-service servers, and non-onion-service clients should only
     # connect to non-onion-service servers
-    public_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers if not server['is_hs_server']]
+    exit_peers = ["{}:{}".format(server['name'], TGEN_SERVER_PORT) for server in tgen_servers if not server['is_hs_server']]
     hs_peers = ["{}:{}".format(server['hs_hostname'], TGEN_ONIONSERVICE_PORT) for server in tgen_servers if server['is_hs_server']]
 
     # perf-clients do not have host-specific tgen configs, so we can't set individual peer lists
     for client in tgen_clients:
-        client['peers'] = public_peers if not client['is_hs_client'] else hs_peers
+        client['peers'] = exit_peers if not client['is_hs_client'] else hs_peers
 
     # a map from hostnames to the host's torrc-defaults
     host_torrc_defaults = {}
@@ -79,7 +79,7 @@ def run(args):
     generate_tor_config(args, authorities, relays, host_torrc_defaults)
 
     logging.info("Generating TGen configuration files")
-    generate_tgen_config(args, tgen_clients, public_peers, hs_peers)
+    generate_tgen_config(args, tgen_clients, exit_peers, hs_peers)
 
     logging.info("Constructing Shadow config YAML file")
     __generate_shadow_config(args, network, authorities, relays, tgen_servers, perf_clients, tgen_clients)
@@ -250,7 +250,7 @@ def __server(args, network, server):
 
     if server['is_hs_server']:
         # this is an onion service, so tgen should only listen on localhost so that we catch errors if we accidentally
-        # try connecting to the onion service from "public" clients
+        # try connecting to the onion service from "exit" clients
         process["environment"] = "TGENIP=127.0.0.1"
 
     host["processes"].append(process)
@@ -283,7 +283,7 @@ def __server(args, network, server):
 def __perfclient(args, network, client):
     # a perfclient can have one of two tgen configurations which specifies which servers it connects to
     if not client['is_hs_client']:
-        tgenrc_fname = TGENRC_PERFCLIENT_PUBLIC_FILENAME
+        tgenrc_fname = TGENRC_PERFCLIENT_EXIT_FILENAME
     else:
         tgenrc_fname = TGENRC_PERFCLIENT_HS_FILENAME
 

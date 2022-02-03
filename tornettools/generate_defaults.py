@@ -52,6 +52,7 @@ BW_RATE_MIN = 102400
 
 # country codes where we can place onionperf client hosts
 ONIONPERF_COUNTRY_CODES = ['HK', 'NL', 'AB', 'US']
+# Minimum tgen count for each tgen type (exit or onion)
 TGEN_CLIENT_MIN_COUNT=100
 TGEN_SERVER_MIN_COUNT=10
 PRIVCOUNT_PERIODS_PER_DAY=144.0
@@ -59,7 +60,7 @@ TGEN_SERVER_PORT=80
 TGEN_ONIONSERVICE_PORT=8080
 
 TGENRC_SERVER_FILENAME="tgen-server.tgenrc.graphml"
-TGENRC_PERFCLIENT_PUBLIC_FILENAME="tgen-perf-public.tgenrc.graphml"
+TGENRC_PERFCLIENT_EXIT_FILENAME="tgen-perf-exit.tgenrc.graphml"
 TGENRC_PERFCLIENT_HS_FILENAME="tgen-perf-hs.tgenrc.graphml"
 TGENRC_MARKOVCLIENT_FILENAME="tgenrc.graphml"
 TGENRC_FLOWMODEL_FILENAME_FMT="tgen.tor-flowmodel-{}usec.graphml"

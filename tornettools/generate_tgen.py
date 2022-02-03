@@ -32,7 +32,7 @@ def __round_or_ceil(x):
         res = ceil(x)
     return res
 
-def generate_tgen_config(args, tgen_clients, public_peers, hs_peers):
+def generate_tgen_config(args, tgen_clients, exit_peers, hs_peers):
     # make sure the config directory exists
     abs_conf_path = "{}/{}".format(args.prefix, CONFIG_DIRNAME)
     if not os.path.exists(abs_conf_path):
@@ -43,7 +43,7 @@ def generate_tgen_config(args, tgen_clients, public_peers, hs_peers):
         os.makedirs(hosts_prefix)
 
     __generate_tgenrc_server(abs_conf_path)
-    __generate_tgenrc_perfclient(public_peers, os.path.join(abs_conf_path, TGENRC_PERFCLIENT_PUBLIC_FILENAME))
+    __generate_tgenrc_perfclient(exit_peers, os.path.join(abs_conf_path, TGENRC_PERFCLIENT_EXIT_FILENAME))
     __generate_tgenrc_perfclient(hs_peers, os.path.join(abs_conf_path, TGENRC_PERFCLIENT_HS_FILENAME))
     __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients)
     __generate_tgen_traffic_models(args, abs_conf_path)
@@ -268,34 +268,23 @@ def __convert_privcount_key_to_tgen_key(str):
     else:
         return str
 
-def __calculate_number_of_servers(args, n_public_clients, n_hs_clients):
-    # the number of servers will be a fraction of the number of clients
-    n_public_servers = n_public_clients * args.server_scale
-    n_hs_servers = n_hs_clients * args.server_scale
-    n_servers = n_public_servers + n_hs_servers
+def __calculate_number_of_servers(args, n_exit_clients, n_hs_clients):
+    n_exit_servers = min(
+            round(n_exit_clients * args.server_scale),
+            TGEN_SERVER_MIN_COUNT) if n_exit_clients > 0 else 0
+    n_hs_servers = min(
+            round(n_hs_clients * args.server_scale),
+            TGEN_SERVER_MIN_COUNT) if n_hs_clients > 0 else 0
 
-    # if we don't have enough servers, scale both server counts
-    if n_servers < TGEN_SERVER_MIN_COUNT:
-        n_public_servers *= TGEN_SERVER_MIN_COUNT / n_servers
-        n_hs_servers *= TGEN_SERVER_MIN_COUNT / n_servers
-
-    # round after completing calculations
-    n_public_servers = round(n_public_servers)
-    n_hs_servers = round(n_hs_servers)
-    n_servers = n_public_servers + n_hs_servers
-
-    # this should still hold after rounding, but we'll double-check
-    assert n_servers >= TGEN_SERVER_MIN_COUNT
-
-    return (n_public_servers, n_hs_servers)
+    return (n_exit_servers, n_hs_servers)
 
 def get_servers(args, clients):
     tgen_servers = []
 
-    n_public_clients = len([x for x in clients if not x['is_hs_client']])
+    n_exit_clients = len([x for x in clients if not x['is_hs_client']])
     n_hs_clients = len([x for x in clients if x['is_hs_client']])
 
-    (n_public_servers, n_hs_servers) = __calculate_number_of_servers(args, n_public_clients, n_hs_clients)
+    (n_exit_servers, n_hs_servers) = __calculate_number_of_servers(args, n_exit_clients, n_hs_clients)
 
     # each server will be placed in a country
     # right now we use client stats to decide where to place servers
@@ -306,10 +295,10 @@ def get_servers(args, clients):
 
     server_counter = 0
 
-    for i in range(n_public_servers):
+    for i in range(n_exit_servers):
         chosen_country_code = choice(country_codes, p=country_probs)
         server = {
-            'name': 'server{}public'.format(server_counter+1),
+            'name': 'server{}exit'.format(server_counter+1),
             'country_code': chosen_country_code,
             'is_hs_server': False,
         }
@@ -329,7 +318,7 @@ def get_servers(args, clients):
         tgen_servers.append(server)
         server_counter += 1
 
-    logging.info("We will use {} TGen public servers and {} TGen onion-service servers to serve {} TGen public clients and {} TGen onion-service clients".format(n_public_servers, n_hs_servers, n_public_clients, n_hs_clients))
+    logging.info("We will use {} TGen exit servers and {} TGen onion-service servers to serve {} TGen exit clients and {} TGen onion-service clients".format(n_exit_servers, n_hs_servers, n_exit_clients, n_hs_clients))
 
     return tgen_servers
 
@@ -372,29 +361,41 @@ def get_clients(args):
     n_total_users, n_active_users, n_inactive_users = __get_client_counts(measurement1, measurement1_scale, args.network_scale)
     logging.info("Privcount measurements scaled to {} Tor users, {} active and {} inactive".format(n_total_users, n_active_users, n_inactive_users))
 
-    n_total_circs, n_active_circs, n_inactive_circs = __get_exit_circuit_counts(measurement3, measurement3_scale, args.network_scale)
-    logging.info("Privcount measurements scaled to {} exit circuits, {} active and {} inactive".format(n_total_circs, n_active_circs, n_inactive_circs))
+    n_total_exit_circs, n_active_exit_circs, n_inactive_exit_circs = __get_exit_circuit_counts(measurement3, measurement3_scale, args.network_scale)
+    logging.info("Privcount measurements scaled to {} exit circuits, {} active and {} inactive".format(n_total_exit_circs, n_active_exit_circs, n_inactive_exit_circs))
 
-    tgen_clients, total_circuits_10_mins = __get_tgen_clients(args, n_active_users, n_active_circs, measurement2)
+    n_exit_users, n_hs_users, n_circuits_per_user = __get_tgen_users(args, n_active_users, n_active_exit_circs)
 
-    logging.info("We will use {} TGen client processes to emulate {} Tor users and create {} circuits every 10 minutes in aggregate".format(len(tgen_clients), n_active_users, total_circuits_10_mins))
+    tgen_clients, total_exit_circuits_10_mins, total_hs_circuits_10_mins = __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user)
 
-    perf_clients = __get_perf_clients(args, n_active_users)
+    logging.info("We will use {} TGen client processes to emulate {} Tor exit users and create {} exit circuits every 10 minutes in aggregate".format(
+        sum([1 for c in tgen_clients if not c['is_hs_client']]),
+        n_exit_users,
+        total_exit_circuits_10_mins))
 
-    logging.info("We will use {} perf nodes to benchmark Tor performance".format(len(perf_clients)))
+    logging.info("We will use {} TGen client processes to emulate {} Tor onion-service users and create {} onion-service circuits every 10 minutes in aggregate".format(
+        sum([1 for c in tgen_clients if c['is_hs_client']]),
+        n_hs_users,
+        total_hs_circuits_10_mins))
+
+    perf_clients = __get_perf_clients(args, n_exit_users, n_hs_users)
+
+    logging.info("We will use {} exit perf nodes to benchmark Tor exit performance".format(
+        sum([1 for c in perf_clients if not c['is_hs_client']])))
+    logging.info("We will use {} onion-service perf nodes to benchmark Tor onion-service performance".format(
+        sum([1 for c in perf_clients if c['is_hs_client']])))
 
     return tgen_clients, perf_clients
 
-def __get_perf_clients(args, n_users):
+def __get_perf_clients(args, n_exit_users, n_hs_users):
     perf_clients = []
 
-    n_perf = __round_or_ceil(n_users * args.torperf_scale)
+    # split the perf clients between onion-service clients and non-onion-service (exit) clients
+    n_hs_perf = __round_or_ceil(n_hs_users * args.torperf_scale)
+    n_exit_perf = __round_or_ceil(n_exit_users * args.torperf_scale)
+    n_perf = n_hs_perf + n_exit_perf
 
-    # split the perf clients between onion-service clients and non-onion-service (public) clients
-    n_hs_perf = math.ceil(n_perf * args.onion_service_traffic_scale)
-    n_public_perf = n_perf - n_hs_perf
-
-    for (i, is_hs_client) in ((x, x >= n_public_perf) for x in range(n_perf)):
+    for (i, is_hs_client) in ((x, x >= n_exit_perf) for x in range(n_perf)):
         chosen_country_code = choice(ONIONPERF_COUNTRY_CODES)
         client = {
             'country_code': chosen_country_code,
@@ -404,7 +405,7 @@ def __get_perf_clients(args, n_users):
         if is_hs_client:
             client['name'] = 'perfclient{}onionservice'.format(i+1)
         else:
-            client['name'] = 'perfclient{}public'.format(i+1)
+            client['name'] = 'perfclient{}exit'.format(i+1)
 
         perf_clients.append(client)
 
@@ -419,33 +420,62 @@ def __load_user_data(args):
 
     return country_codes, country_probs
 
-def __get_tgen_clients(args, n_users, n_circuits, measurement2):
+def __get_tgen_users(args, n_users, n_exit_circuits):
     # we need a set of TGen clients generating Tor client load
     tgen_clients = []
 
-    n_users_per_tgen = __round_or_ceil(1.0 / args.process_scale)
-    n_tgen = __round_or_ceil(n_users / n_users_per_tgen)
+    # The privcount data has the total number of users. During that time
+    # roughtly 5% of of usage was onion services. We model this by splitting
+    # out 5% of the users to be "onion service users".
+    # When we update our measurements, we should get a more precise number
+    # here.
+    estimated_hs_frac = 0.05
+    n_estimated_hs_users = n_users * estimated_hs_frac
+    n_estimated_exit_users = n_users - n_estimated_hs_users
 
-    if n_tgen < TGEN_CLIENT_MIN_COUNT:
-        # in this case, each tgen client will emulate fewer than requested tor users.
-        # i.e., args.process_scale will be ignored
-        n_tgen = TGEN_CLIENT_MIN_COUNT
-        n_users_per_tgen = __round_or_ceil(n_users / n_tgen)
+    # Calculate the number of circuits each tgen creates every 10 minutes.
+    # We have measurements of the number of exit circuits and number of exit
+    # users, which estimates the load per user in the measured network. 
+    # For now we assume the same per-user load in onion services.
+    n_estimated_circuits_per_user = n_exit_circuits / n_estimated_exit_users
+
+    # Final load in circuits-per-user, with configured total load scaling.
+    n_circuits_per_user = n_estimated_circuits_per_user * args.load_scale
+
+    # Final number of users to simulate, with configured per-type scaling.
+    n_hs_users = n_estimated_hs_users * args.onion_service_user_scale
+    n_exit_users = n_estimated_exit_users * args.exit_user_scale
+
+    return (n_exit_users, n_hs_users, n_circuits_per_user)
+
+def __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user):
+    # we need a set of TGen clients generating Tor client load
+    tgen_clients = []
+
+    # Calculate number of tgen instances. We scale by args.process_scale,
+    # for efficiency, but apply a minimum to avoid losing granularity.
+    # We do this separately for hidden service and exit clients to avoid having
+    # a small number of hidden service clients force there to be a large number
+    # of exit clients.
+    n_hs_tgen = __round_or_ceil(n_hs_users * args.process_scale)
+    if n_hs_users > 0:
+        n_hs_tgen = max(n_hs_tgen, TGEN_CLIENT_MIN_COUNT)
+        hs_users_per_hs_tgen = n_hs_users / n_hs_tgen
+        n_circuits_per_hs_tgen = __round_or_ceil(n_circuits_per_user * hs_users_per_hs_tgen) 
+
+    # Same for exit users.
+    n_exit_tgen = __round_or_ceil(n_exit_users * args.process_scale)
+    if n_exit_users > 0:
+        n_exit_tgen = max(n_exit_tgen, TGEN_CLIENT_MIN_COUNT)
+        exit_users_per_exit_tgen = n_exit_users / n_exit_tgen
+        n_circuits_per_exit_tgen = __round_or_ceil(n_circuits_per_user * exit_users_per_exit_tgen) 
 
     # each client will be placed in a country
     country_codes, country_probs = __load_user_data(args)
 
-    # the number of circuits each tgen creates every 10 minutes.
-    # we adjust by the load scale here instead of on n_tgen, because n_tgen
-    # can already be adjusted with args.process_scale.
-    n_circuits_per_tgen = __round_or_ceil(n_circuits / n_tgen * args.load_scale)
-
-    # split the tgen clients between onion-service clients and non-onion-service (public) clients
-    n_hs_tgen = math.ceil(n_tgen * args.onion_service_traffic_scale)
-    n_public_tgen = n_tgen - n_hs_tgen
-
-    total_circuits_10_mins = 0
-    for (i, is_hs_client) in ((x, x >= n_public_tgen) for x in range(n_tgen)):
+    total_exit_circuits_10_mins = 0
+    total_hs_circuits_10_mins = 0
+    for (i, is_hs_client) in ((x, x >= n_exit_tgen) for x in range(n_exit_tgen + n_hs_tgen)):
         # where to place the tgen process
         chosen_country_code = choice(country_codes, p=country_probs)
 
@@ -455,9 +485,13 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
         #        relays to see ~10 times as many circuits as exit relays. So instead we use the
         #        more accurate total circuit counts from exits.
         #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_users_per_tgen)
-        num_circs_every_10_minutes = int(n_circuits_per_tgen)
-        total_circuits_10_mins += num_circs_every_10_minutes
-
+        if is_hs_client:
+            num_circs_every_10_minutes  = n_circuits_per_hs_tgen
+            total_hs_circuits_10_mins += n_circuits_per_hs_tgen
+        else:
+            num_circs_every_10_minutes  = n_circuits_per_exit_tgen
+            total_exit_circuits_10_mins += n_circuits_per_exit_tgen
+            
         # convert circuit count into a rate for the exponential distribution
         usec_in_10_minutes = 10.0*60.0*1000.0*1000.0
         usec_per_circ = usec_in_10_minutes / num_circs_every_10_minutes
@@ -473,11 +507,11 @@ def __get_tgen_clients(args, n_users, n_circuits, measurement2):
         if is_hs_client:
             client['name'] = 'markovclient{}onionservice'.format(i+1)
         else:
-            client['name'] = 'markovclient{}public'.format(i+1)
+            client['name'] = 'markovclient{}exit'.format(i+1)
 
         tgen_clients.append(client)
 
-    return tgen_clients, total_circuits_10_mins
+    return tgen_clients, total_exit_circuits_10_mins, total_hs_circuits_10_mins
 
 def __get_client_counts(measurement, privcount_scale, tornet_scale):
     # extract the counts from the tally file data

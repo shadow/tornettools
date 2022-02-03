@@ -279,13 +279,6 @@ def main():
         action="store", dest="process_scale",
         default=0.01)
 
-    generate_parser.add_argument('--onion_service_traffic_scale',
-        help="""The fraction of clients and servers that will communicate using onion-service
-            traffic.""",
-        metavar="N", type=__type_fractional_float,
-        action="store", dest="onion_service_traffic_scale",
-        default=0.0)
-
     generate_parser.add_argument('-s', '--server_scale',
         help="""A fractional number representing the ratio of the number of TGen servers to the
             number of TGen clients that we run. E.g., a value of 0.1 means that we will run 1
@@ -312,6 +305,24 @@ def main():
         relays in the generated network.""",
         metavar="N", type=float,
         action="store", dest="load_scale",
+        default=1.0)
+
+    generate_parser.add_argument('--onion_service_user_scale',
+        help="""A float number by which we scale (multiply) the number of
+        onion-service users and servers. Does *not* change traffic generated
+        *per* user. i.e. *does* scale *total* onion service traffic in the
+        network.""",
+        metavar="N", type=__type_fractional_float,
+        action="store", dest="onion_service_user_scale",
+        default=0.0)
+
+    generate_parser.add_argument('--exit_user_scale',
+        help="""A float number by which we scale (multiply) the number of exit
+        (non-onion-service) users and servers.  Does not change traffic
+        generated *per* user. i.e. *does* scale *total* exit traffic in the
+        network.""",
+        metavar="N", type=__type_fractional_float,
+        action="store", dest="exit_user_scale",
         default=1.0)
 
     generate_parser.add_argument('-a', '--atlas',
