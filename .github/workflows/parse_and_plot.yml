@@ -71,6 +71,7 @@ jobs:
       - name: Diff
         run: for f in .github/workflows/parse_and_plot_output/tornet.plot.data/*.json;
           do 
+            echo "Diffing $f"
             diff $f parse_and_plot_output/tornet.plot.data/$(basename $f);
           done
 

@@ -307,6 +307,24 @@ def main():
         action="store", dest="load_scale",
         default=1.0)
 
+    generate_parser.add_argument('--onion_service_user_scale',
+        help="""A float number by which we scale (multiply) the number of
+        onion-service users and servers. Does *not* change traffic generated
+        *per* user. i.e. *does* scale *total* onion service traffic in the
+        network.""",
+        metavar="N", type=__type_fractional_float,
+        action="store", dest="onion_service_user_scale",
+        default=0.0)
+
+    generate_parser.add_argument('--exit_user_scale',
+        help="""A float number by which we scale (multiply) the number of exit
+        (non-onion-service) users and servers.  Does not change traffic
+        generated *per* user. i.e. *does* scale *total* exit traffic in the
+        network.""",
+        metavar="N", type=__type_fractional_float,
+        action="store", dest="exit_user_scale",
+        default=1.0)
+
     generate_parser.add_argument('-a', '--atlas',
         help="""The path to a decompressed version of the atlas topology file that Shadow should
             use to construct its network. Use this option to avoid storing duplicate atlas files;

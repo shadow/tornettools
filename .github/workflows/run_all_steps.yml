@@ -208,6 +208,7 @@ jobs:
             tmodel-ccs2018.github.io \
             --network_scale 0.0001 \
             --torperf_scale 0.1 \
+            --onion_service_user_scale 1.0 \
             --prefix tornet
 
       - name: Simulate

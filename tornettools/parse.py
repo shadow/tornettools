@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 from tornettools.parse_oniontrace import parse_oniontrace_logs, extract_oniontrace_plot_data
 from tornettools.parse_tgen import parse_tgen_logs, extract_tgen_plot_data
@@ -44,41 +45,46 @@ def __parse_tornettools_log(args):
     gen_log_path = f"{args.prefix}/{gen_logs[-1]}"
     with open_readable_file(gen_log_path) as inf:
         for line in inf:
-            if "Seeded standard and numpy PRNGs" in line:
-                info['tornettools_generate_seed'] = int(line.strip().split()[11].split('=')[1])
-            elif "relays using scale factor" in line:
-                parts = line.strip().split()
-                l = len(parts)
-                if l >= 7:
-                    info['num_sampled_relays'] = int(parts[6])
-                if l >= 9:
-                    info['num_public_relays'] = int(parts[8])
-                if l >= 14:
-                    info['net_scale'] = float(parts[13])
-            elif "Generated fingerprints and keys" in line:
-                parts = line.strip().split()
-                l = len(parts)
-                if l >= 14:
-                    info['num_dir_authorities'] = int(parts[13].strip('('))
-            elif "TGen client processes to emulate" in line:
-                parts = line.strip().split()
-                l = len(parts)
-                if l >= 9:
-                    info['num_tgen_markov_clients'] = int(parts[8])
-                if l >= 15:
-                    info['num_emulated_users'] = int(parts[14])
-                if l >= 20:
-                    info['num_circuits_ten_minutes'] = int(parts[19])
-            elif "perf nodes to benchmark Tor performance" in line:
-                 parts = line.strip().split()
-                 l = len(parts)
-                 if l >= 9:
-                     info['num_tgen_perf_clients'] = int(parts[8])
-            elif "TGen servers to serve" in line:
-                 parts = line.strip().split()
-                 l = len(parts)
-                 if l >= 9:
-                     info['num_tgen_servers'] = int(parts[8])
+
+            match = re.search(r'Seeded standard and numpy PRNGs with seed=(\d+)', line)
+            if match:
+                info['tornettools_generate_seed'] = int(match.groups()[0])
+                continue
+            match = re.search('Chose (\d+) of (\d+) relays using scale factor (\S+)', line)
+            if match:
+                info['num_sampled_relays'] = int(match.groups()[0])
+                info['num_public_relays'] = int(match.groups()[1])
+                info['net_scale'] = float(match.groups()[2])
+                continue
+            match = re.search(r'Generated fingerprints and keys for (\d+) Tor nodes \((\d+) authorities and (\d+) relays', line)
+            if match:
+                info['num_dir_authorities'] = int(match.groups()[1])
+                continue
+            match = re.search(r'We will use (\d+) TGen client processes to emulate (\S+) Tor exit users and create (\d+) exit circuits', line)
+            if match:
+                info['num_tgen_exit_markov_clients'] = int(match.groups()[0])
+                info['num_tgen_exit_emulated_users'] = float(match.groups()[1])
+                info['num_exit_circuits_ten_minutes'] = int(match.groups()[2])
+                continue
+            match = re.search(r'We will use (\d+) TGen client processes to emulate (\S+) Tor onion-service users and create (\d+) onion-service circuits', line)
+            if match:
+                info['num_tgen_hs_markov_clients'] = int(match.groups()[0])
+                info['num_tgen_hs_emulated_users'] = float(match.groups()[1])
+                info['num_hs_circuits_ten_minutes'] = int(match.groups()[2])
+                continue
+            match = re.search(r'We will use (\d+) exit perf nodes to benchmark Tor exit performance', line)
+            if match:
+                 info['num_tgen_exit_perf_clients'] = int(match.groups()[0])
+                 continue
+            match = re.search(r'We will use (\d+) onion-service perf nodes to benchmark Tor onion-service performance', line)
+            if match:
+                 info['num_tgen_hs_perf_clients'] = int(match.groups()[0])
+                 continue
+            match = re.search(r'We will use (\d+) TGen exit servers and (\d+) TGen onion-service servers', line)
+            if match:
+                 info['num_tgen_exit_servers'] = int(match.groups()[0])
+                 info['num_tgen_onionservice_servers'] = int(match.groups()[1])
+                 continue
 
     outpath = f"{args.prefix}/tornet.plot.data/simulation_info.json"
     dump_json_data(info, outpath, compress=False)
