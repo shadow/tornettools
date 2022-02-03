@@ -1,3 +1,4 @@
+import re
 import sys
 import os
 import logging
@@ -30,6 +31,16 @@ def run(args):
 
     logging.info(f"Done plotting! PDF files are saved to {args.prefix}")
 
+def __pattern_for_basename(circuittype, basename):
+    s = basename + '\.' + circuittype + '\.json'
+    if circuittype == 'exit':
+        # Data files without a circuittype contain exit circuits (from legacy
+        # tornettools runs).
+        s = basename + '(\.' + circuittype + ')?\.json'
+    else:
+        s = basename + '\.' + circuittype + '\.json'
+    return re.compile(s)
+
 def __plot_tornet(args):
     args.pdfpages = PdfPages(f"{args.prefix}/tornet.plot.pages.pdf")
 
@@ -48,37 +59,39 @@ def __plot_tornet(args):
     logging.info("Plotting relay goodput")
     __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale)
 
+    # FIXME: split by circuittype
     logging.info("Loading tornet circuit build time data")
     tornet_dbs = __load_tornet_datasets(args, "perfclient_circuit_build_time.json")
     logging.info("Plotting circuit build times")
     __plot_circuit_build_time(args, torperf_dbs, tornet_dbs)
 
-    logging.info("Loading tornet round trip time data")
-    tornet_dbs = __load_tornet_datasets(args, "round_trip_time.json")
-    logging.info("Plotting round trip times")
-    __plot_round_trip_time(args, torperf_dbs, tornet_dbs)
+    for circuittype in ('exit', 'onionservice'):
+        logging.info(f"Loading {circuittype} tornet round trip time data")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'round_trip_time'))
+        logging.info(f"Plotting {circuittype} round trip times")
+        __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs)
 
-    logging.info("Loading tornet transfer time data")
-    tornet_dbs = __load_tornet_datasets(args, "time_to_last_byte_recv.json")
-    logging.info("Plotting transfer times")
-    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "51200")
-    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "1048576")
-    __plot_transfer_time(args, torperf_dbs, tornet_dbs, "5242880")
+        logging.info(f"Loading {circuittype} tornet transfer time data")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'time_to_last_byte_recv'))
+        logging.info("Plotting transfer times")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "51200")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "1048576")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "5242880")
 
-    logging.info("Loading tornet goodput data")
-    tornet_dbs = __load_tornet_datasets(args, "perfclient_goodput.json")
-    logging.info("Plotting client goodput")
-    __plot_client_goodput(args, torperf_dbs, tornet_dbs)
+        logging.info(f"Loading {circuittype} tornet goodput data")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput'))
+        logging.info(f"Plotting {circuittype} client goodput")
+        __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs)
 
-    logging.info("Loading tornet goodput data 5MiB")
-    tornet_dbs = __load_tornet_datasets(args, "perfclient_goodput_5MiB.json")
-    logging.info("Plotting client goodput [5 MiB]")
-    __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs)
+        logging.info(f"Loading {circuittype} tornet goodput data 5MiB")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput_5MiB'))
+        logging.info(f"Plotting {circuittype} client goodput [5 MiB]")
+        __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs)
 
-    logging.info("Loading tornet transfer error rate data")
-    tornet_dbs = __load_tornet_datasets(args, "error_rate.json")
-    logging.info("Plotting transfer error rates")
-    __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, "ALL")
+        logging.info(f"Loading {circuittype} tornet transfer error rate data")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'error_rate'))
+        logging.info(f"Plotting {circuittype} transfer error rates")
+        __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, "ALL")
 
     args.pdfpages.close()
 
@@ -194,7 +207,7 @@ def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
         yscale="taillog",
         xlabel="Circuit Build Time (s)")
 
-def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
+def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
@@ -203,11 +216,11 @@ def __plot_round_trip_time(args, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, 'round_trip_time',
+    __plot_cdf_figure(args, dbs_to_plot, f'round_trip_time.{circuittype}',
         yscale="taillog",
-        xlabel="Circuit Round Trip Time (s)")
+        xlabel=f"{circuittype} Circuit Round Trip Time (s)")
 
-def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
+def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset']) if bytes_key in tornet_db['dataset'][i]]
@@ -216,11 +229,11 @@ def __plot_transfer_time(args, torperf_dbs, tornet_dbs, bytes_key):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}",
+    __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}.{circuittype}",
         yscale="taillog",
-        xlabel=f"Transfer Time (s): Bytes={bytes_key}")
+        xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
 
-def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
+def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, error_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][i][error_key] for i, _ in enumerate(tornet_db['dataset']) if error_key in tornet_db['dataset'][i]]
@@ -230,10 +243,10 @@ def __plot_transfer_error_rates(args, torperf_dbs, tornet_dbs, error_key):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}",
-        xlabel=f"Transfer Error Rate (\%): Type={error_key}")
+    __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}.{circuittype}",
+        xlabel=f"{circuittype} Transfer Error Rate (\%): Type={error_key}")
 
-def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
+def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
     # Tor computes goodput based on the time between the .5 MiB byte to the 1 MiB
     # byte in order to cut out circuit build and other startup costs.
     # https://metrics.torproject.org/reproducible-metrics.html#performance
@@ -250,11 +263,11 @@ def __plot_client_goodput(args, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, 'client_goodput',
+    __plot_cdf_figure(args, dbs_to_plot, f'client_goodput.{circuittype}',
         yscale="taillog",
-        xlabel="Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
+        xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
-def __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs):
+def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
     # Computes throughput for last of 5MiB transfer
 
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
@@ -269,9 +282,9 @@ def __plot_client_goodput_5MiB(args, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, 'client_goodput_5MiB',
+    __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_5MiB.{circuittype}',
         yscale="taillog",
-        xlabel="Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
+        xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)
@@ -396,7 +409,7 @@ def __time_format_func(x, pos):
     seconds = int(x%60)
     return "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
-def __load_tornet_datasets(args, filename):
+def __load_tornet_datasets(args, filepattern):
     tornet_dbs = []
 
     print(args.labels)
@@ -406,7 +419,7 @@ def __load_tornet_datasets(args, filename):
     if args.tornet_collection_path != None:
         for collection_dir in args.tornet_collection_path:
             tornet_db = {
-                'dataset': [load_json_data(p) for p in find_matching_files_in_dir(collection_dir, filename)],
+                'dataset': [load_json_data(p) for p in find_matching_files_in_dir(collection_dir, filepattern)],
                 'label': next(label_cycle) if label_cycle != None else os.path.basename(collection_dir),
                 'color': next(color_cycle) if color_cycle != None else None,
             }
