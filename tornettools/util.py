@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import lzma
+import re
 import shutil
 import shlex
 import subprocess
@@ -48,12 +49,17 @@ def load_json_data(infile_path):
         data = json.load(infile)
     return data
 
-def find_matching_files_in_dir(search_dir, filename):
-    logging.info(f"Searching for files with name {filename} in directory tree at {search_dir}")
+def find_matching_files_in_dir(search_dir, filepattern):
+    if type(filepattern) == str:
+        # Interpret as a literal string
+        logging.info(f"Searching for files containing {filepattern} in directory tree at {search_dir}")
+        filepattern = re.compile('.*' + re.escape(filepattern) + '.*')
+    else:
+        logging.info(f"Searching for files matching {filepattern.pattern} in directory tree at {search_dir}")
     found = []
     for root, dirs, files in os.walk(search_dir):
         for name in files:
-            if filename in name:
+            if filepattern.match(name):
                 p = os.path.join(root, name)
                 logging.info("Found {}".format(p))
                 found.append(p)
