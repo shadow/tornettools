@@ -59,13 +59,12 @@ def __plot_tornet(args):
     logging.info("Plotting relay goodput")
     __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale)
 
-    # FIXME: split by circuittype
-    logging.info("Loading tornet circuit build time data")
-    tornet_dbs = __load_tornet_datasets(args, "perfclient_circuit_build_time.json")
-    logging.info("Plotting circuit build times")
-    __plot_circuit_build_time(args, torperf_dbs, tornet_dbs)
-
     for circuittype in ('exit', 'onionservice'):
+        logging.info(f"Loading {circuittype} tornet circuit build time data")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, "perfclient_circuit_build_time"))
+        logging.info(f"Plotting {circuittype} circuit build times")
+        __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs)
+
         logging.info(f"Loading {circuittype} tornet round trip time data")
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'round_trip_time'))
         logging.info(f"Plotting {circuittype} round trip times")
@@ -194,7 +193,7 @@ def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
     __plot_cdf_figure(args, dbs_to_plot, 'relay_goodput',
         xlabel="Sum of Relays' Goodput (Gbit/s)")
 
-def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
+def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
@@ -203,9 +202,9 @@ def __plot_circuit_build_time(args, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
-    __plot_cdf_figure(args, dbs_to_plot, 'circuit_build_time',
+    __plot_cdf_figure(args, dbs_to_plot, f'circuit_build_time.{circuittype}',
         yscale="taillog",
-        xlabel="Circuit Build Time (s)")
+        xlabel=f"{circuittype} Circuit Build Time (s)")
 
 def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
