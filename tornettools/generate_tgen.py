@@ -269,12 +269,8 @@ def __convert_privcount_key_to_tgen_key(str):
         return str
 
 def __calculate_number_of_servers(args, n_exit_clients, n_hs_clients):
-    n_exit_servers = max(
-            round(n_exit_clients * args.server_scale),
-            TGEN_SERVER_MIN_COUNT) if n_exit_clients > 0 else 0
-    n_hs_servers = max(
-            round(n_hs_clients * args.server_scale),
-            TGEN_SERVER_MIN_COUNT) if n_hs_clients > 0 else 0
+    n_exit_servers = __round_or_ceil(n_exit_clients * args.server_scale)
+    n_hs_servers = __round_or_ceil(n_hs_clients * args.server_scale)
 
     return (n_exit_servers, n_hs_servers)
 
@@ -452,21 +448,21 @@ def __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user):
     # we need a set of TGen clients generating Tor client load
     tgen_clients = []
 
-    # Calculate number of tgen instances. We scale by args.process_scale,
-    # for efficiency, but apply a minimum to avoid losing granularity.
-    # We do this separately for hidden service and exit clients to avoid having
-    # a small number of hidden service clients force there to be a large number
-    # of exit clients.
-    n_hs_tgen = __round_or_ceil(n_hs_users * args.process_scale)
-    if n_hs_users > 0:
-        n_hs_tgen = max(n_hs_tgen, TGEN_CLIENT_MIN_COUNT)
+    # Calculate number of tgen instances used to emulate n_hs_users.
+    # We typically use a smaller number of tgen instances than the number of users
+    # we're emulating for efficiency (configured via args.process_scale).
+    # However we don't allow args.process_scale to drive the number of processes lower than
+    # TGEN_CLIENT_MIN_COUNT (or the number of users, whichever is smaller).
+    n_hs_tgen_min = min(__round_or_ceil(n_hs_users), TGEN_CLIENT_MIN_COUNT)
+    n_hs_tgen = max(__round_or_ceil(n_hs_users * args.process_scale), n_hs_tgen_min)
+    if n_hs_tgen > 0:
         hs_users_per_hs_tgen = n_hs_users / n_hs_tgen
         n_circuits_per_hs_tgen = __round_or_ceil(n_circuits_per_user * hs_users_per_hs_tgen) 
 
     # Same for exit users.
-    n_exit_tgen = __round_or_ceil(n_exit_users * args.process_scale)
-    if n_exit_users > 0:
-        n_exit_tgen = max(n_exit_tgen, TGEN_CLIENT_MIN_COUNT)
+    n_exit_tgen_min = min(__round_or_ceil(n_exit_users), TGEN_CLIENT_MIN_COUNT)
+    n_exit_tgen = max(__round_or_ceil(n_exit_users * args.process_scale), n_exit_tgen_min)
+    if n_exit_tgen > 0:
         exit_users_per_exit_tgen = n_exit_users / n_exit_tgen
         n_circuits_per_exit_tgen = __round_or_ceil(n_circuits_per_user * exit_users_per_exit_tgen) 
 
