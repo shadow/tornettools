@@ -269,12 +269,8 @@ def __convert_privcount_key_to_tgen_key(str):
         return str
 
 def __calculate_number_of_servers(args, n_exit_clients, n_hs_clients):
-    n_exit_servers = max(
-            round(n_exit_clients * args.server_scale),
-            TGEN_SERVER_MIN_COUNT) if n_exit_clients > 0 else 0
-    n_hs_servers = max(
-            round(n_hs_clients * args.server_scale),
-            TGEN_SERVER_MIN_COUNT) if n_hs_clients > 0 else 0
+    n_exit_servers = __round_or_ceil(n_exit_clients * args.server_scale)
+    n_hs_servers = __round_or_ceil(n_hs_clients * args.server_scale)
 
     return (n_exit_servers, n_hs_servers)
 
