@@ -293,3 +293,12 @@ jobs:
         with:
           name: plots
           path: pdfs/*.pdf
+
+      # Full tornet, including invididual process logs for debugging
+      - name: Full output
+        uses: actions/upload-artifact@v2
+        with:
+          name: full_output
+          path: |
+            tornet
+
