@@ -20,7 +20,7 @@ def parse_oniontrace_logs(args):
     cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e '.*\.oniontrace\.[0-9]+.stdout' -e 'stdout.*\.oniontrace\.[0-9]+.log' shadow.data/hosts"
     cmd = cmdsplit(cmd_str)
 
-    datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H.%M.%S")
 
     with open_writeable_file(f"{args.prefix}/oniontracetools.parse.{datestr}.log") as outf:
         logging.info("Parsing oniontrace log data with oniontracetools now...")

@@ -23,7 +23,7 @@ def plot_oniontrace(args):
             cmd_str = f"{cmd_prefix_str} --data {json_path} {dir_name}"
             cmd = cmdsplit(cmd_str)
 
-            datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+            datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H.%M.%S")
 
             with open_writeable_file(f"{dir_path}/oniontracetools.plot.{datestr}.log") as outf:
                 logging.info(f"Using oniontracetools to plot data from {json_path} now...")
