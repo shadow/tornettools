@@ -69,10 +69,11 @@ jobs:
       # golden data in `.github/workflows/parse_and_plot_output` can be updated
       # using the actual output from this workflow's artifacts.
       - name: Diff
-        run: for f in .github/workflows/parse_and_plot_output/tornet.plot.data/*.json;
+        run: |
+          for f in .github/workflows/parse_and_plot_output/tornet.plot.data/*.json
           do 
             echo "Diffing $f"
-            diff $f parse_and_plot_output/tornet.plot.data/$(basename $f);
+            diff $f parse_and_plot_output/tornet.plot.data/$(basename $f)
           done
 
       - name: Plot
