@@ -67,10 +67,10 @@ def __generate_tgenrc_perfclient(server_peers, path):
     # torperf uses 5 minute pause, but we reduce it for shadow
     G.add_node("pause", time="1 minute")
 
-    # Same timeout settings as used in torperf.
-    G.add_node("stream_50k", sendsize="1000 bytes", recvsize="50 KiB", stallout="0 seconds", timeout="300 seconds")
-    G.add_node("stream_1m", sendsize="1000 bytes", recvsize="1 MiB", stallout="0 seconds", timeout="1800 seconds")
-    G.add_node("stream_5m", sendsize="1000 bytes", recvsize="5 MiB", stallout="0 seconds", timeout="3600 seconds")
+    # torperf uses 300, 1800, and 3600 second timeouts, but we reduce them for shadow
+    G.add_node("stream_50k", sendsize="1000 bytes", recvsize="50 KiB", stallout="0 seconds", timeout="15 seconds")
+    G.add_node("stream_1m", sendsize="1000 bytes", recvsize="1 MiB", stallout="0 seconds", timeout="60 seconds")
+    G.add_node("stream_5m", sendsize="1000 bytes", recvsize="5 MiB", stallout="0 seconds", timeout="120 seconds")
 
     G.add_edge("start", "pause")
 
