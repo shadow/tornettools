@@ -399,7 +399,7 @@ def main():
         # It is set here as well so that old shadow simulations that don't have it set in
         # the configuration file will still run correctly. This option can be removed from
         # these default shadow options in the future.
-        default="--parallelism={} --seed=666 --template-directory=shadow.data.template".format(cpu_count()//2))
+        default="--progress=true --parallelism={} --seed=666 --template-directory=shadow.data.template".format(cpu_count()//2))
 
     # This option allows us to swap the filename with shadow.config.xml in Shadow v1.15.x.
     # Once we no longer care about supporting Shadow v1.15.x, we could remove this option.

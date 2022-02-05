@@ -221,10 +221,10 @@ jobs:
         run: |
           # Use short simulation time
           sed -i 's/stop_time:.*/stop_time: "15m"/' tornet/shadow.config.yaml
-          # Extra logging for perf clients XXX DO NOT MERGE
-          echo "Log debug stdout" >> tornet/conf/tor.client.perf.torrc
-          echo "logtimegranularity 1" >> tornet/conf/tor.client.perf.torrc
-          echo "safelogging 0" >> tornet/conf/tor.client.perf.torrc
+          # Extra logging for tor XXX DO NOT MERGE
+          echo "Log debug stdout" >> tornet/conf/tor.common.torrc
+          echo "logtimegranularity 1" >> tornet/conf/tor.common.torrc
+          echo "safelogging 0" >> tornet/conf/tor.common.torrc
           # Install runtime shadow and tor deps, in case we skipped building (and installing build deps)
           sudo apt-get install -y libevent-2.1-7 libssl1.1 zlib1g libglib2.0-0 libigraph0v5 libprocps8 sysstat python3 python3-pip
           tornettools simulate --args "--parallelism=$(nproc) --seed=1 --template-directory=shadow.data.template --progress=true" tornet
