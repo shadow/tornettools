@@ -194,6 +194,10 @@ def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
         xlabel="Sum of Relays' Goodput (Gbit/s)")
 
 def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
@@ -207,6 +211,10 @@ def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
         xlabel=f"{circuittype} Circuit Build Time (s)")
 
 def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = tornet_db['dataset']
@@ -220,6 +228,10 @@ def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
         xlabel=f"{circuittype} Circuit Round Trip Time (s)")
 
 def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset']) if bytes_key in tornet_db['dataset'][i]]
@@ -233,6 +245,10 @@ def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
         xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
 
 def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, error_key):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][i][error_key] for i, _ in enumerate(tornet_db['dataset']) if error_key in tornet_db['dataset'][i]]
@@ -246,6 +262,10 @@ def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, erro
         xlabel=f"{circuittype} Transfer Error Rate (\%): Type={error_key}")
 
 def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # Tor computes goodput based on the time between the .5 MiB byte to the 1 MiB
     # byte in order to cut out circuit build and other startup costs.
     # https://metrics.torproject.org/reproducible-metrics.html#performance
@@ -267,6 +287,10 @@ def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
         xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
 def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
     # Computes throughput for last of 5MiB transfer
 
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
