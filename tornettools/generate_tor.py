@@ -371,6 +371,7 @@ def __generate_torrc_onionservice(conf_path):
     torrc_file.write(f'SocksPort {TOR_SOCKS_PORT}\n')
     torrc_file.write(f'HiddenServiceDir {TOR_ONIONSERVICE_DIR}\n')
     torrc_file.write(f'HiddenServicePort {TGEN_ONIONSERVICE_PORT} 127.0.0.1:{TGEN_SERVER_PORT}\n')
+    torrc_file.write('UseEntryGuards 0\n')
 
     torrc_file.close()
 
