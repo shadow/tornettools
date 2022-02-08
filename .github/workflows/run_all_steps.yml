@@ -198,13 +198,12 @@ jobs:
       - name: Generate
         run: |
           # Simulate a very small network to keep this test fast.
-          NETWORK_SCALE=0.0001
+          NETWORK_SCALE=0.001
           # The default torperf_scale would only give us ~1 client
-          # at this network scale. 0.1 gives us ~10 total.
-          TORPERF_SCALE=0.1
-          # At this network size, 1.0 would only give us ~4 onion service
-          # markov clients, and 1 perf client.
-          ONION_SERVICE_USER_SCALE=5.0
+          # at this network scale. 0.01 gives us ~10 total.
+          TORPERF_SCALE=0.01
+          # Enable onion services
+          ONION_SERVICE_USER_SCALE=1.0
           tornettools \
             --seed 1 \
             generate \
