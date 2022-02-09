@@ -1,6 +1,7 @@
 import os
 import logging
 import datetime
+import re
 import subprocess
 
 from tornettools.util import which, cmdsplit, open_writeable_file, load_json_data, dump_json_data
@@ -43,12 +44,14 @@ def extract_oniontrace_plot_data(args):
     # parse performance stats only after the network has reached steady state
     startts, stopts = args.converge_time, -1 if args.run_time < 0 else args.converge_time + args.run_time
 
-    __extract_circuit_build_times(args, data, startts, stopts)
+    for circuittype in ('exit', 'onionservice'):
+        __extract_circuit_build_times(args, circuittype, data, startts, stopts)
+
     __extract_relay_tput(args, data, startts, stopts)
 
-def __extract_circuit_build_times(args, data, startts, stopts):
-    cbt = __get_perfclient_cbt(data, startts, stopts)
-    outpath = f"{args.prefix}/tornet.plot.data/perfclient_circuit_build_time.json"
+def __extract_circuit_build_times(args, circuittype, data, startts, stopts):
+    cbt = __get_perfclient_cbt(data, circuittype, startts, stopts)
+    outpath = f"{args.prefix}/tornet.plot.data/perfclient_circuit_build_time.{circuittype}.json"
     dump_json_data(cbt, outpath, compress=False)
 
 def __extract_relay_tput(args, data, startts, stopts):
@@ -56,18 +59,18 @@ def __extract_relay_tput(args, data, startts, stopts):
     outpath = f"{args.prefix}/tornet.plot.data/relay_goodput.json"
     dump_json_data(tput, outpath, compress=False)
 
-def __get_perfclient_cbt(data, startts, stopts):
+def __get_perfclient_cbt(data, circuittype, startts, stopts):
     perf_cbt = []
 
     # cbts can differ by microseconds
     resolution = 1.0/1000000.0
 
+    pattern = re.compile(r'perfclient\d+' + circuittype)
+
     if 'data' in data:
         for name in data['data']:
-            if 'perfclient' not in name: continue
-            # Process only non-onionservice perfclients for now.
-            # TODO: Process onionservice perfclients separately.
-            if 'onionservice' in name: continue
+            if pattern.match(name) is None:
+                continue
 
             circ = data['data'][name]['oniontrace']['circuit']
             key = 'build_time'

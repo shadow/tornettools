@@ -312,7 +312,7 @@ def main():
         onion-service users and servers. Does *not* change traffic generated
         *per* user. i.e. *does* scale *total* onion service traffic in the
         network.""",
-        metavar="N", type=__type_fractional_float,
+        metavar="N", type=__type_nonnegative_float,
         action="store", dest="onion_service_user_scale",
         default=0.0)
 
@@ -631,6 +631,12 @@ def __type_nonnegative_integer(value):
     i = int(value)
     if i < 0:
         raise argparse.ArgumentTypeError("'%s' is an invalid non-negative int value" % value)
+    return i
+
+def __type_nonnegative_float(value):
+    i = float(value)
+    if i < 0.0:
+        raise argparse.ArgumentTypeError("'%s' is an invalid non-negative flat value" % value)
     return i
 
 def __type_fractional_float(value):
