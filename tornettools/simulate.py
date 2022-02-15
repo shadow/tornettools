@@ -1,9 +1,6 @@
-import sys
-import os
 import logging
 import subprocess
 import threading
-import lzma
 
 from time import sleep
 

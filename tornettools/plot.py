@@ -1,11 +1,11 @@
 import re
-import sys
 import os
 import logging
 
 from itertools import cycle
 import matplotlib.pyplot as pyplot
 from matplotlib.ticker import FuncFormatter
+from matplotlib.backends.backend_pdf import PdfPages
 
 from tornettools.util import load_json_data, find_matching_files_in_dir
 

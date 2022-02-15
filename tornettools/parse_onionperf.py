@@ -1,7 +1,5 @@
-import sys
 import os
 import json
-import lzma
 import logging
 
 from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_stream_seconds_at_bytes

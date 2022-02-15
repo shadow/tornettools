@@ -5,7 +5,6 @@ import lzma
 import re
 import shutil
 import shlex
-import subprocess
 
 def make_directories(path):
     p = os.path.abspath(os.path.expanduser(path))

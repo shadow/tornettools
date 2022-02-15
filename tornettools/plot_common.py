@@ -1,13 +1,11 @@
 from tornettools.util import which
 from numpy import array as nparray, log10 as nplog10
-from numpy import ma, mean, median, std, log10, quantile, sqrt, linspace, var
+from numpy import ma, mean, median, std, quantile, sqrt, linspace, var
 from scipy.stats import scoreatpercentile as score, t
 from matplotlib import rcParams
 from matplotlib.ticker import FixedFormatter, FixedLocator
 from matplotlib import transforms as mtransforms
 from matplotlib import scale as mscale
-from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.pyplot as pyplot
 from matplotlib import use as mp_use
 mp_use('Agg') # for systems without X11
 

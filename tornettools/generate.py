@@ -1,9 +1,6 @@
-import sys
 import os
-import json
 import yaml
 import logging
-import shlex
 import shutil
 import random
 from ipaddress import IPv4Address

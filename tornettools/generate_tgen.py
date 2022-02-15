@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import math
 import stem.process
 import stem.connection
 import tempfile

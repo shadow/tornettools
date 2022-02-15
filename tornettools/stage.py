@@ -3,7 +3,6 @@ import os
 import logging
 import lzma
 import datetime
-import json
 
 from tornettools.generate_defaults import TMODEL_TOPOLOGY_FILENAME
 from tornettools.util import dump_json_data
