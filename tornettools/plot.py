@@ -9,7 +9,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from tornettools.util import load_json_data, find_matching_files_in_dir
 
-from tornettools.plot_common import *
+from tornettools.plot_common import (DEFAULT_COLORS, DEFAULT_LINESTYLES, draw_cdf, draw_cdf_ci,
+                                     draw_line, draw_line_ci, quantile, set_plot_options)
 from tornettools.plot_tgen import plot_tgen
 from tornettools.plot_oniontrace import plot_oniontrace
 

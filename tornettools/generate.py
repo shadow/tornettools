@@ -8,9 +8,23 @@ import base64
 
 import networkx as nx
 
-from tornettools.generate_defaults import *
-from tornettools.generate_tgen import *
-from tornettools.generate_tor import *
+from tornettools.generate_tgen import generate_tgen_config, get_clients, get_servers
+from tornettools.generate_defaults import (BOOTSTRAP_LENGTH_SECONDS, BW_1GBIT_KBIT, BW_1MBIT_KBIT,
+                                           BW_RATE_MIN, CONFIG_DIRNAME, SHADOW_CONFIG_FILENAME,
+                                           SHADOW_HOSTS_PATH, SHADOW_INSTALL_PREFIX,
+                                           SHADOW_TEMPLATE_PATH, SIMULATION_LENGTH_SECONDS,
+                                           TGENRC_MARKOVCLIENT_FILENAME, TGENRC_PERFCLIENT_EXIT_FILENAME,
+                                           TGENRC_PERFCLIENT_HS_FILENAME, TGENRC_SERVER_FILENAME,
+                                           TGEN_ONIONSERVICE_PORT, TGEN_SERVER_PORT,
+                                           TMODEL_TOPOLOGY_FILENAME, TORRC_CLIENT_FILENAME,
+                                           TORRC_CLIENT_MARKOV_FILENAME, TORRC_CLIENT_PERF_FILENAME,
+                                           TORRC_DEFAULTS_HOST_FILENAME, TORRC_HOST_FILENAME,
+                                           TORRC_ONIONSERVICE_FILENAME, TORRC_RELAY_AUTHORITY_FILENAME,
+                                           TORRC_RELAY_EXITGUARD_FILENAME, TORRC_RELAY_EXITONLY_FILENAME,
+                                           TORRC_RELAY_FILENAME, TORRC_RELAY_GUARDONLY_FILENAME,
+                                           TORRC_RELAY_OTHER_FILENAME, TOR_CONTROL_PORT,
+                                           TOR_ONIONSERVICE_DIR, get_host_rel_conf_path)
+from tornettools.generate_tor import generate_tor_config, generate_tor_keys, get_relays
 
 def run(args):
     if args.torexe is None:

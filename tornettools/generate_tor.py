@@ -9,7 +9,21 @@ from multiprocessing import Pool, cpu_count
 from numpy import array_split
 from numpy.random import choice, uniform
 
-from tornettools.generate_defaults import *
+from tornettools.generate_defaults import (BW_1GBIT_BYTES, BW_AUTHORITY_NAME, CONFIG_DIRNAME,
+                                           DIRAUTH_COUNTRY_CODES, RESOLV_FILENAME, RUN_FREQ_THRESH,
+                                           SHADOW_HOSTS_PATH, SHADOW_TEMPLATE_PATH,
+                                           TGEN_ONIONSERVICE_PORT, TGEN_SERVER_PORT,
+                                           TORRC_CLIENT_FILENAME, TORRC_CLIENT_MARKOV_FILENAME,
+                                           TORRC_CLIENT_PERF_FILENAME, TORRC_COMMON_FILENAME,
+                                           TORRC_DEFAULTS_HOST_FILENAME, TORRC_HOST_FILENAME,
+                                           TORRC_ONIONSERVICE_FILENAME,
+                                           TORRC_RELAY_AUTHORITY_FILENAME,
+                                           TORRC_RELAY_EXITGUARD_FILENAME,
+                                           TORRC_RELAY_EXITONLY_FILENAME, TORRC_RELAY_FILENAME,
+                                           TORRC_RELAY_GUARDONLY_FILENAME,
+                                           TORRC_RELAY_OTHER_FILENAME, TOR_CONTROL_PORT,
+                                           TOR_DIR_PORT, TOR_GUARD_MIN_CONSBW, TOR_ONIONSERVICE_DIR,
+                                           TOR_OR_PORT, TOR_SOCKS_PORT, get_host_rel_conf_path)
 from tornettools.util import load_json_data
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
