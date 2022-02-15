@@ -204,7 +204,7 @@ def process(num_processes, file_paths, map_func, reduce_func):
                 async_result.wait(1)
             results = async_result.get()
         except KeyboardInterrupt:
-            print >> sys.stderr, "interrupted, terminating process pool"
+            print("interrupted, terminating process pool", file=sys.stderr)
             p.terminate()
             p.join()
             sys.exit(1)
