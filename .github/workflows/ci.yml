@@ -64,9 +64,8 @@ jobs:
       - name: Run flake8
         # Ignores:
         # * E302: E302 expected 2 blank lines, found 1.
-        #   We prefer not.
         # * E501 line too long.
-        #   Not worth the churn to fix.
         # * E261 at least two spaces before inline comment.
-        #   Not worth the churn to fix.
-        run: flake8 --extend-ignore=E302,E501,E261 tornettools
+        # * E265 block comment should start with '# '
+        # * F405 may be undefined, or defined from star imports
+        run: flake8 --extend-ignore=E302,E501,E261,E265,F405 tornettools
