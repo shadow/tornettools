@@ -97,8 +97,9 @@ def __extract_client_goodput_5MiB(args, data, circuittype, startts, stopts):
 def __get_download_time(data, circuittype, startts, stopts, bytekey):
     dt = {'ALL': []}
 
-    # download times can differ by microseconds in tgen
-    resolution = 1.0 / 1000000.0
+    # download times can differ by microseconds in tgen.
+    # TODO: use
+    # resolution = 1.0 / 1000000.0
 
     pattern = re.compile(r'perfclient\d+' + circuittype)
     if 'data' in data:
@@ -107,10 +108,8 @@ def __get_download_time(data, circuittype, startts, stopts, bytekey):
                 continue
             db = data['data'][name]
             ss = db['tgen']['stream_summary']
-            mybytes, mytime = 0, 0.0
             if bytekey in ss:
                 for header in ss[bytekey]:
-                    bytes = int(header)
                     for secstr in ss[bytekey][header]:
                         sec = int(secstr) - 946684800
                         if sec >= startts and (stopts < 0 or sec < stopts):
@@ -126,8 +125,9 @@ def __get_download_time(data, circuittype, startts, stopts, bytekey):
 def __get_round_trip_time(data, circuittype, startts, stopts):
     rtt = []
 
-    # rtts can differ by microseconds in tgen
-    resolution = 1.0 / 1000000.0
+    # rtts can differ by microseconds in tgen.
+    # TODO: use
+    # resolution = 1.0 / 1000000.0
 
     pattern = re.compile(r'perfclient\d+' + circuittype)
     if 'data' in data:
@@ -206,7 +206,8 @@ def __get_error_rate(data, circuittype, startts, stopts):
 def __get_client_goodput(data, circuittype, startts, stopts, start_bytes, end_bytes):
     goodput = []
 
-    resolution = 0.0 # TODO: goodput would be in bits/second
+    # TODO: goodput would be in bits/second
+    # resolution = 0.0
 
     pattern = re.compile(r'perfclient\d+' + circuittype)
 

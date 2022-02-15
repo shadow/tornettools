@@ -43,9 +43,9 @@ class GeoIP():
             # check if ip is in an interval from the parsed geoip data
             b = bisect(self.boundaries, ipnum)
             if (b % 2) == 1:
-                # the ip is in a known interval defined in the geoip file
-                # b holds the index of the right side of the interval
-                right_index = b
+                # the ip is in a known interval defined in the geoip file.
+                # b holds the index of the right side of the interval.
+                # right_index = b
                 left_index = b - 1
                 low = self.boundaries[left_index]
                 code = self.codes[low]

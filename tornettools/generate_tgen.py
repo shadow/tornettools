@@ -335,19 +335,19 @@ def get_clients(args):
       Period 7: scale=0.0254, path=data/privcount/measurement7/privcount.tallies.1516493936-1516580336.json
     '''
 
-    # client counts taken from measurement 1 in the tmodel ccs2018 paper
+    # client counts taken from measurement 1 in the tmodel ccs2018 paper.
     measurement1_scale = 0.0126
     tally_path = '{}/data/privcount/measurement1/privcount.tallies.1508707017-1508793717.json'.format(args.tmodel_git_path)
     with open(tally_path, 'r') as tally_file:
         measurement1 = json.load(tally_file)
 
-    # circuits per client historgram taken from measurement 2 in the tmodel ccs2018 paper
-    measurement2_scale = 0.0113
-    tally_path = '{}/data/privcount/measurement2/privcount.tallies.1510708289-1510794689.json'.format(args.tmodel_git_path)
-    with open(tally_path, 'r') as tally_file:
-        measurement2 = json.load(tally_file)
+    # circuits per client historgram taken from measurement 2 in the tmodel ccs2018 paper.
+    # measurement2_scale = 0.0113
+    # tally_path = '{}/data/privcount/measurement2/privcount.tallies.1510708289-1510794689.json'.format(args.tmodel_git_path)
+    # with open(tally_path, 'r') as tally_file:
+    #     measurement2 = json.load(tally_file)
 
-    # exit circuit count taken from measurement 3 in the tmodel ccs2018 paper
+    # exit circuit count taken from measurement 3 in the tmodel ccs2018 paper.
     measurement3_scale = 0.0213
     tally_path = '{}/data/privcount/measurement3/privcount.tallies.1515796790-1515883190.json'.format(args.tmodel_git_path)
     with open(tally_path, 'r') as tally_file:
@@ -416,9 +416,6 @@ def __load_user_data(args):
     return country_codes, country_probs
 
 def __get_tgen_users(args, n_users, n_exit_circuits):
-    # we need a set of TGen clients generating Tor client load
-    tgen_clients = []
-
     # The privcount data has the total number of users. During that time
     # roughtly 5% of of usage was onion services. We model this by splitting
     # out 5% of the users to be "onion service users".

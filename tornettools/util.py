@@ -8,7 +8,7 @@ import shlex
 
 def make_directories(path):
     p = os.path.abspath(os.path.expanduser(path))
-    d = os.path.dirname(path)
+    d = os.path.dirname(p)
     if not os.path.exists(d):
         os.makedirs(d)
 

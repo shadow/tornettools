@@ -313,7 +313,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     color_cycle = cycle(DEFAULT_COLORS)
     linestyle_cycle = cycle(DEFAULT_LINESTYLES)
 
-    f = pyplot.figure()
+    pyplot.figure()
     lines, labels = [], []
 
     for db in dbs:
@@ -484,9 +484,6 @@ def __get_simulated_network_scale(args):
 def __compute_torperf_error_rates(daily_counts):
     err_rates = []
     for day in daily_counts:
-        year = int(day.split('-')[0])
-        month = int(day.split('-')[1])
-
         total = int(daily_counts[day]['requests'])
         if total <= 0:
             continue

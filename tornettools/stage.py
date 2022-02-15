@@ -407,12 +407,12 @@ def parse_extrainfo(path): # unused right now, but might be useful
     read_max_rate, read_avg_rate = 0, 0
     if xinfo.read_history_values is not None and xinfo.read_history_interval is not None:
         read_max_rate = int(max(xinfo.read_history_values) / xinfo.read_history_interval)
-        read_mean_rate = int((sum(xinfo.read_history_values) / len(xinfo.read_history_values)) / xinfo.read_history_interval)
+        read_avg_rate = int((sum(xinfo.read_history_values) / len(xinfo.read_history_values)) / xinfo.read_history_interval)
 
     write_max_rate, write_avg_rate = 0, 0
     if xinfo.write_history_values is not None and xinfo.write_history_interval is not None:
         write_max_rate = int(max(xinfo.write_history_values) / xinfo.write_history_interval)
-        write_mean_rate = int((sum(xinfo.write_history_values) / len(xinfo.write_history_values)) / xinfo.write_history_interval)
+        write_avg_rate = int((sum(xinfo.write_history_values) / len(xinfo.write_history_values)) / xinfo.write_history_interval)
 
     result = {
         'type': type,

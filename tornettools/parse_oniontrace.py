@@ -62,8 +62,9 @@ def __extract_relay_tput(args, data, startts, stopts):
 def __get_perfclient_cbt(data, circuittype, startts, stopts):
     perf_cbt = []
 
-    # cbts can differ by microseconds
-    resolution = 1.0 / 1000000.0
+    # cbts can differ by microseconds.
+    # TODO: use.
+    # resolution = 1.0 / 1000000.0
 
     pattern = re.compile(r'perfclient\d+' + circuittype)
 
@@ -92,8 +93,9 @@ def __get_perfclient_cbt(data, circuittype, startts, stopts):
 def __get_relay_tput(data, startts, stopts):
     net_tput_sec = {}
 
-    # resolution in 1 byte
-    resolution = 1
+    # resolution in 1 byte.
+    # TODO: Use.
+    # resolution = 1
 
     if 'data' in data:
         for name in data['data']:
