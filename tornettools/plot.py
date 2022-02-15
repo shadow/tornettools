@@ -320,9 +320,9 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
         if 'data' not in db or len(db['data']) < 1:
             continue
         elif len(db['data']) == 1:
-            plot_func, d = draw_cdf, db['data'][0]
+            (plot_func, d) = draw_cdf, db['data'][0]
         else:
-            plot_func, d = draw_cdf_ci, db['data']
+            (plot_func, d) = draw_cdf_ci, db['data']
 
         if len(d) < 1:
             continue
