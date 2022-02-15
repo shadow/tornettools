@@ -67,5 +67,6 @@ jobs:
         # * E501 line too long.
         # * E261 at least two spaces before inline comment.
         # * E265 block comment should start with '# '
+        # * F403 'from X import *' used; unable to detect undefined names
         # * F405 may be undefined, or defined from star imports
-        run: flake8 --extend-ignore=E302,E501,E261,E265,F405 tornettools
+        run: flake8 --extend-ignore=E302,E501,E261,E265,F403,F403,F405 tornettools
