@@ -138,7 +138,6 @@ def __handle_stream(db, stream, day):
     # receiving the 4MiB byte and 5MiB byte, which is a total amount of 1 MiB  or
     # 8 Mib.
 
-
     if 'elapsed_seconds' in stream and 'payload_bytes_recv' in stream['elapsed_seconds']:
         # download times
         for (transfer_size, time_to_size) in stream['elapsed_seconds']['payload_bytes_recv'].items():
@@ -172,7 +171,7 @@ def __goodput_bps(stream, start_bytes, end_bytes):
     end_time = tgen_stream_seconds_at_bytes(stream, end_bytes)
     if end_time is None or end_time <= start_time:
         return None
-    return (end_bytes - start_bytes) * 8.0  / (end_time - start_time)
+    return (end_bytes - start_bytes) * 8.0 / (end_time - start_time)
 
 def __store_transfer_time(db, transfer_size, transfer_time):
     db['download_times'].setdefault('ALL', [])

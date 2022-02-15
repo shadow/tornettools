@@ -46,3 +46,27 @@ jobs:
           pip3 install wheel
           pip3 install -r requirements.txt
           pip3 install -I .
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update packages
+        run: sudo apt-get update
+
+      - name: Install tornettools dependencies
+        run: sudo apt-get install -y
+          python3
+          flake8
+
+      - name: Run flake8
+        # Ignores:
+        # * E302: E302 expected 2 blank lines, found 1.
+        #   We prefer not.
+        # * E501 line too long.
+        #   Not worth the churn to fix.
+        # * E261 at least two spaces before inline comment.
+        #   Not worth the churn to fix.
+        run: flake8 --extend-ignore=E302,E501,E261 tornettools
