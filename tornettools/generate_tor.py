@@ -347,11 +347,11 @@ def __generate_torrc_client_perf(conf_path):
 
 def __generate_host_torrc(host_path, torrc_defaults):
     with open(f"{host_path}/{TORRC_HOST_FILENAME}", "w") as outf:
-        outf.write(f"# Enter any host-specific tor config options here.\n")
+        outf.write("# Enter any host-specific tor config options here.\n")
         outf.write(f"# Note that any option specified here may override a default from {TORRC_DEFAULTS_HOST_FILENAME}.\n")
 
     with open(f"{host_path}/{TORRC_DEFAULTS_HOST_FILENAME}", "w") as outf:
-        outf.write(f"# The following files specify default tor config options for this host.\n")
+        outf.write("# The following files specify default tor config options for this host.\n")
         outf.write(f"%include {get_host_rel_conf_path(TORRC_COMMON_FILENAME)}\n")
         for fname in torrc_defaults['includes']:
             outf.write(f"%include {get_host_rel_conf_path(fname)}\n")
