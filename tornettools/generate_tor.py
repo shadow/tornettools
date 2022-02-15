@@ -65,7 +65,7 @@ def generate_tor_keys(args, relays):
 
     # tor key generation configs
     print("DirServer test 127.0.0.1:5000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000\nORPort 5000\n",
-        file=open(keygen_torrc, 'w'))
+          file=open(keygen_torrc, 'w'))
     print("shadowprivatenetwork\n", file=open(keygen_pw, 'w'))
 
     # generate the list of commands we need to run to generate the fingerprints
@@ -74,7 +74,7 @@ def generate_tor_keys(args, relays):
     # handle authorities, we need at least 3 to produce valid consensus
     n_authorities = max(3, round(10.0 * args.network_scale))
     for i in range(n_authorities):
-        nickname = "4uthority{}".format(i+1)
+        nickname = "4uthority{}".format(i + 1)
         datadir = "{}/{}".format(hosts_prefix, nickname)
         subproc_args = [args.torexe, datadir, nickname, keygen_torrc]
         work.append(subproc_args)
@@ -119,7 +119,7 @@ def generate_tor_keys(args, relays):
 
     authorities = {}
     for i in range(n_authorities):
-        nickname = "4uthority{}".format(i+1)
+        nickname = "4uthority{}".format(i + 1)
         datadir = "{}/{}".format(hosts_prefix, nickname)
         fp = __read_fingerprint(datadir)
         authorities[fp] = {
@@ -127,7 +127,7 @@ def generate_tor_keys(args, relays):
             "tornet_fingerprint": fp,
             "v3identity": __generate_authority_keys(args.torgencertexe, datadir, keygen_torrc, keygen_pw),
             "bandwidth_capacity": BW_1GBIT_BYTES,
-            "address": "100.0.0.{0}".format(i+1),
+            "address": "100.0.0.{0}".format(i + 1),
             "country_code": choice(DIRAUTH_COUNTRY_CODES),
         }
 
@@ -193,7 +193,7 @@ def __generate_tor_v3bw_file(args, authorities, relays):
         for pos in ['ge', 'e', 'g', 'm']:
             # use reverse to sort each class from fastest to slowest when assigning the id counter
             for (fp, relay) in sorted(relays[pos].items(), key=lambda kv: kv[1]['weight'], reverse=True):
-                cons_bw_weight = int(round(relay['weight']/min_weight))
+                cons_bw_weight = int(round(relay['weight'] / min_weight))
                 nickname = relay['nickname']
                 tornet_fp = relay['tornet_fingerprint']
                 v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(tornet_fp, cons_bw_weight, nickname))
@@ -212,7 +212,7 @@ def __generate_torrc_common(conf_path, authorities, geoip_path):
         v3id = authority['v3identity']
         address = authority['address']
         tornet_fp = authority['tornet_fingerprint']
-        fp_with_spaces = " ".join(tornet_fp[i:i+4] for i in range(0, len(tornet_fp), 4))
+        fp_with_spaces = " ".join(tornet_fp[i:i + 4] for i in range(0, len(tornet_fp), 4))
 
         line = 'DirServer {} v3ident={} orport={} {}:{} {}'.format(nickname, v3id, TOR_OR_PORT, address, TOR_DIR_PORT, fp_with_spaces)
         torrc_file.write('{}\n'.format(line))
@@ -389,7 +389,7 @@ def get_relays(args):
     # log some info
     n_relays = len(sampled_relays['all'])
     total_capacity = sum([relay['bandwidth_capacity'] for relay in sampled_relays['all'].values()])
-    gbit = total_capacity*8.0/1000.0/1000.0/1000.0
+    gbit = total_capacity * 8.0 / 1000.0 / 1000.0 / 1000.0
     logging.info("A full Tor network has {} relays with total capacity of {} Gbit/s".format(n_relays, gbit))
 
     # compute ratios of nodes for each position
@@ -432,25 +432,25 @@ def __sample_relays(relays, sample_size):
             freq = 0.0
         run_freqs.append(freq)
     # normalize
-    run_freqs_normed = [freq/sum(run_freqs) for freq in run_freqs]
+    run_freqs_normed = [freq / sum(run_freqs) for freq in run_freqs]
     sampled_fingerprints = list(choice(all_fingerprints, p=run_freqs_normed, replace=False, size=sample_size))
 
     min_weight_sampled = min([relays[fp]['weight'] for fp in sampled_fingerprints])
     # track the results
-    sampled_relays = {'all':{}, 'g':{}, 'e':{}, 'ge':{}, 'm':{}}
-    sampled_weights = {'all':0, 'g':0, 'e':0, 'ge':0, 'm':0}
+    sampled_relays = {'all': {}, 'g': {}, 'e': {}, 'ge': {}, 'm': {}}
+    sampled_weights = {'all': 0, 'g': 0, 'e': 0, 'ge': 0, 'm': 0}
     for fp in sampled_fingerprints:
         relay, weight = relays[fp], relays[fp]['weight']
 
         # track list of all relays
         sampled_relays['all'][fp] = relay
         sampled_weights['all'] += weight
-        #Makes the flag assignment probabilistic w.r.t. relays' observed flag
-        #frequency. Relays receiving the guard flag must at least have
-        #TOR_GUARD_MIN_CONSBW
+        # Makes the flag assignment probabilistic w.r.t. relays' observed flag
+        # frequency. Relays receiving the guard flag must at least have
+        # TOR_GUARD_MIN_CONSBW
         has_guard_f = True if relays[fp]['weight'] > 0 and \
-                            int(round(relays[fp]['weight']/min_weight_sampled))>= TOR_GUARD_MIN_CONSBW\
-                              and uniform() <= relays[fp]['guard_frequency'] else False
+            int(round(relays[fp]['weight'] / min_weight_sampled)) >= TOR_GUARD_MIN_CONSBW\
+            and uniform() <= relays[fp]['guard_frequency'] else False
         has_exit_f = True if uniform() <= relays[fp]['exit_frequency'] else False
 
         # track relays by position too
@@ -484,16 +484,16 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     m_items_sorted = sorted(sampled_relays['m'].items(), key=lambda kv: kv[1]['weight'])
 
     # split into k bins, and we need at least 1 bin (i.e., 1 relay of each type)
-    g_bins = array_split(g_items_sorted, max(1, round(n_relays*pos_ratios['g'])))
-    e_bins = array_split(e_items_sorted, max(1, round(n_relays*pos_ratios['e'])))
-    ge_bins = array_split(ge_items_sorted, max(1, round(n_relays*pos_ratios['ge'])))
-    m_bins = array_split(m_items_sorted, max(1, round(n_relays*pos_ratios['m'])))
+    g_bins = array_split(g_items_sorted, max(1, round(n_relays * pos_ratios['g'])))
+    e_bins = array_split(e_items_sorted, max(1, round(n_relays * pos_ratios['e'])))
+    ge_bins = array_split(ge_items_sorted, max(1, round(n_relays * pos_ratios['ge'])))
+    m_bins = array_split(m_items_sorted, max(1, round(n_relays * pos_ratios['m'])))
 
     # get the index of the median relay in each bin
-    g_bin_indices = [len(bin)//2 for bin in g_bins]
-    e_bin_indices = [len(bin)//2 for bin in e_bins]
-    ge_bin_indices = [len(bin)//2 for bin in ge_bins]
-    m_bin_indices = [len(bin)//2 for bin in m_bins]
+    g_bin_indices = [len(bin) // 2 for bin in g_bins]
+    e_bin_indices = [len(bin) // 2 for bin in e_bins]
+    ge_bin_indices = [len(bin) // 2 for bin in ge_bins]
+    m_bin_indices = [len(bin) // 2 for bin in m_bins]
 
     __log_bwweights_sampled_network(sampled_relays, sampled_weights)
 
@@ -508,22 +508,21 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
         e_weight = sum([sampled_relays['e'][fp]['weight'] for fp in e_fingerprints])
         ge_weight = sum([sampled_relays['ge'][fp]['weight'] for fp in ge_fingerprints])
         m_weight = sum([sampled_relays['m'][fp]['weight'] for fp in m_fingerprints])
-        total_weight_before = g_weight+e_weight+ge_weight+m_weight
+        total_weight_before = g_weight + e_weight + ge_weight + m_weight
 
         # normalize the weights
-        g_frac = g_weight/total_weight_before
-        e_frac = e_weight/total_weight_before
-        ge_frac = ge_weight/total_weight_before
-        m_frac = m_weight/total_weight_before
+        g_frac = g_weight / total_weight_before
+        e_frac = e_weight / total_weight_before
+        ge_frac = ge_weight / total_weight_before
+        m_frac = m_weight / total_weight_before
 
         # compute distance between relay class selection probabilities
-        divergence_g = (g_frac-sampled_weights['g'])
-        divergence_e = (e_frac-sampled_weights['e'])
-        divergence_ge = (ge_frac-sampled_weights['ge'])
-        divergence_m = (m_frac-sampled_weights['m'])
+        divergence_g = (g_frac - sampled_weights['g'])
+        divergence_e = (e_frac - sampled_weights['e'])
+        divergence_ge = (ge_frac - sampled_weights['ge'])
+        divergence_m = (m_frac - sampled_weights['m'])
 
         max_divergence = max([abs(divergence_ge), abs(divergence_e), abs(divergence_g), abs(divergence_m)])
-
 
         # At this point, we could go through the lists of indices to tweak them
         # in order to reduce the divergence between relay classes. But I haven't
@@ -546,10 +545,10 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
     logging.info("The max weight divergence between positions is {}".format(max_divergence))
 
     chosen_relays = {
-        'g':{fp: sampled_relays['g'][fp] for fp in g_fingerprints},
-        'e':{fp: sampled_relays['e'][fp] for fp in e_fingerprints},
-        'ge':{fp: sampled_relays['ge'][fp] for fp in ge_fingerprints},
-        'm':{fp: sampled_relays['m'][fp] for fp in m_fingerprints}
+        'g': {fp: sampled_relays['g'][fp] for fp in g_fingerprints},
+        'e': {fp: sampled_relays['e'][fp] for fp in e_fingerprints},
+        'ge': {fp: sampled_relays['ge'][fp] for fp in ge_fingerprints},
+        'm': {fp: sampled_relays['m'][fp] for fp in m_fingerprints}
     }
 
     # renormalize the weights for the scaled network
@@ -570,9 +569,9 @@ def __choose_relays(n_relays, sampled_relays, sampled_weights, pos_ratios):
 # currently unused, but kept around for posterity
 def __choose_relays_old(n_relays, sampled_relays, sampled_weights, pos_ratios):
     # choose relays using the median bucketing approach
-    relays_g, weight_g = __choose_best_fit(sampled_relays['g'], int(n_relays*pos_ratios['g']))
-    relays_e, weight_e = __choose_best_fit(sampled_relays['e'], int(n_relays*pos_ratios['e']))
-    relays_ge, weight_ge = __choose_best_fit(sampled_relays['ge'], int(n_relays*pos_ratios['ge']))
+    relays_g, weight_g = __choose_best_fit(sampled_relays['g'], int(n_relays * pos_ratios['g']))
+    relays_e, weight_e = __choose_best_fit(sampled_relays['e'], int(n_relays * pos_ratios['e']))
+    relays_ge, weight_ge = __choose_best_fit(sampled_relays['ge'], int(n_relays * pos_ratios['ge']))
 
     remaining = n_relays - len(relays_g) - len(relays_e) - len(relays_ge)
     relays_m, weight_m = __choose_best_fit(sampled_relays['m'], remaining)
@@ -584,17 +583,17 @@ def __choose_relays_old(n_relays, sampled_relays, sampled_weights, pos_ratios):
     weight_ge /= weight_total
     weight_m /= weight_total
 
-    divergence_g = (weight_g-sampled_weights['g'])
-    divergence_e = (weight_e-sampled_weights['e'])
-    divergence_ge = (weight_ge-sampled_weights['ge'])
-    divergence_m = (weight_m-sampled_weights['m'])
+    divergence_g = (weight_g - sampled_weights['g'])
+    divergence_e = (weight_e - sampled_weights['e'])
+    divergence_ge = (weight_ge - sampled_weights['ge'])
+    divergence_m = (weight_m - sampled_weights['m'])
     max_divergence = max([abs(divergence_ge), abs(divergence_e), abs(divergence_g), abs(divergence_m)])
 
     chosen_relays = {
-        'g':relays_g,
-        'e':relays_e,
-        'ge':relays_ge,
-        'm':relays_m
+        'g': relays_g,
+        'e': relays_e,
+        'ge': relays_ge,
+        'm': relays_m
     }
 
     return chosen_relays, max_divergence
@@ -626,52 +625,55 @@ def __choose_best_fit(relays, k):
     # split into k bins
     relay_bins = array_split(sorted_relay_items, k)
     # get the fingerprint of the median relay in each bin
-    chosen_fingerprints = [bin[len(bin)//2][0] for bin in relay_bins]
+    chosen_fingerprints = [bin[len(bin) // 2][0] for bin in relay_bins]
 
-    chosen_relays = {fp:relays[fp] for fp in chosen_fingerprints}
+    chosen_relays = {fp: relays[fp] for fp in chosen_fingerprints}
     chosen_weight = sum([relay['weight'] for relay in chosen_relays.values()])
 
     return chosen_relays, chosen_weight
 
 
-class Enum(tuple): __getattr__ = tuple.index
+class Enum(tuple):
+    __getattr__ = tuple.index
 
-bww_errors = Enum(("NO_ERROR","SUMG_ERROR", "SUME_ERROR",
-            "SUMD_ERROR","BALANCE_MID_ERROR", "BALANCE_EG_ERROR",
-            "RANGE_ERROR"))
+
+bww_errors = Enum(("NO_ERROR", "SUMG_ERROR", "SUME_ERROR",
+                   "SUMD_ERROR", "BALANCE_MID_ERROR", "BALANCE_EG_ERROR",
+                   "RANGE_ERROR"))
 
 
 def __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd, Wee, Wed,
-        weightscale, G, M, E, D, T, margin, do_balance):
+                           weightscale, G, M, E, D, T, margin, do_balance):
     """Verify that our weights satify the formulas from dir-spec.txt"""
 
     def check_eq(a, b, margin):
         return (a - b) <= margin if (a - b) >= 0 else (b - a) <= margin
+
     def check_range(a, b, c, d, e, f, g, mx):
-        return (a >= 0 and a <= mx and b >= 0 and b <= mx and\
-                c >= 0 and c <= mx and d >= 0 and d <= mx and\
-                e >= 0 and e <= mx and f >= 0 and f <= mx and\
+        return (a >= 0 and a <= mx and b >= 0 and b <= mx and
+                c >= 0 and c <= mx and d >= 0 and d <= mx and
+                e >= 0 and e <= mx and f >= 0 and f <= mx and
                 g >= 0 and g <= mx)
 
         # Wed + Wmd + Wgd == weightscale
-    if (not check_eq(Wed+Wmd+Wgd, weightscale, margin)):
+    if (not check_eq(Wed + Wmd + Wgd, weightscale, margin)):
         return bww_errors.SUMD_ERROR
     # Wmg + Wgg == weightscale
-    if (not check_eq(Wmg+Wgg, weightscale, margin)):
+    if (not check_eq(Wmg + Wgg, weightscale, margin)):
         return bww_errors.SUMG_ERROR
     # Wme + Wee == 1
-    if (not check_eq(Wme+Wee, weightscale, margin)):
+    if (not check_eq(Wme + Wee, weightscale, margin)):
         return bww_errors.SUME_ERROR
     # Verify weights within range 0 -> weightscale
     if (not check_range(Wgg, Wgd, Wmg, Wme, Wmd, Wed, Wee, weightscale)):
         return bww_errors.RANGE_ERROR
     if (do_balance):
         #Wgg*G + Wgd*D == Wee*E + Wed*D
-        if (not check_eq(Wgg*G+Wgd*D, Wee*E+Wed*D, (margin*T)/3)):
+        if (not check_eq(Wgg * G + Wgd * D, Wee * E + Wed * D, (margin * T) / 3)):
             return bww_errors.BALANCE_EG_ERROR
         #Wgg*G+Wgd*D == M*weightscale + Wmd*D + Wme * E + Wmg*G
-        if (not check_eq(Wgg*G+Wgd*D, M*weightscale+Wmd*D+Wme*E+Wmg*G,
-            (margin*T)/3)):
+        if (not check_eq(Wgg * G + Wgd * D, M * weightscale + Wmd * D + Wme * E + Wmg * G,
+                         (margin * T) / 3)):
             return bww_errors.BALANCE_MID_ERROR
 
     return bww_errors.NO_ERROR
@@ -682,30 +684,30 @@ def __recompute_bwweights(G, M, E, D, T):
     of dir-spec.txt from Tor' specifications and recompute bandwidth weights
     """
     weightscale = 10000
-    if (3*E >= T and 3*G >= T):
-        #Case 1: Neither are scarce
+    if (3 * E >= T and 3 * G >= T):
+        # Case 1: Neither are scarce
         casename = "Case 1 (Wgd=Wmd=Wed)"
-        Wgd = Wed = Wmd = weightscale/3
-        Wee = (weightscale*(E+G+M))/(3*E)
+        Wgd = Wed = Wmd = weightscale / 3
+        Wee = (weightscale * (E + G + M)) / (3 * E)
         Wme = weightscale - Wee
-        Wmg = (weightscale*(2*G-E-M))/(3*G)
+        Wmg = (weightscale * (2 * G - E - M)) / (3 * G)
         Wgg = weightscale - Wmg
 
         check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd, Wee, Wed,
-                weightscale, G, M, E, D, T, 10, True)
+                                       weightscale, G, M, E, D, T, 10, True)
         if (check != bww_errors.NO_ERROR):
-            raise ValueError(\
-                    'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+            raise ValueError(
+                'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
                     Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
-                        Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
-    elif (3*E < T and 3*G < T):
-        #Case 2: Both Guards and Exits are scarce
-        #Balance D between E and G, depending upon D capacity and
-        #scarcity
+                                                      Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+    elif (3 * E < T and 3 * G < T):
+        # Case 2: Both Guards and Exits are scarce
+        # Balance D between E and G, depending upon D capacity and
+        # scarcity
         R = min(E, G)
         S = max(E, G)
-        if (R+D < S):
-            #subcase a
+        if (R + D < S):
+            # subcase a
             Wgg = Wee = weightscale
             Wmg = Wme = Wmd = 0
             if (E < G):
@@ -719,97 +721,101 @@ def __recompute_bwweights(G, M, E, D, T):
                 Wgd = weightscale
 
         else:
-            #subcase b R+D >= S
+            # subcase b R+D >= S
             casename = "Case 2b1 (Wgg=weightscale, Wmd=Wgd)"
-            Wee = (weightscale*(E-G+M))/E
-            Wed = (weightscale*(D-2*E+4*G-2*M))/(3*D)
-            Wme = (weightscale*(G-M))/E
+            Wee = (weightscale * (E - G + M)) / E
+            Wed = (weightscale * (D - 2 * E + 4 * G - 2 * M)) / (3 * D)
+            Wme = (weightscale * (G - M)) / E
             Wmg = 0
             Wgg = weightscale
-            Wmd = Wgd = (weightscale-Wed)/2
+            Wmd = Wgd = (weightscale - Wed) / 2
 
             check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd,
-                    Wee, Wed, weightscale, G, M, E, D, T, 10, True)
+                                           Wee, Wed, weightscale, G, M, E, D, T, 10, True)
             if (check != bww_errors.NO_ERROR):
                 casename = 'Case 2b2 (Wgg=weightscale, Wee=weightscale)'
                 Wgg = Wee = weightscale
-                Wed = (weightscale*(D-2*E+G+M))/(3*D)
-                Wmd = (weightscale*(D-2*M+G+E))/(3*D)
+                Wed = (weightscale * (D - 2 * E + G + M)) / (3 * D)
+                Wmd = (weightscale * (D - 2 * M + G + E)) / (3 * D)
                 Wme = Wmg = 0
                 if (Wmd < 0):
-                    #Too much bandwidth at middle position
+                    # Too much bandwidth at middle position
                     casename = 'case 2b3 (Wmd=0)'
                     Wmd = 0
                 Wgd = weightscale - Wed - Wmd
 
                 check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd,
-                        Wee, Wed, weightscale, G, M, E, D, T, 10, True)
-            if (check != bww_errors.NO_ERROR and check !=\
-                        bww_errors.BALANCE_MID_ERROR):
-                raise ValueError(\
-                        'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+                                               Wee, Wed, weightscale, G, M, E, D, T, 10, True)
+            if (check != bww_errors.NO_ERROR and check !=
+                    bww_errors.BALANCE_MID_ERROR):
+                raise ValueError(
+                    'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
                         Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
-                            Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+                                                          Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
     else: # if (E < T/3 or G < T/3)
-        #Case 3: Guard or Exit is scarce
+        # Case 3: Guard or Exit is scarce
         S = min(E, G)
 
-        if (not (3*E < T or  3*G < T) or not (3*G >= T or 3*E >= T)):
-            raise ValueError(\
-                    'ERROR: Bandwidths have inconsistent values \
-                    G={0}, M={1}, E={2}, D={3}, T={4}'.format(G,M,E,D,T))
+        if (not (3 * E < T or 3 * G < T) or not (3 * G >= T or 3 * E >= T)):
+            raise ValueError(
+                'ERROR: Bandwidths have inconsistent values \
+                    G={0}, M={1}, E={2}, D={3}, T={4}'.format(G, M, E, D, T))
 
-        if (3*(S+D) < T):
-                #subcasea: S+D < T/3
+        if (3 * (S + D) < T):
+            #subcasea: S+D < T/3
             if (G < E):
                 casename = 'Case 3a (G scarce)'
                 Wgg = Wgd = weightscale
                 Wmd = Wed = Wmg = 0
 
-                if (E < M): Wme = 0
-                else: Wme = (weightscale*(E-M))/(2*E)
+                if (E < M):
+                    Wme = 0
+                else:
+                    Wme = (weightscale * (E - M)) / (2 * E)
                 Wee = weightscale - Wme
             else:
                 # G >= E
                 casename = "Case 3a (E scarce)"
                 Wee = Wed = weightscale
                 Wmd = Wgd = Wme = 0
-                if (G < M): Wmg = 0
-                else: Wmg = (weightscale*(G-M))/(2*G)
+                if (G < M):
+                    Wmg = 0
+                else:
+                    Wmg = (weightscale * (G - M)) / (2 * G)
                 Wgg = weightscale - Wmg
         else:
-            #subcase S+D >= T/3
+            # subcase S+D >= T/3
             if (G < E):
                 casename = 'Case 3bg (G scarce, Wgg=weightscale, Wmd == Wed'
                 Wgg = weightscale
-                Wgd = (weightscale*(D-2*G+E+M))/(3*D)
+                Wgd = (weightscale * (D - 2 * G + E + M)) / (3 * D)
                 Wmg = 0
-                Wee = (weightscale*(E+M))/(2*E)
+                Wee = (weightscale * (E + M)) / (2 * E)
                 Wme = weightscale - Wee
-                Wmd = Wed = (weightscale-Wgd)/2
+                Wmd = Wed = (weightscale - Wgd) / 2
 
                 check = __check_weights_errors(Wgg, Wgd, Wmg, Wme,
-                        Wmd, Wee, Wed, weightscale, G, M, E, D, T, 10,
-                        True)
+                                               Wmd, Wee, Wed, weightscale, G, M, E, D, T, 10,
+                                               True)
             else:
                 # G >= E
                 casename = 'Case 3be (E scarce, Wee=weightscale, Wmd == Wgd'
                 Wee = weightscale
-                Wed = (weightscale*(D-2*E+G+M))/(3*D)
+                Wed = (weightscale * (D - 2 * E + G + M)) / (3 * D)
                 Wme = 0
-                Wgg = (weightscale*(G+M))/(2*G)
+                Wgg = (weightscale * (G + M)) / (2 * G)
                 Wmg = weightscale - Wgg
-                Wmd = Wgd = (weightscale-Wed)/2
+                Wmd = Wgd = (weightscale - Wed) / 2
 
                 check = __check_weights_errors(Wgg, Wgd, Wmg, Wme,
-                        Wmd, Wee, Wed,  weightscale, G, M, E, D, T, 10,
-                        True)
+                                               Wmd, Wee, Wed, weightscale, G, M, E, D, T, 10,
+                                               True)
 
             if (check):
-                raise ValueError(\
-                        'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
+                raise ValueError(
+                    'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
                         Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
-                            Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
+                                                          Wgd, Wed, Wmd, Wee, Wme, Wmg, Wgg))
 
     return (casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd)
 
@@ -822,33 +828,33 @@ def __log_bwweights_chosen_network(chosen_relays):
 
     min_weight = __get_min(chosen_relays)
 
-    g_consweight = g_weight/min_weight
-    e_consweight = e_weight/min_weight
-    ge_consweight = ge_weight/min_weight
-    m_consweight = m_weight/min_weight
-    T = g_consweight+e_consweight+ge_consweight+m_consweight
+    g_consweight = g_weight / min_weight
+    e_consweight = e_weight / min_weight
+    ge_consweight = ge_weight / min_weight
+    m_consweight = m_weight / min_weight
+    T = g_consweight + e_consweight + ge_consweight + m_consweight
 
     casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
-    __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
+        __recompute_bwweights(g_consweight, m_consweight, e_consweight, ge_consweight, T)
 
     logging.info("Bandwidth-weights (relevant ones) of our scaled down consensus of {} relays:".format(
-        len(chosen_relays['g'])+len(chosen_relays['e'])+len(chosen_relays['ge'])+len(chosen_relays['m'])))
+        len(chosen_relays['g']) + len(chosen_relays['e']) + len(chosen_relays['ge']) + len(chosen_relays['m'])))
     logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"
                  .format(casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd))
 
 def __log_bwweights_sampled_network(sampled_relays, sampled_weights):
-    #compute bandwidth-weights
+    # compute bandwidth-weights
     min_weight = __get_min(sampled_relays)
 
-    g_consweight_samp = sampled_weights['g']/min_weight
-    e_consweight_samp = sampled_weights['e']/min_weight
-    ge_consweight_samp = sampled_weights['ge']/min_weight
-    m_consweight_samp = sampled_weights['m']/min_weight
+    g_consweight_samp = sampled_weights['g'] / min_weight
+    e_consweight_samp = sampled_weights['e'] / min_weight
+    ge_consweight_samp = sampled_weights['ge'] / min_weight
+    m_consweight_samp = sampled_weights['m'] / min_weight
     T =\
-    g_consweight_samp+e_consweight_samp+ge_consweight_samp+m_consweight_samp
+        g_consweight_samp + e_consweight_samp + ge_consweight_samp + m_consweight_samp
     casename, Wgg, Wgd, Wee, Wed, Wmg, Wme, Wmd =\
-    __recompute_bwweights(g_consweight_samp, m_consweight_samp,
-                          e_consweight_samp, ge_consweight_samp, T)
+        __recompute_bwweights(g_consweight_samp, m_consweight_samp,
+                              e_consweight_samp, ge_consweight_samp, T)
 
     logging.info("Bandwidth-weights (relevant ones) of a typical consensus:")
     logging.info("Casename: {}, with: Wgg={}, Wgd={}, Wee={}, Wed={}, Wmg={}, Wme={}, Wmd={}"

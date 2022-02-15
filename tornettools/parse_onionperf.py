@@ -13,8 +13,8 @@ from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_s
 
 def run(args):
     db = {"circuit_rtt": [], "client_goodput": [], "client_goodput_5MiB": [],
-        "circuit_build_times": [], "download_times": {}, "daily_counts": {},
-        "relay_goodput": {}}
+          "circuit_build_times": [], "download_times": {}, "daily_counts": {},
+          "relay_goodput": {}}
 
     if args.bandwidth_data_path != None:
         logging.info(f"Parsing bandwidth data stored in '{args.bandwidth_data_path}'")
@@ -148,7 +148,7 @@ def __handle_stream(db, stream, day):
         # goodput between 500 kibibytes and 1 mebibyte. Old way of calcuting throughput.
         # https://metrics.torproject.org/reproducible-metrics.html#performance
         goodput = __goodput_bps(
-                stream, aka_int(512000, 500 * 2**10), aka_int(1048576, 2**20))
+            stream, aka_int(512000, 500 * 2**10), aka_int(1048576, 2**20))
         if goodput is not None:
             db['client_goodput'].append(goodput)
 
@@ -157,7 +157,7 @@ def __handle_stream(db, stream, day):
         # https://gitlab.torproject.org/tpo/network-health/metrics/statistics/-/issues/40020
         # https://metrics.torproject.org/reproducible-metrics.html#performance
         goodput = __goodput_bps(
-                stream, aka_int(4194304, 4 * 2**20), aka_int(5242880, 5 * 2**20))
+            stream, aka_int(4194304, 4 * 2**20), aka_int(5242880, 5 * 2**20))
         if goodput is not None:
             db['client_goodput_5MiB'].append(goodput)
 

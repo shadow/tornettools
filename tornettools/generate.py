@@ -208,7 +208,7 @@ def __filter_nodes(network, ip_address_hint, country_code_hint):
             # function to compute the prefix match between two IPv4 addresses
             # the 32-bit mask is required since python uses signed integers
             #   (see https://stackoverflow.com/questions/210629/python-unsigned-32-bit-bitwise-arithmetic/210740)
-            def compute_prefix_match(ip_1, ip_2): return ~(int(ip_1)^int(ip_2)) & 0xffffffff
+            def compute_prefix_match(ip_1, ip_2): return ~(int(ip_1) ^ int(ip_2)) & 0xffffffff
 
             # get the prefix match for each node
             prefix_matches = [(node, compute_prefix_match(IPv4Address(node['ip_address']), ip_address_hint)) for node in candidate_nodes]
@@ -265,7 +265,7 @@ def __server(args, network, server):
             os.makedirs(hs_prefix, 0o700)
 
         with open("{}/{}".format(hs_prefix, 'hostname'), 'w') as outf:
-            outf.write(server['hs_hostname']+'\n')
+            outf.write(server['hs_hostname'] + '\n')
         with open("{}/{}".format(hs_prefix, 'hs_ed25519_secret_key'), 'wb') as outf:
             outf.write(b"== ed25519v1-secret: type0 ==\x00\x00\x00" + base64.b64decode(server['hs_ed25519_secret_key']))
 
@@ -274,7 +274,7 @@ def __server(args, network, server):
         process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
         # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
         process["args"] = __format_tor_args(None)
-        process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS-60) # start before boostrapping ends
+        process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS - 60) # start before boostrapping ends
 
         host["processes"].append(process)
 
@@ -287,13 +287,13 @@ def __perfclient(args, network, client):
     else:
         tgenrc_fname = TGENRC_PERFCLIENT_HS_FILENAME
 
-    return __tgen_client(args, network, client['name'], client['country_code'], \
-        get_host_rel_conf_path(tgenrc_fname))
+    return __tgen_client(args, network, client['name'], client['country_code'],
+                         get_host_rel_conf_path(tgenrc_fname))
 
 def __markovclient(args, network, client):
     # these should be relative paths
-    return __tgen_client(args, network, client['name'], client['country_code'], \
-        TGENRC_MARKOVCLIENT_FILENAME)
+    return __tgen_client(args, network, client['name'], client['country_code'],
+                         TGENRC_MARKOVCLIENT_FILENAME)
 
 def __format_tor_args(name):
     args = []
@@ -334,11 +334,11 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
     # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
     process["args"] = __format_tor_args(None)
-    process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS-60) # start before boostrapping ends
+    process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS - 60) # start before boostrapping ends
 
     host["processes"].append(process)
 
-    oniontrace_start_time = max(2, BOOTSTRAP_LENGTH_SECONDS-60+1)
+    oniontrace_start_time = max(2, BOOTSTRAP_LENGTH_SECONDS - 60 + 1)
     host["processes"].extend(__oniontrace(args, oniontrace_start_time, name))
 
     process = {}
@@ -395,7 +395,7 @@ def __tor_relay(args, network, used_addresses, relay, orig_fp, is_authority=Fals
 
     host['processes'].append(process)
 
-    oniontrace_start_time = starttime+1
+    oniontrace_start_time = starttime + 1
     host['processes'].extend(__oniontrace(args, oniontrace_start_time, relay['nickname']))
 
     return {relay['nickname']: host}
@@ -414,7 +414,7 @@ def __oniontrace(args, start_time, name):
         start_time = max(start_time, BOOTSTRAP_LENGTH_SECONDS)
         process = {}
         process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
-        run_time = SIMULATION_LENGTH_SECONDS-start_time-1
+        run_time = SIMULATION_LENGTH_SECONDS - start_time - 1
         process["args"] = "Mode=record TorControlPort={} LogLevel=info RunTime={} TraceFile=oniontrace.csv".format(TOR_CONTROL_PORT, run_time)
         process["start_time"] = start_time
         processes.append(process)

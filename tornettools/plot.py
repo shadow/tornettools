@@ -102,16 +102,16 @@ def __plot_memory_usage_real_time(args, tornet_dbs):
                 continue
             ramd = d['ram']['gib_used_per_minute']
             for real_minute in ramd:
-                s = int(real_minute)*60.0 # to seconds
+                s = int(real_minute) * 60.0 # to seconds
                 xy.setdefault(s, []).append(ramd[real_minute])
         tornet_db['data'] = xy
 
     dbs_to_plot = tornet_dbs
 
     __plot_timeseries_figure(args, dbs_to_plot, "ram_realtime",
-        xtime=True,
-        xlabel="Real Time",
-        ylabel="RAM Used (GiB)")
+                             xtime=True,
+                             xlabel="Real Time",
+                             ylabel="RAM Used (GiB)")
 
 def __get_ram_per_sim_time(timed, ramd):
     d = {}
@@ -121,7 +121,7 @@ def __get_ram_per_sim_time(timed, ramd):
         for real_minute in sorted(ramd.keys(), key=int):
             ram = float(ramd[real_minute])
             # we have ram at a real time, convert the real time to sim time
-            real_sec_ram = int(round(int(real_minute)*60.0)) # to seconds
+            real_sec_ram = int(round(int(real_minute) * 60.0)) # to seconds
             real_sec_time, sim_sec_time = 0, 0
             while real_sec_time < real_sec_ram:
                 k = next(time_iter)
@@ -154,9 +154,9 @@ def __plot_memory_usage_sim_time(args, tornet_dbs):
     dbs_to_plot = tornet_dbs
 
     __plot_timeseries_figure(args, dbs_to_plot, "ram_simtime",
-        xtime=True,
-        xlabel="Simulation Time",
-        ylabel="RAM Used (GiB)")
+                             xtime=True,
+                             xlabel="Simulation Time",
+                             ylabel="RAM Used (GiB)")
 
 def __plot_run_time(args, tornet_dbs):
     for tornet_db in tornet_dbs:
@@ -173,25 +173,25 @@ def __plot_run_time(args, tornet_dbs):
     dbs_to_plot = tornet_dbs
 
     __plot_timeseries_figure(args, dbs_to_plot, "run_time",
-        ytime=True, xtime=True,
-        xlabel="Simulation Time",
-        ylabel="Real Time")
+                             ytime=True, xtime=True,
+                             xlabel="Simulation Time",
+                             ylabel="Real Time")
 
 def __plot_relay_goodput(args, torperf_dbs, tornet_dbs, net_scale):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = []
         for i, d in enumerate(tornet_db['dataset']):
-            l = [b/(1024**3)*8 for b in d.values()] # bytes to gbits
+            l = [b / (1024**3) * 8 for b in d.values()] # bytes to gbits
             tornet_db['data'].append(l)
     for torperf_db in torperf_dbs:
         gput = torperf_db['dataset']['relay_goodput']
-        torperf_db['data'] = [[net_scale*gbits for gbits in gput.values()]]
+        torperf_db['data'] = [[net_scale * gbits for gbits in gput.values()]]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, 'relay_goodput',
-        xlabel="Sum of Relays' Goodput (Gbit/s)")
+                      xlabel="Sum of Relays' Goodput (Gbit/s)")
 
 def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
     if circuittype == 'onionservice':
@@ -207,8 +207,8 @@ def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'circuit_build_time.{circuittype}',
-        yscale="taillog",
-        xlabel=f"{circuittype} Circuit Build Time (s)")
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Circuit Build Time (s)")
 
 def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
     if circuittype == 'onionservice':
@@ -224,8 +224,8 @@ def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'round_trip_time.{circuittype}',
-        yscale="taillog",
-        xlabel=f"{circuittype} Circuit Round Trip Time (s)")
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Circuit Round Trip Time (s)")
 
 def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
     if circuittype == 'onionservice':
@@ -241,8 +241,8 @@ def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}.{circuittype}",
-        yscale="taillog",
-        xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
 
 def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, error_key):
     if circuittype == 'onionservice':
@@ -259,7 +259,7 @@ def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, erro
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}.{circuittype}",
-        xlabel=f"{circuittype} Transfer Error Rate (\%): Type={error_key}")
+                      xlabel=f"{circuittype} Transfer Error Rate (\%): Type={error_key}")
 
 def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
     if circuittype == 'onionservice':
@@ -274,17 +274,17 @@ def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
     for tornet_db in tornet_dbs:
         # For compatibility with legacy parsed data, the output of the parse
         # step is in *mebi* bits per second.  Convert to *mega* here.
-        tornet_db['data'] = [[x*2**20/1e6 for x in ds] for ds in tornet_db['dataset']]
+        tornet_db['data'] = [[x * 2**20 / 1e6 for x in ds] for ds in tornet_db['dataset']]
     for torperf_db in torperf_dbs:
         # Covert to Mbps
-        client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput"]]
+        client_gput = [t / 1e6 for t in torperf_db['dataset']["client_goodput"]]
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput.{circuittype}',
-        yscale="taillog",
-        xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
 def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
     if circuittype == 'onionservice':
@@ -297,17 +297,17 @@ def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
     for tornet_db in tornet_dbs:
         # For compatibility with legacy parsed data, the output of the parse
         # step is in *mebi* bits per second.  Convert to *mega* here.
-        tornet_db['data'] = [[x*2**20/1e6 for x in ds] for ds in tornet_db['dataset']]
+        tornet_db['data'] = [[x * 2**20 / 1e6 for x in ds] for ds in tornet_db['dataset']]
     for torperf_db in torperf_dbs:
         # Covert to Mbps
-        client_gput = [t/1e6 for t in torperf_db['dataset']["client_goodput_5MiB"]]
+        client_gput = [t / 1e6 for t in torperf_db['dataset']["client_goodput_5MiB"]]
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_5MiB.{circuittype}',
-        yscale="taillog",
-        xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)
@@ -328,9 +328,9 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
             continue
 
         line = plot_func(pyplot, d,
-            label=db['label'],
-            color=db['color'] or next(color_cycle),
-            linestyle=next(linestyle_cycle))
+                         label=db['label'],
+                         color=db['color'] or next(color_cycle),
+                         linestyle=next(linestyle_cycle))
 
         lines.append(line)
         labels.append(db['label'])
@@ -360,7 +360,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
             q = quantile(db['data'][0], 0.99)
             x_visible_max = q if x_visible_max == None else max(x_visible_max, q)
     if x_visible_max != None:
-        pyplot.xlim(xmin=-m*x_visible_max, xmax=(m+1)*x_visible_max)
+        pyplot.xlim(xmin=-m * x_visible_max, xmax=(m + 1) * x_visible_max)
 
     __plot_finish(args, lines, labels, filename)
 
@@ -384,9 +384,9 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
             plot_func = draw_line
 
         line = plot_func(pyplot, x, y_buckets,
-            label=db['label'],
-            color=db['color'] or next(color_cycle),
-            linestyle=next(linestyle_cycle))
+                         label=db['label'],
+                         color=db['color'] or next(color_cycle),
+                         linestyle=next(linestyle_cycle))
 
         lines.append(line)
         labels.append(db['label'])
@@ -399,7 +399,7 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
     if xtime:
         f.axes[0].xaxis.set_major_formatter(FuncFormatter(__time_format_func))
         # this locates y-ticks at the hours
-        #ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3600))
+        # ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3600))
         # rotate xlabels so they don't overlap
         pyplot.xticks(rotation=30)
     if ytime:
@@ -427,9 +427,9 @@ def __get_scale_suffix(scale):
         return ""
 
 def __time_format_func(x, pos):
-    hours = int(x//3600)
-    minutes = int((x%3600)//60)
-    seconds = int(x%60)
+    hours = int(x // 3600)
+    minutes = int((x % 3600) // 60)
+    seconds = int(x % 60)
     return "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
 def __load_tornet_datasets(args, filepattern):
@@ -494,5 +494,5 @@ def __compute_torperf_error_rates(daily_counts):
         timeouts = int(daily_counts[day]['timeouts'])
         failures = int(daily_counts[day]['failures'])
 
-        err_rates.append((timeouts+failures)/float(total)*100.0)
+        err_rates.append((timeouts + failures) / float(total) * 100.0)
     return err_rates

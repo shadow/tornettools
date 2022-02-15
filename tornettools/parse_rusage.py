@@ -72,7 +72,7 @@ def __parse_shadow_rusage(args):
                 parts = line.strip().split()
                 if len(parts) >= 13:
                     sim_time = float(parts[12]) # nanos e.g. 2000000000
-                    std = datetime.timedelta(microseconds=sim_time/1000.0)
+                    std = datetime.timedelta(microseconds=sim_time / 1000.0)
                     sim_secs = std.total_seconds()
 
                     if sim_secs not in rusage:
@@ -129,9 +129,9 @@ def __get_ram_usage(data):
     if "mem_available" in data[some_key]:
         used = {float(ts): data[ts]["mem_total"] - data[ts]["mem_available"] for ts in data}
     else:
-        logging.warning(f"The available memory data is missing, so we are computing memory usage "\
-                         "with the used memory data instead (which is less precise and may not "\
-                         "match the way usage was calculated for other experiments).")
+        logging.warning(f"The available memory data is missing, so we are computing memory usage "
+                        "with the used memory data instead (which is less precise and may not "
+                        "match the way usage was calculated for other experiments).")
         used = {float(ts): data[ts]["mem_used"] for ts in data}
 
     ts_start = min(used.keys())
@@ -139,13 +139,13 @@ def __get_ram_usage(data):
     mem_max = max(used.values())
 
     # subtract mem used by OS, get time offset from beginning of simulation
-    gib_used_per_second = {int(ts-ts_start): (used[ts]-mem_start)/(1024.0**3) for ts in used}
+    gib_used_per_second = {int(ts - ts_start): (used[ts] - mem_start) / (1024.0**3) for ts in used}
     bytes_used_max = mem_max - mem_start
-    gib_used_max = bytes_used_max/(1024.0**3)
+    gib_used_max = bytes_used_max / (1024.0**3)
 
     gib_minute_bins = {}
     for second in gib_used_per_second:
-        gib_minute_bins.setdefault(int(second/60), []).append(gib_used_per_second[second])
+        gib_minute_bins.setdefault(int(second / 60), []).append(gib_used_per_second[second])
 
     gib_used_per_minute = {minute: mean(gib_minute_bins[minute]) for minute in gib_minute_bins}
 
@@ -157,7 +157,7 @@ def __get_run_time(data):
     runtime = datetime.timedelta(seconds=max(times))
 
     return {"human": str(runtime),
-        "seconds": runtime.total_seconds(),
-        "minutes": runtime.total_seconds()/60.0,
-        "hours": runtime.total_seconds()/3600.0,
-        "real_seconds_per_sim_second": real_seconds_per_sim_second}
+            "seconds": runtime.total_seconds(),
+            "minutes": runtime.total_seconds() / 60.0,
+            "hours": runtime.total_seconds() / 3600.0,
+            "real_seconds_per_sim_second": real_seconds_per_sim_second}

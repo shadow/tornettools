@@ -13,9 +13,9 @@ def make_directories(path):
     if not os.path.exists(d):
         os.makedirs(d)
 
-## test if program is in path
+# test if program is in path
 def which(program):
-    #returns None if not found
+    # returns None if not found
     return shutil.which(program)
 
 def cmdsplit(cmd_str):

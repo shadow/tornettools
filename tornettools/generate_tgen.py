@@ -92,7 +92,7 @@ def __generate_tgenrc_markovclients(abs_conf_path, hosts_prefix, tgen_clients):
 def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client):
     server_peers = ','.join(tgen_client['peers'])
     circuit_rate_exp = float(tgen_client['circuit_rate_exp'])
-    usec_per_circ = int(round(1.0/circuit_rate_exp))
+    usec_per_circ = int(round(1.0 / circuit_rate_exp))
 
     # write the flow model that will instruct tgen when to build new circuits
     # tgen clients with the same rate param can share flow model files
@@ -103,8 +103,8 @@ def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client):
 
     # we need a new tgenrc for each markov client, even though some of them share the flow model,
     # because each of them gets new random seeds
-    socksauthseed = "{}".format(randrange(1,1000000000))
-    markovmodelseed = "{}".format(randrange(1,1000000000))
+    socksauthseed = "{}".format(randrange(1, 1000000000))
+    markovmodelseed = "{}".format(randrange(1, 1000000000))
 
     # we use the following paths in the tgenrc, they should be relative
     fmodel_relpath = get_host_rel_conf_path(flowmodelname)
@@ -112,7 +112,7 @@ def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client):
     pmodel_relpath = get_host_rel_conf_path(TMODEL_PACKETMODEL_FILENAME)
 
     # at startup, delay walking the tgen graph for a random period in the range [1,60] seconds
-    startup_delay = "{}".format(randrange(60)+1)
+    startup_delay = "{}".format(randrange(60) + 1)
 
     # now generate the tgenrc graphml file
     G = DiGraph()
@@ -121,22 +121,22 @@ def __generate_tgenrc_markovclient(abs_conf_path, hosts_prefix, tgen_client):
 
     # use a absolute timeout of 10 minutes (the default circuit lifetime)
     # idle streams stallout after 5 minutes (the default timeout in apache)
-    G.add_node("start", \
-        loglevel=tgen_client['log_level'], \
-        time=startup_delay, \
-        socksproxy=proxy, \
-        peers=server_peers, \
-        stallout="5 minutes", \
-        timeout="10 minutes" \
-    )
-    G.add_node("traffic", \
-        socksauthseed=socksauthseed, \
-        flowmodelpath=fmodel_relpath, \
-        streammodelpath=smodel_relpath, \
-        packetmodelpath=pmodel_relpath, \
-        packetmodelmode="path", \
-        markovmodelseed=markovmodelseed \
-    )
+    G.add_node("start",
+               loglevel=tgen_client['log_level'],
+               time=startup_delay,
+               socksproxy=proxy,
+               peers=server_peers,
+               stallout="5 minutes",
+               timeout="10 minutes"
+               )
+    G.add_node("traffic",
+               socksauthseed=socksauthseed,
+               flowmodelpath=fmodel_relpath,
+               streammodelpath=smodel_relpath,
+               packetmodelpath=pmodel_relpath,
+               packetmodelmode="path",
+               markovmodelseed=markovmodelseed
+               )
 
     # we loop generating traffic until the experiment ends
     G.add_edge("start", "traffic")
@@ -294,7 +294,7 @@ def get_servers(args, clients):
     for i in range(n_exit_servers):
         chosen_country_code = choice(country_codes, p=country_probs)
         server = {
-            'name': 'server{}exit'.format(server_counter+1),
+            'name': 'server{}exit'.format(server_counter + 1),
             'country_code': chosen_country_code,
             'is_hs_server': False,
         }
@@ -305,7 +305,7 @@ def get_servers(args, clients):
         (privkey, onion_url) = keys[i]
         chosen_country_code = choice(country_codes, p=country_probs)
         server = {
-            'name': 'server{}onionservice'.format(server_counter+1),
+            'name': 'server{}onionservice'.format(server_counter + 1),
             'country_code': chosen_country_code,
             'hs_ed25519_secret_key': privkey,
             'hs_hostname': onion_url,
@@ -399,9 +399,9 @@ def __get_perf_clients(args, n_exit_users, n_hs_users):
         }
 
         if is_hs_client:
-            client['name'] = 'perfclient{}onionservice'.format(i+1)
+            client['name'] = 'perfclient{}onionservice'.format(i + 1)
         else:
-            client['name'] = 'perfclient{}exit'.format(i+1)
+            client['name'] = 'perfclient{}exit'.format(i + 1)
 
         perf_clients.append(client)
 
@@ -431,7 +431,7 @@ def __get_tgen_users(args, n_users, n_exit_circuits):
 
     # Calculate the number of circuits each tgen creates every 10 minutes.
     # We have measurements of the number of exit circuits and number of exit
-    # users, which estimates the load per user in the measured network. 
+    # users, which estimates the load per user in the measured network.
     # For now we assume the same per-user load in onion services.
     n_estimated_circuits_per_user = n_exit_circuits / n_estimated_exit_users
 
@@ -457,14 +457,14 @@ def __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user):
     n_hs_tgen = max(__round_or_ceil(n_hs_users * args.process_scale), n_hs_tgen_min)
     if n_hs_tgen > 0:
         hs_users_per_hs_tgen = n_hs_users / n_hs_tgen
-        n_circuits_per_hs_tgen = __round_or_ceil(n_circuits_per_user * hs_users_per_hs_tgen) 
+        n_circuits_per_hs_tgen = __round_or_ceil(n_circuits_per_user * hs_users_per_hs_tgen)
 
     # Same for exit users.
     n_exit_tgen_min = min(__round_or_ceil(n_exit_users), TGEN_CLIENT_MIN_COUNT)
     n_exit_tgen = max(__round_or_ceil(n_exit_users * args.process_scale), n_exit_tgen_min)
     if n_exit_tgen > 0:
         exit_users_per_exit_tgen = n_exit_users / n_exit_tgen
-        n_circuits_per_exit_tgen = __round_or_ceil(n_circuits_per_user * exit_users_per_exit_tgen) 
+        n_circuits_per_exit_tgen = __round_or_ceil(n_circuits_per_user * exit_users_per_exit_tgen)
 
     # each client will be placed in a country
     country_codes, country_probs = __load_user_data(args)
@@ -482,14 +482,14 @@ def __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user):
         #        more accurate total circuit counts from exits.
         #num_circs_every_10_minutes = __sample_active_circuits_per_n_clients(measurement2, n_users_per_tgen)
         if is_hs_client:
-            num_circs_every_10_minutes  = n_circuits_per_hs_tgen
+            num_circs_every_10_minutes = n_circuits_per_hs_tgen
             total_hs_circuits_10_mins += n_circuits_per_hs_tgen
         else:
-            num_circs_every_10_minutes  = n_circuits_per_exit_tgen
+            num_circs_every_10_minutes = n_circuits_per_exit_tgen
             total_exit_circuits_10_mins += n_circuits_per_exit_tgen
-            
+
         # convert circuit count into a rate for the exponential distribution
-        usec_in_10_minutes = 10.0*60.0*1000.0*1000.0
+        usec_in_10_minutes = 10.0 * 60.0 * 1000.0 * 1000.0
         usec_per_circ = usec_in_10_minutes / num_circs_every_10_minutes
         exponential_rate = 1.0 / usec_per_circ
 
@@ -501,9 +501,9 @@ def __get_tgen_clients(args, n_exit_users, n_hs_users, n_circuits_per_user):
         }
 
         if is_hs_client:
-            client['name'] = 'markovclient{}onionservice'.format(i+1)
+            client['name'] = 'markovclient{}onionservice'.format(i + 1)
         else:
-            client['name'] = 'markovclient{}exit'.format(i+1)
+            client['name'] = 'markovclient{}exit'.format(i + 1)
 
         tgen_clients.append(client)
 
@@ -547,7 +547,7 @@ def __sample_active_circuits_per_n_clients(measurement, n_clients):
         count += __sample_active_circuits_per_client(measurement)
     # exits saw ~1/10 of the circs entries see, possibly related to DoS on tor during measurement
     # note - this is hand-wavy magic
-    return __round_or_ceil(count/10.0)
+    return __round_or_ceil(count / 10.0)
 
 def __sample_active_circuits_per_client(measurement):
     return __sample_bins(measurement['EntryClientIPActiveCircuitCount']['bins'])
@@ -561,7 +561,7 @@ def __sample_bins(bins):
     total = float(sum(counts))
     probs = []
     for i in indices:
-        probs.append(counts[i]/total)
+        probs.append(counts[i] / total)
 
     # choose one bin index using probs as the prob distribution
     bin_index_choice = int(float(choice(indices, 1, p=probs)))
@@ -581,10 +581,10 @@ def generate_onion_service_keys(tor_cmd, n):
     with tempfile.TemporaryDirectory(prefix='tornettools-hs-keygen-') as dir_name:
         config = {'DisableNetwork': '1', 'DataDirectory': dir_name, 'ControlPort': '9030'}
         tor_process = stem.process.launch_tor_with_config(config,
-                tor_cmd=tor_cmd,
-                init_msg_handler=logging.debug,
-                take_ownership=True,
-                completion_percent=0)
+                                                          tor_cmd=tor_cmd,
+                                                          init_msg_handler=logging.debug,
+                                                          take_ownership=True,
+                                                          completion_percent=0)
         controller = stem.connection.connect(control_port=('127.0.0.1', 9030))
 
         keys = []

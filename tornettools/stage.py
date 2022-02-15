@@ -128,7 +128,7 @@ def stage_relays(args):
             found_bandwidths += 1
 
     logging.info("We found bandwidth information for {} of {} relays".format(found_bandwidths, len(relays)))
-    #for (k, v) in sorted(relays.items(), key=lambda kv: kv[1].bandwidths.max_obs_bw):
+    # for (k, v) in sorted(relays.items(), key=lambda kv: kv[1].bandwidths.max_obs_bw):
     #    logging.info("fp={} capacity={}".format(k, v.bandwidths.max_obs_bw))
 
     geo = None
@@ -264,7 +264,8 @@ def parse_consensus(path):
     for fingerprint in relays:
         relays[fingerprint]['weight'] /= weights["total"]
     for position_type in weights:
-        if position_type == "total": continue
+        if position_type == "total":
+            continue
         weights[position_type] /= weights["total"]
 
     result = {
@@ -363,8 +364,10 @@ def parse_serverdesc(args):
     avg_bw = relay.average_bandwidth
     bst_bw = relay.burst_bandwidth
 
-    if avg_bw != None and avg_bw < advertised_bw: advertised_bw = avg_bw
-    if bst_bw != None and bst_bw < advertised_bw: advertised_bw = bst_bw
+    if avg_bw != None and avg_bw < advertised_bw:
+        advertised_bw = avg_bw
+    if bst_bw != None and bst_bw < advertised_bw:
+        advertised_bw = bst_bw
 
     result = {
         'type': 'serverdesc',
@@ -405,12 +408,12 @@ def parse_extrainfo(path): # unused right now, but might be useful
     read_max_rate, read_avg_rate = 0, 0
     if xinfo.read_history_values != None and xinfo.read_history_interval != None:
         read_max_rate = int(max(xinfo.read_history_values) / xinfo.read_history_interval)
-        read_mean_rate = int((sum(xinfo.read_history_values)/len(xinfo.read_history_values)) / xinfo.read_history_interval)
+        read_mean_rate = int((sum(xinfo.read_history_values) / len(xinfo.read_history_values)) / xinfo.read_history_interval)
 
     write_max_rate, write_avg_rate = 0, 0
     if xinfo.write_history_values != None and xinfo.write_history_interval != None:
         write_max_rate = int(max(xinfo.write_history_values) / xinfo.write_history_interval)
-        write_mean_rate = int((sum(xinfo.write_history_values)/len(xinfo.write_history_values)) / xinfo.write_history_interval)
+        write_mean_rate = int((sum(xinfo.write_history_values) / len(xinfo.write_history_values)) / xinfo.write_history_interval)
 
     result = {
         'type': type,
