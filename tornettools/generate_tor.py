@@ -19,7 +19,7 @@ def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
     try:
         with open(pwpath, 'r') as pwin:
             proc = subprocess.run(shlex.split(cmd), stdin=pwin, capture_output=True)
-    except:
+    except Exception:
         with open(pwpath, 'r') as pwin:
             proc = subprocess.run(shlex.split(cmd), stdin=pwin)
 
