@@ -16,11 +16,11 @@ from tornettools.generate_tgen import *
 from tornettools.generate_tor import *
 
 def run(args):
-    if args.torexe == None:
+    if args.torexe is None:
         logging.critical("Unable to find a 'tor' executable in PATH, but we need it to generate keys. Did you build 'tor'? Did you set your PATH or provide the path to the 'tor' executable?")
         logging.critical("Refusing to generate a network without 'tor'.")
         return
-    if args.torgencertexe == None:
+    if args.torgencertexe is None:
         logging.critical("Unable to find a 'tor-gencert' executable in PATH, but we need it to generate keys. Did you build 'tor-gencert'? Did you set your PATH or provide the path to the 'tor-gencert' executable?")
         logging.critical("Refusing to generate a network without 'tor-gencert'.")
         return

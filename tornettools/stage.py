@@ -295,9 +295,9 @@ def combine_parsed_consensus_results(results):
 
         if result['pub_dt'] is not None:
             unix_time = result['pub_dt'].replace(tzinfo=timezone.utc).timestamp()
-            if min_unix_time == None or unix_time < min_unix_time:
+            if min_unix_time is None or unix_time < min_unix_time:
                 min_unix_time = unix_time
-            if max_unix_time == None or unix_time > max_unix_time:
+            if max_unix_time is None or unix_time > max_unix_time:
                 max_unix_time = unix_time
 
         weights_t.append(result['weights']['total'])
@@ -349,7 +349,7 @@ def parse_serverdesc(args):
     path, min_time, max_time = args
     relay = next(parse_file(path, document_handler='DOCUMENT', descriptor_type='server-descriptor 1.0', validate=False))
 
-    if relay == None:
+    if relay is None:
         return None
 
     pub_ts = relay.published.replace(tzinfo=timezone.utc).timestamp()
@@ -364,9 +364,9 @@ def parse_serverdesc(args):
     avg_bw = relay.average_bandwidth
     bst_bw = relay.burst_bandwidth
 
-    if avg_bw != None and avg_bw < advertised_bw:
+    if avg_bw is not None and avg_bw < advertised_bw:
         advertised_bw = avg_bw
-    if bst_bw != None and bst_bw < advertised_bw:
+    if bst_bw is not None and bst_bw < advertised_bw:
         advertised_bw = bst_bw
 
     result = {
@@ -375,8 +375,8 @@ def parse_serverdesc(args):
         'fprint': relay.fingerprint,
         'address': relay.address,
         'bw_obs': relay.observed_bandwidth,
-        'bw_rate': avg_bw if avg_bw != None else 0,
-        'bw_burst': bst_bw if bst_bw != None else 0,
+        'bw_rate': avg_bw if avg_bw is not None else 0,
+        'bw_burst': bst_bw if bst_bw is not None else 0,
         'bw_adv': advertised_bw,
     }
 
@@ -406,12 +406,12 @@ def parse_extrainfo(path): # unused right now, but might be useful
     xinfo = next(parse_file(path, document_handler='DOCUMENT', descriptor_type='extra-info 1.0', validate=False))
 
     read_max_rate, read_avg_rate = 0, 0
-    if xinfo.read_history_values != None and xinfo.read_history_interval != None:
+    if xinfo.read_history_values is not None and xinfo.read_history_interval is not None:
         read_max_rate = int(max(xinfo.read_history_values) / xinfo.read_history_interval)
         read_mean_rate = int((sum(xinfo.read_history_values) / len(xinfo.read_history_values)) / xinfo.read_history_interval)
 
     write_max_rate, write_avg_rate = 0, 0
-    if xinfo.write_history_values != None and xinfo.write_history_interval != None:
+    if xinfo.write_history_values is not None and xinfo.write_history_interval is not None:
         write_max_rate = int(max(xinfo.write_history_values) / xinfo.write_history_interval)
         write_mean_rate = int((sum(xinfo.write_history_values) / len(xinfo.write_history_values)) / xinfo.write_history_interval)
 

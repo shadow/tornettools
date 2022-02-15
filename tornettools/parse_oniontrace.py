@@ -9,7 +9,7 @@ from tornettools.util import which, cmdsplit, open_writeable_file, load_json_dat
 def parse_oniontrace_logs(args):
     otracetools_exe = which('oniontracetools')
 
-    if otracetools_exe == None:
+    if otracetools_exe is None:
         logging.warning("Cannot find oniontracetools in your PATH. Is your python venv active? Do you have oniontracetools installed?")
         logging.warning("Unable to parse oniontrace simulation data.")
         return

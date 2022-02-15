@@ -16,12 +16,12 @@ def run(args):
           "circuit_build_times": [], "download_times": {}, "daily_counts": {},
           "relay_goodput": {}}
 
-    if args.bandwidth_data_path != None:
+    if args.bandwidth_data_path is not None:
         logging.info(f"Parsing bandwidth data stored in '{args.bandwidth_data_path}'")
         db['relay_goodput'] = __parse_bandwidth_data(args.bandwidth_data_path)
         logging.info("Finished parsing bandwidth data")
 
-    if args.onionperf_data_path != None:
+    if args.onionperf_data_path is not None:
         logging.info(f"Extracting onionperf data stored in '{args.onionperf_data_path}'")
         __extract_onionperf_data(args, db)
         logging.info("Finished extracting onionperf data")

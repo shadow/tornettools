@@ -337,15 +337,15 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
 
     if xscale is not None:
         pyplot.xscale(xscale)
-        if xlabel != None:
+        if xlabel is not None:
             xlabel += __get_scale_suffix(xscale)
-    if yscale != None:
+    if yscale is not None:
         pyplot.yscale(yscale)
-        if ylabel != None:
+        if ylabel is not None:
             ylabel += __get_scale_suffix(yscale)
-    if xlabel != None:
+    if xlabel is not None:
         pyplot.xlabel(xlabel)
-    if ylabel != None:
+    if ylabel is not None:
         pyplot.ylabel(ylabel)
 
     m = 0.025
@@ -358,8 +358,8 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     for db in dbs:
         if len(db['data']) >= 1 and len(db['data'][0]) >= 1:
             q = quantile(db['data'][0], 0.99)
-            x_visible_max = q if x_visible_max == None else max(x_visible_max, q)
-    if x_visible_max != None:
+            x_visible_max = q if x_visible_max is None else max(x_visible_max, q)
+    if x_visible_max is not None:
         pyplot.xlim(xmin=-m * x_visible_max, xmax=(m + 1) * x_visible_max)
 
     __plot_finish(args, lines, labels, filename)
@@ -391,9 +391,9 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
         lines.append(line)
         labels.append(db['label'])
 
-    if xlabel != None:
+    if xlabel is not None:
         pyplot.xlabel(xlabel)
-    if ylabel != None:
+    if ylabel is not None:
         pyplot.ylabel(ylabel)
 
     if xtime:
@@ -436,15 +436,15 @@ def __load_tornet_datasets(args, filepattern):
     tornet_dbs = []
 
     print(args.labels)
-    label_cycle = cycle(args.labels) if args.labels != None else None
-    color_cycle = cycle(args.colors) if args.colors != None else None
+    label_cycle = cycle(args.labels) if args.labels is not None else None
+    color_cycle = cycle(args.colors) if args.colors is not None else None
 
-    if args.tornet_collection_path != None:
+    if args.tornet_collection_path is not None:
         for collection_dir in args.tornet_collection_path:
             tornet_db = {
                 'dataset': [load_json_data(p) for p in find_matching_files_in_dir(collection_dir, filepattern)],
-                'label': next(label_cycle) if label_cycle != None else os.path.basename(collection_dir),
-                'color': next(color_cycle) if color_cycle != None else None,
+                'label': next(label_cycle) if label_cycle is not None else os.path.basename(collection_dir),
+                'color': next(color_cycle) if color_cycle is not None else None,
             }
             tornet_dbs.append(tornet_db)
 
@@ -453,11 +453,11 @@ def __load_tornet_datasets(args, filepattern):
 def __load_torperf_datasets(torperf_argset):
     torperf_dbs = []
 
-    if torperf_argset != None:
+    if torperf_argset is not None:
         for torperf_args in torperf_argset:
             torperf_db = {
-                'dataset': load_json_data(torperf_args[0]) if torperf_args[0] != None else None,
-                'label': torperf_args[1] if torperf_args[1] != None else "Public Tor",
+                'dataset': load_json_data(torperf_args[0]) if torperf_args[0] is not None else None,
+                'label': torperf_args[1] if torperf_args[1] is not None else "Public Tor",
                 'color': torperf_args[2],
             }
             torperf_dbs.append(torperf_db)

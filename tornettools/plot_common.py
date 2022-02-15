@@ -278,7 +278,7 @@ def set_plot_options():
 
     rcParams.update(options)
 
-    if which("latex") != None:
+    if which("latex") is not None:
         rcParams.update(options_latex)
 
     if 'figure.max_num_figures' in rcParams:

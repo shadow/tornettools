@@ -9,7 +9,7 @@ from tornettools.util import which, cmdsplit, open_writeable_file, load_json_dat
 def parse_tgen_logs(args):
     tgentools_exe = which('tgentools')
 
-    if tgentools_exe == None:
+    if tgentools_exe is None:
         logging.warning("Cannot find tgentools in your PATH. Is your python venv active? Do you have tgentools installed?")
         logging.warning("Unable to parse tgen simulation data.")
         return

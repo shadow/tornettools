@@ -69,7 +69,7 @@ TMODEL_PACKETMODEL_FILENAME = "tgen.tor-packetmodel-ccs2018.graphml"
 TMODEL_TOPOLOGY_FILENAME = "atlas_v201801.shadow_v2.gml"
 
 def get_host_rel_conf_path(rc_filename, rc_subdirname=None):
-    if rc_subdirname == None:
+    if rc_subdirname is None:
         return f"../../../{CONFIG_DIRNAME}/{rc_filename}"
     else:
         return f"../../../{CONFIG_DIRNAME}/{rc_subdirname}/{rc_filename}"

@@ -8,7 +8,7 @@ from tornettools.util import which, cmdsplit, find_matching_files_in_dir, open_w
 def plot_tgen(args):
     tgentools_exe = which('tgentools')
 
-    if tgentools_exe == None:
+    if tgentools_exe is None:
         logging.warning("Cannot find tgentools in your PATH. Is your python venv active? Do you have tgentools installed?")
         logging.warning("Unable to plot tgen data.")
         return

@@ -37,7 +37,7 @@ def __parse_free_rusage(args):
                     #dt = datetime.datetime.fromtimestamp(ts)
                     #last_ts = dt.timestamp()
                     last_ts = ts
-            elif 'total' in line and mem_header == None:
+            elif 'total' in line and mem_header is None:
                 mem_header = [p.strip() for p in line.strip().split()]
             elif "Mem:" in line:
                 parts = [p.strip() for p in line.strip().split()]
@@ -68,7 +68,7 @@ def __parse_shadow_rusage(args):
     heartbeat = re.compile("_manager_heartbeat")
     with open_readable_file(shadow_filepath) as inf:
         for line in inf:
-            if heartbeat.search(line) != None:
+            if heartbeat.search(line) is not None:
                 parts = line.strip().split()
                 if len(parts) >= 13:
                     sim_time = float(parts[12]) # nanos e.g. 2000000000
