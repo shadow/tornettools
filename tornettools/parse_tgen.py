@@ -4,7 +4,7 @@ import datetime
 import subprocess
 import re
 
-from tornettools.util import which, cmdsplit, open_writeable_file, load_json_data, dump_json_data, aka_int, tgen_stream_seconds_at_bytes
+from tornettools.util import which, open_writeable_file, load_json_data, dump_json_data, aka_int, tgen_stream_seconds_at_bytes
 
 def parse_tgen_logs(args):
     tgentools_exe = which('tgentools')
@@ -17,8 +17,13 @@ def parse_tgen_logs(args):
     # tgentools supports a list of expressions that are used to search for oniontrace log filenames
     # the first -e expression matches the log file names for Shadow v2.x.x
     # and the second -e expression matches the log file names for Shadow v1.x.x
-    cmd_str = f"{tgentools_exe} parse -m {args.nprocesses} -e 'perfclient[0-9]+(exit|onionservice)?\.tgen\.[0-9]+.stdout' -e 'stdout.*perfclient[0-9]+\.tgen\.[0-9]+.log' --complete shadow.data/hosts"
-    cmd = cmdsplit(cmd_str)
+    cmd = [tgentools_exe,
+           'parse',
+           '-m', str(args.nprocesses),
+           '-e', r'perfclient[0-9]+(exit|onionservice)?\.tgen\.[0-9]+\.stdout',
+           '-e', r'stdout\.*perfclient[0-9]+\.tgen\.[0-9]+\.log',
+           '--complete',
+           'shadow.data/hosts']
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 

@@ -4,7 +4,7 @@ import datetime
 import re
 import subprocess
 
-from tornettools.util import which, cmdsplit, open_writeable_file, load_json_data, dump_json_data
+from tornettools.util import which, open_writeable_file, load_json_data, dump_json_data
 
 def parse_oniontrace_logs(args):
     otracetools_exe = which('oniontracetools')
@@ -17,8 +17,12 @@ def parse_oniontrace_logs(args):
     # oniontracetools supports a list of expressions that are used to search for oniontrace log filenames
     # the first -e expression matches the log file names for Shadow v2.x.x
     # and the second -e expression matches the log file names for Shadow v1.x.x
-    cmd_str = f"{otracetools_exe} parse -m {args.nprocesses} -e '.*\.oniontrace\.[0-9]+.stdout' -e 'stdout.*\.oniontrace\.[0-9]+.log' shadow.data/hosts"
-    cmd = cmdsplit(cmd_str)
+    cmd = [otracetools_exe,
+           'parse',
+           '-m', str(args.nprocesses),
+           '-e', r'.*\.oniontrace\.[0-9]+\.stdout',
+           '-e', r'stdout.*\.oniontrace\.[0-9]+\.log',
+           'shadow.data/hosts']
 
     datestr = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 

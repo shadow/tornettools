@@ -50,7 +50,7 @@ def __parse_tornettools_log(args):
             if match:
                 info['tornettools_generate_seed'] = int(match.groups()[0])
                 continue
-            match = re.search('Chose (\d+) of (\d+) relays using scale factor (\S+)', line)
+            match = re.search(r'Chose (\d+) of (\d+) relays using scale factor (\S+)', line)
             if match:
                 info['num_sampled_relays'] = int(match.groups()[0])
                 info['num_public_relays'] = int(match.groups()[1])
