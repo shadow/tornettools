@@ -11,7 +11,15 @@ from random import randrange
 
 from networkx import DiGraph, write_graphml
 
-from tornettools.generate_defaults import *
+from tornettools.generate_defaults import (CONFIG_DIRNAME, ONIONPERF_COUNTRY_CODES,
+                                           PRIVCOUNT_PERIODS_PER_DAY, SHADOW_HOSTS_PATH,
+                                           SHADOW_TEMPLATE_PATH, TGENRC_FLOWMODEL_FILENAME_FMT,
+                                           TGENRC_MARKOVCLIENT_FILENAME,
+                                           TGENRC_PERFCLIENT_EXIT_FILENAME,
+                                           TGENRC_PERFCLIENT_HS_FILENAME, TGENRC_SERVER_FILENAME,
+                                           TGEN_CLIENT_MIN_COUNT, TGEN_SERVER_PORT,
+                                           TMODEL_PACKETMODEL_FILENAME, TMODEL_STREAMMODEL_FILENAME,
+                                           TOR_SOCKS_PORT, get_host_rel_conf_path)
 from tornettools.util import load_json_data
 
 def __round_or_ceil(x):
