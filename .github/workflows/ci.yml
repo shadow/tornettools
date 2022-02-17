@@ -62,10 +62,4 @@ jobs:
           flake8
 
       - name: Run flake8
-        # Ignores:
-        # * E302: E302 expected 2 blank lines, found 1.
-        # * E501 line too long.
-        # * E261 at least two spaces before inline comment.
-        # * E265 block comment should start with '# '
-        # * E741 ambiguous variable name
-        run: flake8 --extend-ignore=E302,E501,E261,E265,E741 tornettools
+        run: flake8 tornettools
