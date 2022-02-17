@@ -267,6 +267,7 @@ def __generate_torrc_common(conf_path, authorities, geoip_path):
     torrc_file.write('GeoIPFile {}\n'.format(geoip_path or ''))
     # Never load the geoipv6 file, since we don't support ipv6.
     torrc_file.write('GeoIPV6File\n')
+    torrc_file.write('ProtocolWarnings 1\n')
 
     torrc_file.close()
 
