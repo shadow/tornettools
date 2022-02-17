@@ -1,7 +1,5 @@
-import sys
 import os
 import json
-import lzma
 import logging
 
 from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_stream_seconds_at_bytes
@@ -13,15 +11,15 @@ from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_s
 
 def run(args):
     db = {"circuit_rtt": [], "client_goodput": [], "client_goodput_5MiB": [],
-        "circuit_build_times": [], "download_times": {}, "daily_counts": {},
-        "relay_goodput": {}}
+          "circuit_build_times": [], "download_times": {}, "daily_counts": {},
+          "relay_goodput": {}}
 
-    if args.bandwidth_data_path != None:
+    if args.bandwidth_data_path is not None:
         logging.info(f"Parsing bandwidth data stored in '{args.bandwidth_data_path}'")
         db['relay_goodput'] = __parse_bandwidth_data(args.bandwidth_data_path)
         logging.info("Finished parsing bandwidth data")
 
-    if args.onionperf_data_path != None:
+    if args.onionperf_data_path is not None:
         logging.info(f"Extracting onionperf data stored in '{args.onionperf_data_path}'")
         __extract_onionperf_data(args, db)
         logging.info("Finished extracting onionperf data")
@@ -138,7 +136,6 @@ def __handle_stream(db, stream, day):
     # receiving the 4MiB byte and 5MiB byte, which is a total amount of 1 MiB  or
     # 8 Mib.
 
-
     if 'elapsed_seconds' in stream and 'payload_bytes_recv' in stream['elapsed_seconds']:
         # download times
         for (transfer_size, time_to_size) in stream['elapsed_seconds']['payload_bytes_recv'].items():
@@ -149,7 +146,7 @@ def __handle_stream(db, stream, day):
         # goodput between 500 kibibytes and 1 mebibyte. Old way of calcuting throughput.
         # https://metrics.torproject.org/reproducible-metrics.html#performance
         goodput = __goodput_bps(
-                stream, aka_int(512000, 500 * 2**10), aka_int(1048576, 2**20))
+            stream, aka_int(512000, 500 * 2**10), aka_int(1048576, 2**20))
         if goodput is not None:
             db['client_goodput'].append(goodput)
 
@@ -158,7 +155,7 @@ def __handle_stream(db, stream, day):
         # https://gitlab.torproject.org/tpo/network-health/metrics/statistics/-/issues/40020
         # https://metrics.torproject.org/reproducible-metrics.html#performance
         goodput = __goodput_bps(
-                stream, aka_int(4194304, 4 * 2**20), aka_int(5242880, 5 * 2**20))
+            stream, aka_int(4194304, 4 * 2**20), aka_int(5242880, 5 * 2**20))
         if goodput is not None:
             db['client_goodput_5MiB'].append(goodput)
 
@@ -172,7 +169,7 @@ def __goodput_bps(stream, start_bytes, end_bytes):
     end_time = tgen_stream_seconds_at_bytes(stream, end_bytes)
     if end_time is None or end_time <= start_time:
         return None
-    return (end_bytes - start_bytes) * 8.0  / (end_time - start_time)
+    return (end_bytes - start_bytes) * 8.0 / (end_time - start_time)
 
 def __store_transfer_time(db, transfer_size, transfer_time):
     db['download_times'].setdefault('ALL', [])

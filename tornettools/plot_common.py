@@ -1,18 +1,14 @@
+from tornettools.util import which
+from numpy import array as nparray, log10 as nplog10
+from numpy import ma, mean, median, std, quantile, sqrt, linspace, var
+from scipy.stats import scoreatpercentile as score, t
+from matplotlib import rcParams
+from matplotlib.ticker import FixedFormatter, FixedLocator
+from matplotlib import transforms as mtransforms
+from matplotlib import scale as mscale
 from matplotlib import use as mp_use
 mp_use('Agg') # for systems without X11
-import matplotlib.pyplot as pyplot
-from matplotlib.backends.backend_pdf import PdfPages
 
-from matplotlib import scale as mscale
-from matplotlib import transforms as mtransforms
-from matplotlib.ticker import FixedFormatter, FixedLocator
-from matplotlib import rcParams
-
-from scipy.stats import scoreatpercentile as score, t
-from numpy import ma, mean, median, std, log10, quantile, sqrt, linspace, var
-from numpy import array as nparray, log10 as nplog10
-
-from tornettools.util import which
 
 DEFAULT_COLORS = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
 DEFAULT_LINESTYLES = ['-', '--', ':', '-.']
@@ -39,7 +35,7 @@ class TailLog(mscale.ScaleBase):
         axis.set_major_locator(FixedLocator(nparray(majloc)))
         axis.set_major_formatter(FixedFormatter([str(k) for k in majloc]))
 
-        minloc = [10**(-1*self.nines)*k for k in range(100) if k not in [0, 90, 99] and (k > 90 or k % 10 == 0)]
+        minloc = [10**(-1 * self.nines) * k for k in range(100) if k not in [0, 90, 99] and (k > 90 or k % 10 == 0)]
         minloc = [round(k, self.nines) for k in minloc]
         axis.set_minor_locator(FixedLocator(nparray(minloc)))
         axis.set_minor_formatter(FixedFormatter([str(k) for k in minloc]))
@@ -57,11 +53,11 @@ class TailLog(mscale.ScaleBase):
             self.nines = nines
 
         def transform_non_affine(self, a):
-            masked = ma.masked_where(a > 1-10**(-1-self.nines), a)
+            masked = ma.masked_where(a > 1 - 10**(-1 - self.nines), a)
             if masked.mask.any():
-                return -ma.log10(1-a)
+                return -ma.log10(1 - a)
             else:
-                return -nplog10(1-a)
+                return -nplog10(1 - a)
 
         def inverted(self):
             return TailLog.InvertedTransform(self.nines)
@@ -81,6 +77,7 @@ class TailLog(mscale.ScaleBase):
         def inverted(self):
             return TailLog.Transform(self.nines)
 
+
 mscale.register_scale(TailLog)
 
 # The scipy t.ppf distribution is for one-sided hypothesis tests.
@@ -91,7 +88,7 @@ def __two_to_one_sided_confidence_level(two_sided_level):
 
 def __get_error_factor(k, confidence):
     level = __two_to_one_sided_confidence_level(confidence)
-    return t.ppf(level, k-1)/sqrt(k-1)
+    return t.ppf(level, k - 1) / sqrt(k - 1)
 
 def __compute_sample_mean_and_error(bucket_list, confidence):
     means, mins, maxs = [], [], []
@@ -113,16 +110,16 @@ def __compute_sample_mean_and_error(bucket_list, confidence):
 
         # The resolution variance is 1/12 of the sum of the squares
         # of the resolutions
-        resolution_variance = sum([res**2 for res in resolutions])/12
+        resolution_variance = sum([res**2 for res in resolutions]) / 12
 
         m, v = mean(emp_sample), var(emp_sample)
         assert(k == len(emp_sample))
-        s = sqrt(v + resolution_variance/k)
-        e = z*s
+        s = sqrt(v + resolution_variance / k)
+        e = z * s
 
         means.append(m)
-        mins.append(max(0, m-e))
-        maxs.append(m+e)
+        mins.append(max(0, m - e))
+        maxs.append(m + e)
 
     return means, mins, maxs
 
@@ -133,7 +130,7 @@ def __compute_sample_mean_and_error(bucket_list, confidence):
 # each data may be a list of values, or a list of [value, resolution] items
 def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
     y = list(linspace(0, 0.99, num=1000))
-    quantile_buckets = {q:[] for q in y}
+    quantile_buckets = {q: [] for q in y}
 
     # we should have one empirical value for each simulation (ie data) for each quantile
     total_num_items = 0
@@ -146,7 +143,7 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
         data.sort(key=getfirstorself)
 
         for q in quantile_buckets:
-            val_at_q = data[int((num_items-1) * q)]
+            val_at_q = data[int((num_items - 1) * q)]
             quantile_buckets[q].append(val_at_q)
 
     if total_num_items == 0:
@@ -213,15 +210,15 @@ def draw_line(axis, x, ydata, **kwargs):
     plot_line = axis.plot(x, y, **kwargs)
     return plot_line[0]
 
-## helper - if the passed item is a list, return its first
-## element; otherwise, return the item itself
+# helper - if the passed item is a list, return its first
+# element; otherwise, return the item itself
 def getfirstorself(item):
     if isinstance(item, list):
         return item[0]
     return item
 
-## helper - if the passed item is a list, return its second
-## element; otherwise, return 0
+# helper - if the passed item is a list, return its second
+# element; otherwise, return 0
 def getsecondorzero(item):
     if isinstance(item, list):
         return item[1]
@@ -230,7 +227,7 @@ def getsecondorzero(item):
 def log_stats(filename, msg, dist):
     #from numpy import mean, median, std
     #from scipy.stats import scoreatpercentile as score
-    b = sorted(dist)#.values()
+    b = sorted(dist)  # .values()
     b = [getfirstorself(item) for item in b]
     with open(filename, 'a') as outf:
         print(msg, file=outf)
@@ -238,48 +235,48 @@ def log_stats(filename, msg, dist):
 
 def set_plot_options():
     options = {
-        #'backend': 'PDF',
+        # 'backend': 'PDF',
         'font.size': 12,
-        'figure.figsize': (5,4),
+        'figure.figsize': (5, 4),
         'figure.dpi': 150.0,
         'grid.color': '0.1',
         'grid.linestyle': ':',
         'grid.linewidth': 0.5,
-        'axes.grid' : True,
-        #'axes.grid.axis' : 'y',
-        #'axes.axisbelow': True,
-        'axes.titlesize' : 14,
-        'axes.labelsize' : 10,
-        'axes.formatter.limits': (-4,4),
-        'xtick.labelsize' : 8,
-        'ytick.labelsize' : 8,
-        'lines.linewidth' : 2.0,
-        'lines.markeredgewidth' : 0.5,
-        'lines.markersize' : 10,
-        'legend.fontsize' : 10,
-        'legend.fancybox' : False,
-        'legend.shadow' : False,
-        'legend.borderaxespad' : 0.5,
-        'legend.columnspacing' : 1.0,
-        'legend.numpoints' : 1,
-        'legend.handletextpad' : 0.25,
-        'legend.handlelength' : 2.0,
-        'legend.labelspacing' : 0.25,
-        'legend.markerscale' : 1.0,
+        'axes.grid': True,
+        # 'axes.grid.axis' : 'y',
+        # 'axes.axisbelow': True,
+        'axes.titlesize': 14,
+        'axes.labelsize': 10,
+        'axes.formatter.limits': (-4, 4),
+        'xtick.labelsize': 8,
+        'ytick.labelsize': 8,
+        'lines.linewidth': 2.0,
+        'lines.markeredgewidth': 0.5,
+        'lines.markersize': 10,
+        'legend.fontsize': 10,
+        'legend.fancybox': False,
+        'legend.shadow': False,
+        'legend.borderaxespad': 0.5,
+        'legend.columnspacing': 1.0,
+        'legend.numpoints': 1,
+        'legend.handletextpad': 0.25,
+        'legend.handlelength': 2.0,
+        'legend.labelspacing': 0.25,
+        'legend.markerscale': 1.0,
     }
 
     options_latex = {
         # turn on the following to embedd fonts; requires latex
-        'ps.useafm' : True,
-        'pdf.use14corefonts' : True,
-        'text.usetex' : True,
+        'ps.useafm': True,
+        'pdf.use14corefonts': True,
+        'text.usetex': True,
         # 'text.latex.preamble': r'\boldmath',
         'text.latex.preamble': r'\usepackage{amsmath}',
     }
 
     rcParams.update(options)
 
-    if which("latex") != None:
+    if which("latex") is not None:
         rcParams.update(options_latex)
 
     if 'figure.max_num_figures' in rcParams:

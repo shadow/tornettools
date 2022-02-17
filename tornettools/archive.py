@@ -1,4 +1,3 @@
-import sys
 import os
 import logging
 import shutil
@@ -9,7 +8,7 @@ from tornettools.util import which, cmdsplit
 def run(args):
     logging.info("Starting to archive simulation results now.")
 
-    if which('xz') == None or which('tar') == None or which('dd') == None:
+    if which('xz') is None or which('tar') is None or which('dd') is None:
         logging.warning("We require the tar, xz, and dd tools to archive the results.")
         logging.critical("Unable to archive with missing tools.")
         return

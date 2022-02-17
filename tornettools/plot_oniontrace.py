@@ -8,7 +8,7 @@ from tornettools.util import which, cmdsplit, find_matching_files_in_dir, open_w
 def plot_oniontrace(args):
     oniontracetools_exe = which('oniontracetools')
 
-    if oniontracetools_exe == None:
+    if oniontracetools_exe is None:
         logging.warning("Cannot find oniontracetools in your PATH. Is your python venv active? Do you have oniontracetools installed?")
         logging.warning("Unable to plot oniontrace data.")
         return

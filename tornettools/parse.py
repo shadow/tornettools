@@ -50,7 +50,7 @@ def __parse_tornettools_log(args):
             if match:
                 info['tornettools_generate_seed'] = int(match.groups()[0])
                 continue
-            match = re.search('Chose (\d+) of (\d+) relays using scale factor (\S+)', line)
+            match = re.search(r'Chose (\d+) of (\d+) relays using scale factor (\S+)', line)
             if match:
                 info['num_sampled_relays'] = int(match.groups()[0])
                 info['num_public_relays'] = int(match.groups()[1])
@@ -74,17 +74,17 @@ def __parse_tornettools_log(args):
                 continue
             match = re.search(r'We will use (\d+) exit perf nodes to benchmark Tor exit performance', line)
             if match:
-                 info['num_tgen_exit_perf_clients'] = int(match.groups()[0])
-                 continue
+                info['num_tgen_exit_perf_clients'] = int(match.groups()[0])
+                continue
             match = re.search(r'We will use (\d+) onion-service perf nodes to benchmark Tor onion-service performance', line)
             if match:
-                 info['num_tgen_hs_perf_clients'] = int(match.groups()[0])
-                 continue
+                info['num_tgen_hs_perf_clients'] = int(match.groups()[0])
+                continue
             match = re.search(r'We will use (\d+) TGen exit servers and (\d+) TGen onion-service servers', line)
             if match:
-                 info['num_tgen_exit_servers'] = int(match.groups()[0])
-                 info['num_tgen_onionservice_servers'] = int(match.groups()[1])
-                 continue
+                info['num_tgen_exit_servers'] = int(match.groups()[0])
+                info['num_tgen_onionservice_servers'] = int(match.groups()[1])
+                continue
 
     outpath = f"{args.prefix}/tornet.plot.data/simulation_info.json"
     dump_json_data(info, outpath, compress=False)

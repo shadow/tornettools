@@ -1,9 +1,6 @@
-import sys
-import os
 import logging
 import subprocess
 import threading
-import lzma
 
 from time import sleep
 
@@ -38,7 +35,7 @@ def run(args):
     return comproc.returncode
 
 def __run_shadow(args):
-    if args.shadow_exe == None:
+    if args.shadow_exe is None:
         logging.warning("Cannot find shadow in your PATH. Do you have shadow installed? Did you update your PATH?")
         logging.warning("Unable to run simulation without shadow.")
         return None
@@ -49,7 +46,7 @@ def __run_shadow(args):
         # chrt manipulates the real-time attributes of a process (see `man chrt`)
         chrt_exe_path = which('chrt')
 
-        if chrt_exe_path == None:
+        if chrt_exe_path is None:
             logging.warning("Cannot find chrt in your PATH. Do you have chrt installed?")
             logging.warning("Unable to run simulation with realtime scheduling without chrt.")
             return None
@@ -69,20 +66,20 @@ def __run_free_loop(args, stop_event):
 
     with open(f"{args.prefix}/free.log", 'w') as outf:
         while not stop_event.is_set():
-            if date_exe_path != None:
+            if date_exe_path is not None:
                 date_cmd = cmdsplit(f"{date_exe_path} --utc '+%s.%N %Z seconds since epoch'")
-                comproc = subprocess.run(date_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
+                subprocess.run(date_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
-            if free_exe_path != None:
+            if free_exe_path is not None:
                 free_cmd = cmdsplit(f"{free_exe_path} -w -b -l")
-                comproc = subprocess.run(free_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
+                subprocess.run(free_cmd, cwd=args.prefix, stdout=outf, stderr=subprocess.STDOUT)
 
             sleep(1)
 
 def __start_dstat(args):
     dstat_exe_path = which('dstat')
 
-    if dstat_exe_path == None:
+    if dstat_exe_path is None:
         return None
 
     dstat_cmd = cmdsplit(f"{dstat_exe_path} -cmstTy --fs --output dstat.log")
@@ -92,6 +89,6 @@ def __start_dstat(args):
 
 def __cleanup_subprocess(subp):
     # if subp exists but has yet to receive a return code, then we kill it
-    if subp != None and subp.poll() is None:
+    if subp is not None and subp.poll() is None:
         subp.terminate()
         subp.wait()

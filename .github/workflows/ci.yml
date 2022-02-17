@@ -46,3 +46,28 @@ jobs:
           pip3 install wheel
           pip3 install -r requirements.txt
           pip3 install -I .
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update packages
+        run: sudo apt-get update
+
+      - name: Install tornettools dependencies
+        run: sudo apt-get install -y
+          python3
+          flake8
+
+      - name: Run flake8
+        # Ignores:
+        # * E302: E302 expected 2 blank lines, found 1.
+        # * E501 line too long.
+        # * E261 at least two spaces before inline comment.
+        # * E265 block comment should start with '# '
+        # * E741 ambiguous variable name
+        # * F403 'from X import *' used; unable to detect undefined names
+        # * F405 may be undefined, or defined from star imports
+        run: flake8 --extend-ignore=E302,E501,E261,E265,E741,F403,F405 tornettools
