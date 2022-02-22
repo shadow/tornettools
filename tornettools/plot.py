@@ -260,7 +260,7 @@ def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, erro
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}.{circuittype}",
-                      xlabel=f"{circuittype} Transfer Error Rate (\\%): Type={error_key}")
+                      xlabel=f"{circuittype} Transfer Error Rate (%): Type={error_key}")
 
 def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
     if circuittype == 'onionservice':
