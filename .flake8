@@ -12,5 +12,5 @@ ignore =
   E704,
   # ambiguous variable name
   E741,
-  # line break after binary operator
-  W504,
+  # line break before binary operator
+  W503,

@@ -394,9 +394,9 @@ def __get_perf_clients(args, n_exit_users, n_hs_users):
     perf_clients = []
 
     n_perf = args.torperf_num_onion_service + args.torperf_num_exit
-    if (args.torperf_num_onion_service != args.torperf_num_exit and
-            args.torperf_num_onion_service != 0 and
-            args.torperf_num_exit != 0):
+    if (args.torperf_num_onion_service != args.torperf_num_exit
+            and args.torperf_num_onion_service != 0
+            and args.torperf_num_exit != 0):
         logging.warning("Unequal number of perf nodes. Is this what you meant? "
                         f"torperf_num_onion_service={args.torperf_num_onion_service} "
                         f"torperf_num_exit={args.torperf_num_exit}")

@@ -664,10 +664,10 @@ def __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd, Wee, Wed,
         return (a - b) <= margin if (a - b) >= 0 else (b - a) <= margin
 
     def check_range(a, b, c, d, e, f, g, mx):
-        return (a >= 0 and a <= mx and b >= 0 and b <= mx and
-                c >= 0 and c <= mx and d >= 0 and d <= mx and
-                e >= 0 and e <= mx and f >= 0 and f <= mx and
-                g >= 0 and g <= mx)
+        return (a >= 0 and a <= mx and b >= 0 and b <= mx
+                and c >= 0 and c <= mx and d >= 0 and d <= mx
+                and e >= 0 and e <= mx and f >= 0 and f <= mx
+                and g >= 0 and g <= mx)
 
         # Wed + Wmd + Wgd == weightscale
     if (not check_eq(Wed + Wmd + Wgd, weightscale, margin)):
@@ -760,8 +760,7 @@ def __recompute_bwweights(G, M, E, D, T):
 
                 check = __check_weights_errors(Wgg, Wgd, Wmg, Wme, Wmd,
                                                Wee, Wed, weightscale, G, M, E, D, T, 10, True)
-            if (check != bww_errors.NO_ERROR and check !=
-                    bww_errors.BALANCE_MID_ERROR):
+            if (check != bww_errors.NO_ERROR and check != bww_errors.BALANCE_MID_ERROR):
                 raise ValueError(
                     'ERROR: {0}  Wgd={1}, Wed={2}, Wmd={3}, Wee={4},\
                         Wme={5}, Wmg={6}, Wgg={7}'.format(bww_errors[check],
