@@ -199,9 +199,9 @@ jobs:
         run: |
           # Simulate a very small network to keep this test fast.
           NETWORK_SCALE=0.0001
-          # The default torperf_scale would only give us ~1 client
-          # at this network scale. 0.1 gives us ~10 total.
-          TORPERF_SCALE=0.1
+          # Likewise use a relatively small number of perf nodes, but still
+          # enough to get somewhat meaningful data.
+          TORPERF_N=10
           # At this network size, 1.0 would only give us ~4 onion service
           # markov clients, and 1 perf client.
           ONION_SERVICE_USER_SCALE=5.0
@@ -213,7 +213,8 @@ jobs:
             networkinfo_staging.gml \
             tmodel-ccs2018.github.io \
             --network_scale $NETWORK_SCALE \
-            --torperf_scale $TORPERF_SCALE \
+            --torperf_num_exit $TORPERF_N \
+            --torperf_num_onion_service $TORPERF_N \
             --onion_service_user_scale $ONION_SERVICE_USER_SCALE \
             --prefix tornet
 

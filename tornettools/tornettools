@@ -287,14 +287,29 @@ def main():
         action="store", dest="server_scale",
         default=0.1)
 
-    generate_parser.add_argument('-t', '--torperf_scale',
-        help="""A fractional number representing the ratio of the number of Perf clients to the
-            number of Tor clients that we emulate. E.g., a value of 0.001 means that we will run
-            1 Perf client for every 1/0.001=1000 Tor clients. Perf clients help us benchmark Tor
-            performance during an experiment and validate against Tor metrics.""",
-        metavar="N", type=__type_fractional_float,
-        action="store", dest="torperf_scale",
-        default=0.001)
+    generate_parser.add_argument('--torperf_num_exit',
+        help="""
+            Number of Perf clients using exit circuits to
+            add to the network. Perf clients help us benchmark Tor performance
+            during an experiment and validate against Tor metrics. Increasing
+            this number generates more data, but also increases the cost of the
+            simulation and load on the simulated network.
+        """,
+        metavar="N", type=__type_nonnegative_integer,
+        action="store", dest="torperf_num_exit",
+        default=100)
+
+    generate_parser.add_argument('--torperf_num_onion_service',
+        help="""
+            Number of Perf clients using onion services to
+            add to the network. Perf clients help us benchmark Tor performance
+            during an experiment and validate against Tor metrics. Increasing
+            this number generates more data, but also increases the cost of the
+            simulation and load on the simulated network.
+        """,
+        metavar="N", type=__type_nonnegative_integer,
+        action="store", dest="torperf_num_onion_service",
+        default=0)
 
     generate_parser.add_argument('-l', '--load_scale',
         help="""A float number by which we scale the number of circuit flows created by each TGen

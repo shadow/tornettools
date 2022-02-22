@@ -393,12 +393,15 @@ def get_clients(args):
 def __get_perf_clients(args, n_exit_users, n_hs_users):
     perf_clients = []
 
-    # split the perf clients between onion-service clients and non-onion-service (exit) clients
-    n_hs_perf = __round_or_ceil(n_hs_users * args.torperf_scale)
-    n_exit_perf = __round_or_ceil(n_exit_users * args.torperf_scale)
-    n_perf = n_hs_perf + n_exit_perf
+    n_perf = args.torperf_num_onion_service + args.torperf_num_exit
+    if (args.torperf_num_onion_service != args.torperf_num_exit and
+            args.torperf_num_onion_service != 0 and
+            args.torperf_num_exit != 0):
+        logging.warning("Unequal number of perf nodes. Is this what you meant? "
+                        f"torperf_num_onion_service={args.torperf_num_onion_service} "
+                        f"torperf_num_exit={args.torperf_num_exit}")
 
-    for (i, is_hs_client) in ((x, x >= n_exit_perf) for x in range(n_perf)):
+    for (i, is_hs_client) in ((x, x >= args.torperf_num_exit) for x in range(n_perf)):
         chosen_country_code = choice(ONIONPERF_COUNTRY_CODES)
         client = {
             'country_code': chosen_country_code,
