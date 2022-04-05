@@ -77,6 +77,7 @@ def __plot_tornet(args):
         __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "51200")
         __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "1048576")
         __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "5242880")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "10485760")
 
         logging.info(f"Loading {circuittype} tornet goodput data")
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput'))
@@ -87,6 +88,11 @@ def __plot_tornet(args):
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput_5MiB'))
         logging.info(f"Plotting {circuittype} client goodput [5 MiB]")
         __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs)
+
+        logging.info(f"Loading {circuittype} tornet goodput data 10MiB")
+        tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput_10MiB'))
+        logging.info(f"Plotting {circuittype} client goodput [10 MiB]")
+        __plot_client_goodput_10MiB(args, circuittype, torperf_dbs, tornet_dbs)
 
         logging.info(f"Loading {circuittype} tornet transfer error rate data")
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'error_rate'))
@@ -236,8 +242,13 @@ def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
     # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
     for tornet_db in tornet_dbs:
         tornet_db['data'] = [tornet_db['dataset'][i][bytes_key] for i, _ in enumerate(tornet_db['dataset']) if bytes_key in tornet_db['dataset'][i]]
+    # We do not have public Tor data about 10MiB downloads but we are still
+    # interested in calculatin the transfer times for the simulated network
     for torperf_db in torperf_dbs:
-        torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
+        if int(bytes_key) <= 5242880:
+            torperf_db['data'] = [torperf_db['dataset']['download_times'][bytes_key]]
+        else:
+            torperf_db['data'] = []
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
@@ -309,6 +320,29 @@ def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_5MiB.{circuittype}',
                       yscale="taillog",
                       xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
+
+def __plot_client_goodput_10MiB(args, circuittype, torperf_dbs, tornet_dbs):
+    if circuittype == 'onionservice':
+        # TODO: parse and split onionservice data
+        torperf_dbs = []
+
+    # Computes throughput for last of 10MiB transfer
+
+    # cache the corresponding data in the 'data' keyword for __plot_cdf_figure
+    for tornet_db in tornet_dbs:
+        # For compatibility with legacy parsed data, the output of the parse
+        # step is in *mebi* bits per second.  Convert to *mega* here.
+        tornet_db['data'] = [[x * 2**20 / 1e6 for x in ds] for ds in tornet_db['dataset']]
+
+    # We do not have public Tor data about 10 MiB downloads
+    for torperf_db in torperf_dbs:
+        torperf_db['data'] = []
+
+    dbs_to_plot = torperf_dbs + tornet_dbs
+
+    __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_10MiB.{circuittype}',
+                      yscale="taillog",
+                      xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 9 to 10 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):
     color_cycle = cycle(DEFAULT_COLORS)

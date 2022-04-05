@@ -55,6 +55,7 @@ def extract_tgen_plot_data(args):
         __extract_error_rate(args, data, circuittype, startts, stopts)
         __extract_client_goodput(args, data, circuittype, startts, stopts)
         __extract_client_goodput_5MiB(args, data, circuittype, startts, stopts)
+        __extract_client_goodput_10MiB(args, data, circuittype, startts, stopts)
 
 def __extract_round_trip_time(args, data, circuittype, startts, stopts):
     rtt = __get_round_trip_time(data, circuittype, startts, stopts)
@@ -97,6 +98,17 @@ def __extract_client_goodput_5MiB(args, data, circuittype, startts, stopts):
         aka_int(4194304, 4 * 2**20),
         aka_int(5242880, 5 * 2**20))
     outpath = f"{args.prefix}/tornet.plot.data/perfclient_goodput_5MiB.{circuittype}.json"
+    dump_json_data(client_goodput, outpath, compress=False)
+
+def __extract_client_goodput_10MiB(args, data, circuittype, startts, stopts):
+    # goodput of the 10th Mebibyte. metrics.torproject uses this as of ~ April 2022.
+    # https://gitlab.torproject.org/jnewsome/sponsor-61-sims/-/issues/15
+    # https://metrics.torproject.org/reproducible-metrics.html#performance
+    client_goodput = __get_client_goodput(
+        data, circuittype, startts, stopts,
+        aka_int(9437184, 9 * 2**20),
+        aka_int(10485760, 10 * 2**20))
+    outpath = f"{args.prefix}/tornet.plot.data/perfclient_goodput_10MiB.{circuittype}.json"
     dump_json_data(client_goodput, outpath, compress=False)
 
 def __get_download_time(data, circuittype, startts, stopts, bytekey):

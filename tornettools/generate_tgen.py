@@ -78,6 +78,7 @@ def __generate_tgenrc_perfclient(server_peers, path):
     G.add_node("stream_50k", sendsize="1000 bytes", recvsize="50 KiB", stallout="0 seconds", timeout="15 seconds")
     G.add_node("stream_1m", sendsize="1000 bytes", recvsize="1 MiB", stallout="0 seconds", timeout="60 seconds")
     G.add_node("stream_5m", sendsize="1000 bytes", recvsize="5 MiB", stallout="0 seconds", timeout="120 seconds")
+    G.add_node("stream_10m", sendsize="1000 bytes", recvsize="10 MiB", stallout="0 seconds", timeout="240 seconds")
 
     G.add_edge("start", "pause")
 
@@ -89,6 +90,7 @@ def __generate_tgenrc_perfclient(server_peers, path):
     G.add_edge("pause", "stream_50k", weight="12.0")
     G.add_edge("pause", "stream_1m", weight="2.0")
     G.add_edge("pause", "stream_5m", weight="1.0")
+    G.add_edge("pause", "stream_10m", weight="1.0")
 
     write_graphml(G, path)
 
