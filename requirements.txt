@@ -4,3 +4,4 @@ numpy
 pyyaml
 scipy
 stem
+wheel
