@@ -32,6 +32,10 @@ def run(args):
         return 1
 
     logging.info(f"Done simulating; shadow returned code '{comproc.returncode}'")
+
+    if comproc.returncode != 0:
+        logging.error("Shadow simulation did not complete successfully")
+
     return comproc.returncode
 
 def __run_shadow(args):
