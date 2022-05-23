@@ -91,6 +91,13 @@ Here is a bibtex entry for latex users:
     make -j$(nproc)
     cd ..
 
+### install additional executables used by tornettools
+
+`tornettools` also uses the `faketime`, `dstat`, `free`, and `xz` command-line
+tools. On Ubuntu these can be installed with:
+
+    sudo apt-get install faketime dstat procps xz-utils
+
 ### in order to generate, we need a tor and tor-gencert binaries (to generate relay keys)
 
     export PATH=${PATH}:`pwd`/tor/src/core/or:`pwd`/tor/src/app:`pwd`/tor/src/tools
