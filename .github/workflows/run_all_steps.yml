@@ -260,6 +260,14 @@ jobs:
       - name: Archive
         run: tornettools archive tornet
 
+      - name: Upload tornet
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: tornet
+          path: tornet
+          retention-days: 5
+
       # Use this artifact to update .github/workflow/parse_and_plot_input when
       # necessary - e.g. when the output of the tgen or oniontrace parsers
       # changes in some significant way.
