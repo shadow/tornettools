@@ -3,13 +3,15 @@ import logging
 import subprocess
 import shlex
 import shutil
+import sys
 
 from multiprocessing import Pool, cpu_count
 
 from numpy import array_split
 from numpy.random import choice, uniform
 
-from tornettools.generate_defaults import (BW_1GBIT_BYTES, BW_AUTHORITY_NAME, CONFIG_DIRNAME,
+from tornettools.generate_defaults import (BW_1GBIT_BYTES, BW_AUTHORITY_NAME,
+                                           CERT_FAKETIMESTAMP, CONFIG_DIRNAME,
                                            DIRAUTH_COUNTRY_CODES, RESOLV_FILENAME, RUN_FREQ_THRESH,
                                            SHADOW_HOSTS_PATH, SHADOW_TEMPLATE_PATH,
                                            TGEN_ONIONSERVICE_PORT, TGEN_SERVER_PORT,
@@ -24,10 +26,15 @@ from tornettools.generate_defaults import (BW_1GBIT_BYTES, BW_AUTHORITY_NAME, CO
                                            TORRC_RELAY_OTHER_FILENAME, TOR_CONTROL_PORT,
                                            TOR_DIR_PORT, TOR_GUARD_MIN_CONSBW, TOR_ONIONSERVICE_DIR,
                                            TOR_OR_PORT, TOR_SOCKS_PORT, get_host_rel_conf_path)
-from tornettools.util import load_json_data
+from tornettools.util import load_json_data, which
 
 def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
-    cmd = "{} --create-identity-key -m 24 --passphrase-fd 0".format(torgencertexe)
+    faketime_exe = which('faketime')
+    if faketime_exe is None:
+        logging.critical("Couldn't locate faketime; needed for certificate generation")
+        sys.exit(1)
+
+    cmd = f"{faketime_exe} {CERT_FAKETIMESTAMP} {torgencertexe} --create-identity-key -m 24 --passphrase-fd 0"
 
     # capture_output is only added in python 3.7 or later
     try:

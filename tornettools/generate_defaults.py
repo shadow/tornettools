@@ -68,6 +68,11 @@ TMODEL_STREAMMODEL_FILENAME = "tgen.tor-streammodel-ccs2018.graphml"
 TMODEL_PACKETMODEL_FILENAME = "tgen.tor-packetmodel-ccs2018.graphml"
 TMODEL_TOPOLOGY_FILENAME = "atlas_v201801.shadow_v2.gml"
 
+# Timestamp passed to faketime(1) when generating certificates. Should be < 1
+# year before simulation start (which is currently hard-coded in shadow to
+# 2000-01-01).
+CERT_FAKETIMESTAMP = "1999-12-01"
+
 def get_host_rel_conf_path(rc_filename, rc_subdirname=None):
     if rc_subdirname is None:
         return f"../../../{CONFIG_DIRNAME}/{rc_filename}"

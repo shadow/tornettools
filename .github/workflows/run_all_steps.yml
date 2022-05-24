@@ -197,6 +197,8 @@ jobs:
 
       - name: Generate
         run: |
+          # Needed for fake certificate timestamps
+          sudo apt-get install -y faketime
           # Simulate a very small network to keep this test fast.
           NETWORK_SCALE=0.0001
           # Likewise use a relatively small number of perf nodes, but still
@@ -259,6 +261,14 @@ jobs:
 
       - name: Archive
         run: tornettools archive tornet
+
+      - name: Upload tornet
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: tornet
+          path: tornet
+          retention-days: 5
 
       # Use this artifact to update .github/workflow/parse_and_plot_input when
       # necessary - e.g. when the output of the tgen or oniontrace parsers
