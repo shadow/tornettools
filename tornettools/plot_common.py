@@ -176,7 +176,15 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
 def draw_cdf(axis, data, **kwargs):
     d = [getfirstorself(item) for item in data]
     y = list(linspace(0.0, 1.0, num=1000))
-    x = quantile(d, y)
+
+    # the 'interpolation' parameter name is deprecated and replaced with
+    # 'method', but this change is recent so we'll stick with the deprecated
+    # name for now
+    # https://numpy.org/doc/stable/reference/generated/numpy.quantile.html
+    # the 'lower' is used to match the behaviour of 'draw_cdf_ci()' above
+    # https://github.com/shadow/tornettools/issues/76
+    x = quantile(d, y, interpolation='lower')
+
     plot_line = axis.plot(x, y, **kwargs)
     return plot_line[0]
 
