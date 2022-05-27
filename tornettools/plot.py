@@ -101,9 +101,14 @@ def __plot_memory_usage_real_time(args, tornet_dbs):
         for i, d in enumerate(tornet_db['dataset']):
             if 'ram' not in d or 'gib_used_per_minute' not in d['ram']:
                 continue
+            if 'run_time' not in d or 'seconds' not in d['run_time']:
+                continue
             ramd = d['ram']['gib_used_per_minute']
             for real_minute in ramd:
                 s = int(real_minute) * 60.0 # to seconds
+                # don't include ram usage after the sim end time
+                if s > d['run_time']['seconds']:
+                    continue
                 xy.setdefault(s, []).append(ramd[real_minute])
         tornet_db['data'] = xy
 
