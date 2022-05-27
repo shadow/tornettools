@@ -149,7 +149,9 @@ def main():
         default=0)
 
     main_parser.add_argument('-s', '--seed',
-        help="""Initialize PRNGs with a seed to allow for deterministic behavior.""",
+        help="""Initialize tornettools' PRNGs with a seed to allow for
+            deterministic behavior. This does not affect the seed for the Shadow
+            simulation.""",
         action="store", type=int, dest="seed", metavar="N",
         default=None)
 
