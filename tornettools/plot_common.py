@@ -123,13 +123,37 @@ def __compute_sample_mean_and_error(bucket_list, confidence):
 
     return means, mins, maxs
 
+# computes bins in the range [0,1] for a cdf plot, but applies a scale so that
+# the bins have consistent sizes on the final plot
+# scale is {"linear", "log", "symlog", "logit", ...} or ScaleBase
+# axis can be any plot axis (used for building a new scale)
+# num is the number of values to return
+def __calc_cdf_bins(scale, axis, num=1000):
+    if not isinstance(scale, mscale.ScaleBase):
+        # > For back-compatibility reasons, scales take an Axis object as first
+        # > argument. However, this argument should not be used: [...]
+        # https://matplotlib.org/stable/api/scale_api.html#matplotlib.scale.ScaleBase
+        scale = mscale.scale_factory(scale, axis)
+
+    # get the largest range within [0,1] that is allowed by the scale
+    limits = scale.get_transform().transform(scale.limit_range_for_scale(0, 1, 0))
+
+    # get a linear distribution within this range
+    y = linspace(limits[0], limits[1], num=num)
+
+    # apply the inverse scale transformation
+    return scale.get_transform().inverted().transform(y)
+
 # compute a cdf with confidence intervals based on the dataset and plot it on axis
 # dataset is a list of data
 # confidence is the confidence interval level (eg 0.95 for 95% CIs)
 # kwargs is passed to the plot function
 # each data may be a list of values, or a list of [value, resolution] items
-def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
-    y = list(linspace(0, 0.99, num=1000))
+def draw_cdf_ci(axis, dataset, confidence=0.95, yscale=None, **kwargs):
+    if yscale is None:
+        yscale = axis.gca().get_yscale()
+
+    y = __calc_cdf_bins(yscale, axis.gca().get_yaxis())
     quantile_buckets = {q: [] for q in y}
 
     # we should have one empirical value for each simulation (ie data) for each quantile
@@ -173,9 +197,12 @@ def draw_cdf_ci(axis, dataset, confidence=0.95, **kwargs):
 
 # compute a cdf from the data and plot it on the axis
 # data may be a list of values, or a list of [value, resolution] items
-def draw_cdf(axis, data, **kwargs):
+def draw_cdf(axis, data, yscale=None, **kwargs):
+    if yscale is None:
+        yscale = axis.gca().get_yscale()
+
     d = [getfirstorself(item) for item in data]
-    y = list(linspace(0.0, 1.0, num=1000))
+    y = __calc_cdf_bins(yscale, axis.gca().get_yaxis())
 
     # the 'interpolation' parameter name is deprecated and replaced with
     # 'method', but this change is recent so we'll stick with the deprecated

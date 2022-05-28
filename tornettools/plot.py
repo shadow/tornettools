@@ -334,6 +334,7 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
             continue
 
         line = plot_func(pyplot, d,
+                         yscale=yscale,
                          label=db['label'],
                          color=db['color'] or next(color_cycle),
                          linestyle=next(linestyle_cycle))
