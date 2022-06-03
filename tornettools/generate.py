@@ -135,6 +135,9 @@ def __generate_shadow_config(args, network, authorities, relays, tgen_servers, p
     config["general"]["bootstrap_end_time"] = BOOTSTRAP_LENGTH_SECONDS # disable bandwidth limits and packet loss for first 5 minutes
     config["general"]["stop_time"] = SIMULATION_LENGTH_SECONDS # stop after 1 hour of simulated time
 
+    # supported in Shadow >=2.1
+    config["general"]["progress"] = True
+
     # for compatability with old tornettools sims, this is also set as a default shadow argument in the cli
     config["general"]["template_directory"] = "shadow.data.template"
 
