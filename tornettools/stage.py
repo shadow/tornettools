@@ -229,6 +229,7 @@ def parse_consensus(path):
 
         relays[fingerprint]['address'] = router_entry.address
         relays[fingerprint]['weight'] = router_entry.bandwidth
+        relays[fingerprint]['original_nickname'] = router_entry.nickname
 
         if Flag.GUARD in router_entry.flags and Flag.FAST in router_entry.flags and Flag.STABLE in router_entry.flags:
             relays[fingerprint]['is_guard'] = True
