@@ -7,6 +7,7 @@ from tornettools.generate_defaults import TMODEL_TOPOLOGY_FILENAME
 from tornettools.util import dump_json_data
 from tornettools.util_geoip import GeoIP
 
+from ipaddress import IPv4Address
 from multiprocessing import Pool, cpu_count
 from statistics import median
 from datetime import datetime, timezone
@@ -139,7 +140,7 @@ def stage_relays(args):
         'network_stats': network_stats,
         'relays': {}
     }
-
+    
     for fingerprint in relays:
         r = relays[fingerprint]
 
@@ -157,6 +158,40 @@ def stage_relays(args):
 
         if geo is not None:
             output['relays'][fingerprint]['country_code'] = geo.ip_to_country_code(r.address)
+
+    # Naive clustering. Assume all relays with similar nicknames in the same /24 share
+    # their bandwidth, and should hence be placed on the same host.
+    # (digitless_nick, masked-ip) -> [relay]
+    clusters = {}
+    for (fingerprint, relay) in output['relays'].items():
+        digitless_nick = ''.join(filter(lambda c: not c.isdigit(), relay.nickname))
+        masked_ip = int(IPv4Address(relay['address'])) & 0xffffff00
+        clusters.setdefault((digitless_nick, masked_ip), []).append(relay)
+
+    for cluster in clusters.values():
+        leader = cluster[0]
+        dupes = cluster[1:]
+
+        # Fairly naive merging. For most properties we just take the max across the cluster.
+        # In particular this is likely to underestimate bandwidth, since individual relay
+        # bandwidth is bottlenecked by CPU.
+        leader['cluster_size'] = len(cluster)
+        leader['running_frequency'] = max([r['running_frequency'] for r in cluster])
+        leader['guard_frequency'] = max([r['guard_frequency'] for r in cluster])
+        leader['exit_frequency'] = max([r['exit_frequency'] for r in cluster])
+
+        # XXX: Is this what we want? This will probably further exaggerate the
+        # under-estimated bandwidth, but maybe that's what we want to get a
+        # "worst case" look at how link sharing might affect results.
+        leader['weight'] = sum(r['weight'] for r in cluster])
+
+        leader['bandwidth_capacity'] = max([r['bandwidth_capacity'] for r in cluster])
+        leader['bandwidth_rate'] = max([r['bandwidth_rate'] for r in cluster])
+        leader['bandwidth_burst'] = max([r['bandwidth_burst'] for r in cluster])
+
+        # Delete the dupes
+        for dupe in dupes:
+            del(output['relays'][dupe['fingerprint']])
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
     relay_info_path = f"{args.prefix}/relayinfo_staging_{timesuffix}.json"
@@ -229,7 +264,7 @@ def parse_consensus(path):
 
         relays[fingerprint]['address'] = router_entry.address
         relays[fingerprint]['weight'] = router_entry.bandwidth
-        relays[fingerprint]['original_nickname'] = router_entry.nickname
+        relays[fingerprint]['nickname'] = router_entry.nickname or ''
 
         if Flag.GUARD in router_entry.flags and Flag.FAST in router_entry.flags and Flag.STABLE in router_entry.flags:
             relays[fingerprint]['is_guard'] = True
