@@ -175,30 +175,33 @@ def stage_relays(args):
         masked_ip = int(IPv4Address(relay['address'])) & 0xffffff00
         clusters.setdefault((digitless_nick, masked_ip), []).append(relay)
 
+    output['relays'] = {}
     for cluster in clusters.values():
-        leader = cluster[0]
-        dupes = cluster[1:]
-
+        fingerprint = cluster[0]['fingerprint']
         # Fairly naive merging. For most properties we just take the max across the cluster.
         # In particular this is likely to underestimate bandwidth, since individual relay
         # bandwidth is bottlenecked by CPU.
-        leader['cluster_size'] = len(cluster)
-        leader['running_frequency'] = max([r['running_frequency'] for r in cluster])
-        leader['guard_frequency'] = max([r['guard_frequency'] for r in cluster])
-        leader['exit_frequency'] = max([r['exit_frequency'] for r in cluster])
+        output['relays'][fingerprint] = {
+            'cluster': cluster,
+            'cluster_size': len(cluster),
+            'fingerprint': cluster[0]['fingerprint'],
+            'address': cluster[0]['address'],
+            'running_frequency': max([r['running_frequency'] for r in cluster]),
+            'guard_frequency': max([r['guard_frequency'] for r in cluster]),
+            'exit_frequency': max([r['exit_frequency'] for r in cluster]),
 
-        # XXX: Is this what we want? This will probably further exaggerate the
-        # under-estimated bandwidth, but maybe that's what we want to get a
-        # "worst case" look at how link sharing might affect results.
-        leader['weight'] = sum([r['weight'] for r in cluster])
+            # XXX: Is this what we want? This will probably further exaggerate the
+            # under-estimated bandwidth, but maybe that's what we want to get a
+            # "worst case" look at how link sharing might affect results.
+            'weight': sum([r['weight'] for r in cluster]),
 
-        leader['bandwidth_capacity'] = max([r['bandwidth_capacity'] for r in cluster])
-        leader['bandwidth_rate'] = max([r['bandwidth_rate'] for r in cluster])
-        leader['bandwidth_burst'] = max([r['bandwidth_burst'] for r in cluster])
-
-        # Delete the dupes
-        for dupe in dupes:
-            del(output['relays'][dupe['fingerprint']])
+            'bandwidth_capacity': max([r['bandwidth_capacity'] for r in cluster]),
+            'bandwidth_rate': max([r['bandwidth_rate'] for r in cluster]),
+            'bandwidth_burst': max([r['bandwidth_burst'] for r in cluster]),
+        }
+        country_code = cluster[0].get('country_code')
+        if country_code:
+            output['relays'][fingerprint]['country_code'] = country_code
 
     timesuffix = get_time_suffix(min_unix_time, max_unix_time)
     relay_info_path = f"{args.prefix}/relayinfo_staging_{timesuffix}.json"
