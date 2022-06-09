@@ -144,8 +144,15 @@ def stage_relays(args):
     for fingerprint in relays:
         r = relays[fingerprint]
 
+        nickname = ''
+        try:
+            nickname = r.nickname or ''
+        except AttributeError:
+            pass
+
         output['relays'][fingerprint] = {
             'fingerprint': r.fingerprint,
+            'nickname': nickname,
             'address': r.address,
             'running_frequency': float(len(r.weights)) / float(len(consensus_paths)), # frac consensuses in which relay appeared
             'guard_frequency': float(r.num_guard) / float(len(r.weights)), # when running, frac consensuses with exit flag
@@ -164,7 +171,7 @@ def stage_relays(args):
     # (digitless_nick, masked-ip) -> [relay]
     clusters = {}
     for (fingerprint, relay) in output['relays'].items():
-        digitless_nick = ''.join(filter(lambda c: not c.isdigit(), relay.nickname))
+        digitless_nick = ''.join(filter(lambda c: not c.isdigit(), relay['nickname']))
         masked_ip = int(IPv4Address(relay['address'])) & 0xffffff00
         clusters.setdefault((digitless_nick, masked_ip), []).append(relay)
 
@@ -183,7 +190,7 @@ def stage_relays(args):
         # XXX: Is this what we want? This will probably further exaggerate the
         # under-estimated bandwidth, but maybe that's what we want to get a
         # "worst case" look at how link sharing might affect results.
-        leader['weight'] = sum(r['weight'] for r in cluster])
+        leader['weight'] = sum([r['weight'] for r in cluster])
 
         leader['bandwidth_capacity'] = max([r['bandwidth_capacity'] for r in cluster])
         leader['bandwidth_rate'] = max([r['bandwidth_rate'] for r in cluster])
@@ -351,6 +358,8 @@ def combine_parsed_consensus_results(results):
 
             r = relays[fingerprint]
 
+            r.nickname = result['relays'][fingerprint]['nickname']
+
             r.weights.append(result['relays'][fingerprint]['weight'])
 
             if result['relays'][fingerprint]['is_exit']:
@@ -453,7 +462,7 @@ def parse_extrainfo(path): # unused right now, but might be useful
         'type': type,
         'pub_dt': xinfo.published,
         'fprint': xinfo.fingerprint,
-        'nickname': xinfo.nickname,
+        'nickname': xinfo.nickname or '',
         'bytes_read_max': read_max_rate,
         'bytes_read_avg': read_avg_rate,
         'bytes_write_max': write_max_rate,
