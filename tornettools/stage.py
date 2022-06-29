@@ -7,6 +7,7 @@ from tornettools.generate_defaults import TMODEL_TOPOLOGY_FILENAME
 from tornettools.util import dump_json_data
 from tornettools.util_geoip import GeoIP
 
+from ipaddress import IPv4Address
 from multiprocessing import Pool, cpu_count
 from statistics import median
 from datetime import datetime, timezone
@@ -18,8 +19,8 @@ import networkx as nx
 
 # this is parsed from the consensus files
 class Relay():
-    def __init__(self, fingerprint, address):
-        self.fingerprint = fingerprint
+    def __init__(self, fingerprints, address):
+        self.fingerprints = fingerprints
         self.address = address
         # the length of this list indicates the number of consensuses the relay appeared in
         self.weights = []
@@ -28,12 +29,11 @@ class Relay():
         # a count of the number of consensuses in which the relay had the guard flag
         self.num_guard = 0
         # bandwidth information parsed from server descriptor files
-        self.bandwidths = Bandwidths(fingerprint)
+        self.bandwidths = Bandwidths()
 
 # this is parsed from the server descriptor files
 class Bandwidths():
-    def __init__(self, fingerprint):
-        self.fingerprint = fingerprint
+    def __init__(self):
         self.max_obs_bw = 0
         self.bw_rates = []
         self.bw_bursts = []
@@ -112,25 +112,45 @@ def stage_relays(args):
     consensus_paths = get_file_list(args.consensus_path)
     logging.info("Processing {} consensus files from {}...".format(len(consensus_paths), args.consensus_path))
     consensuses = process(num_processes, consensus_paths, parse_consensus, lambda x: x)
-    relays = relays_from_consensuses(consensuses)
-    network_stats = network_stats_from_consensuses(consensuses)
     min_unix_time = min([c['pub_dt'] for c in consensuses])
     max_unix_time = max([c['pub_dt'] for c in consensuses])
-    timestr = get_time_suffix(min_unix_time, max_unix_time)
-    logging.info("Found {} total unique relays during {} with a median network size of {} relays".format(len(relays), timestr, network_stats['med_count_total']))
 
     servdesc_paths = get_file_list(args.server_descriptor_path)
     logging.info("Processing {} server descriptor files from {}...".format(len(servdesc_paths), args.server_descriptor_path))
     sdesc_args = [[p, min_unix_time, max_unix_time] for p in servdesc_paths]
     serverdescs = process(num_processes, sdesc_args, parse_serverdesc, lambda x: x)
+
+    families = families_from_serverdescs(serverdescs)
+
+    cluster_consensuses(families, consensuses)
+
+    relays = relays_from_consensuses(consensuses)
+    network_stats = network_stats_from_consensuses(consensuses)
+    #timestr = get_time_suffix(min_unix_time, max_unix_time)
+    #logging.info("Found {} total unique relays during {} with a median network size of {} relays".format(len(relays), timestr, network_stats['med_count_total']))
+
     bandwidths = bandwidths_from_serverdescs(serverdescs)
 
     found_bandwidths = 0
-    for fingerprint in relays:
-        if fingerprint in bandwidths:
-            # overwrite empty bandwidth with parsed bandwidth info
-            relays[fingerprint].bandwidths = bandwidths[fingerprint]
-            found_bandwidths += 1
+    for relay in relays.values():
+        for fingerprint in relay.fingerprints:
+            cluster_bandwidths = []
+            bandwidth = bandwidths.get(fingerprint)
+            if bandwidth is not None:
+                cluster_bandwidths.append({
+                    'bandwidth_capacity': int(bandwidth.max_obs_bw),
+                    'bandwidth_rate': int(median(bandwidth.bw_rates)) if len(bandwidth.bw_rates) > 0 else 0,
+                    'bandwidth_burst': int(median(bandwidth.bw_bursts)) if len(bandwidth.bw_bursts) > 0 else 0,
+                })
+            if len(cluster_bandwidths) > 0:
+                relay.bandwidth_capacity = max(b['bandwidth_capacity'] for b in cluster_bandwidths)
+                relay.bandwidth_rate = max(b['bandwidth_rate'] for b in cluster_bandwidths)
+                relay.bandwidth_burst = max(b['bandwidth_burst'] for b in cluster_bandwidths)
+                found_bandwidths += 1
+            else:
+                relay.bandwidth_capacity = 0
+                relay.bandwidth_rate = 0
+                relay.bandwidth_burst = 0
 
     logging.info("We found bandwidth information for {} of {} relays".format(found_bandwidths, len(relays)))
     # for (k, v) in sorted(relays.items(), key=lambda kv: kv[1].bandwidths.max_obs_bw):
@@ -151,15 +171,15 @@ def stage_relays(args):
         r = relays[fingerprint]
 
         output['relays'][fingerprint] = {
-            'fingerprint': r.fingerprint,
+            'fingerprints': r.fingerprints,
             'address': r.address,
             'running_frequency': float(len(r.weights)) / float(len(consensus_paths)), # frac consensuses in which relay appeared
             'guard_frequency': float(r.num_guard) / float(len(r.weights)), # when running, frac consensuses with exit flag
             'exit_frequency': float(r.num_exit) / float(len(r.weights)), # when running, frac consensuses with guard flag
             'weight': float(median(r.weights)) if len(r.weights) > 0 else 0.0,
-            'bandwidth_capacity': int(r.bandwidths.max_obs_bw),
-            'bandwidth_rate': int(median(r.bandwidths.bw_rates)) if len(r.bandwidths.bw_rates) > 0 else 0,
-            'bandwidth_burst': int(median(r.bandwidths.bw_bursts)) if len(r.bandwidths.bw_bursts) > 0 else 0,
+            'bandwidth_capacity': r.bandwidth_capacity,
+            'bandwidth_rate': r.bandwidth_rate,
+            'bandwidth_burst': r.bandwidth_burst,
         }
 
         if geo is not None:
@@ -225,8 +245,6 @@ def parse_consensus(path):
     net_status = next(parse_file(path, document_handler='DOCUMENT', validate=False))
 
     relays = {}
-    weights = {"total": 0, "exit": 0, "guard": 0, "exitguard": 0, "middle": 0}
-    counts = {"total": 0, "exit": 0, "guard": 0, "exitguard": 0, "middle": 0}
 
     for (fingerprint, router_entry) in net_status.routers.items():
         if Flag.BADEXIT in router_entry.flags or Flag.RUNNING not in router_entry.flags or Flag.VALID not in router_entry.flags:
@@ -247,32 +265,6 @@ def parse_consensus(path):
         else:
             relays[fingerprint]['is_exit'] = False
 
-        # fill in the weights
-        bw_weight = float(router_entry.bandwidth)
-
-        weights["total"] += bw_weight
-        counts["total"] += 1
-        if relays[fingerprint]['is_guard'] and relays[fingerprint]['is_exit']:
-            weights["exitguard"] += bw_weight
-            counts["exitguard"] += 1
-        elif relays[fingerprint]['is_guard']:
-            weights["guard"] += bw_weight
-            counts["guard"] += 1
-        elif relays[fingerprint]['is_exit']:
-            weights["exit"] += bw_weight
-            counts["exit"] += 1
-        else:
-            weights["middle"] += bw_weight
-            counts["middle"] += 1
-
-    # weights are normalized on a per-consensus basis
-    for fingerprint in relays:
-        relays[fingerprint]['weight'] /= weights["total"]
-    for position_type in weights:
-        if position_type == "total":
-            continue
-        weights[position_type] /= weights["total"]
-
     # valid_after is for V3 descriptors, V2 use net_status.published
     pub_dt = net_status.valid_after.replace(tzinfo=timezone.utc).timestamp()
     assert(pub_dt is not None)
@@ -281,11 +273,83 @@ def parse_consensus(path):
         'type': 'consensus',
         'pub_dt': pub_dt,
         'relays': relays,
-        'weights': weights,
-        'counts': counts,
     }
 
     return result
+
+def get_cluster_key(families, fingerprint, address):
+    masked_ip = int(IPv4Address(address)) & 0xffff0000
+    # family will be missing if we didn't have a descriptor
+    # for the given relay.
+    family = families.get(fingerprint) or f'<{fingerprint}>'
+    return (masked_ip, family)
+
+def cluster_consensuses(families, consensuses):
+    for c in consensuses:
+        clustered_relays = {}
+        for fingerprint, relay in c['relays'].items():
+            clustered_relays.setdefault(get_cluster_key(families, fingerprint, relay['address']), []).append((fingerprint, relay))
+        new_relays = {}
+        for pairs in clustered_relays.values():
+            fingerprints = [p[0] for p in pairs]
+            fingerprints.sort()
+
+            relays = [p[1] for p in pairs]
+            new_relays[sorted(fingerprints)[0]] = {
+                'address': sorted([r['address'] for r in relays])[0],
+                'weight': sum([r['weight'] for r in relays]),
+                'is_guard': any([r['is_guard'] for r in relays]),
+                'is_exit': any([r['is_exit'] for r in relays]),
+                'fingerprints': fingerprints,
+            }
+        logging.info("Clustered {} relays into {} relays".format(len(c['relays']), len(new_relays)))
+        c['relays'] = new_relays
+
+        weights = {
+            'total': 0,
+            'exitguard': 0,
+            'guard': 0,
+            'exit': 0,
+            'middle': 0,
+        }
+        counts = {
+            'total': 0,
+            'exitguard': 0,
+            'guard': 0,
+            'exit': 0,
+            'middle': 0,
+        }
+
+        for r in new_relays.values():
+            bw_weight = r['weight']
+            weights["total"] += bw_weight
+            counts["total"] += 1
+            if r['is_guard'] and r['is_exit']:
+                weights["exitguard"] += bw_weight
+                counts["exitguard"] += 1
+            elif r['is_guard']:
+                weights["guard"] += bw_weight
+                counts["guard"] += 1
+            elif r['is_exit']:
+                weights["exit"] += bw_weight
+                counts["exit"] += 1
+            else:
+                weights["middle"] += bw_weight
+                counts["middle"] += 1
+
+        # weights are normalized on a per-consensus basis
+        for r in new_relays.values():
+            r['weight'] /= weights["total"]
+        for position_type in weights:
+            if position_type == "total":
+                continue
+            weights[position_type] /= weights["total"]
+
+        c['weights'] = weights
+        c['counts'] = counts
+
+def add_bandwidths(consensuses, serverdescs):
+    pass
 
 def relays_from_consensuses(consensuses):
     relays = {}
@@ -293,16 +357,14 @@ def relays_from_consensuses(consensuses):
     for consensus in consensuses:
         assert(consensus is not None)
         assert(consensus['type'] == 'consensus')
-        for fingerprint in consensus['relays']:
-            relays.setdefault(fingerprint, Relay(fingerprint, consensus['relays'][fingerprint]['address']))
+        for fingerprint, consensus_relay in consensus['relays'].items():
+            r = relays.setdefault(fingerprint, Relay(consensus_relay['fingerprints'], consensus_relay['address']))
 
-            r = relays[fingerprint]
+            r.weights.append(consensus_relay['weight'])
 
-            r.weights.append(consensus['relays'][fingerprint]['weight'])
-
-            if consensus['relays'][fingerprint]['is_exit']:
+            if consensus_relay['is_exit']:
                 r.num_exit += 1
-            if consensus['relays'][fingerprint]['is_guard']:
+            if consensus_relay['is_guard']:
                 r.num_guard += 1
 
     return relays
@@ -371,8 +433,15 @@ def parse_serverdesc(args):
     if bst_bw is not None and bst_bw < advertised_bw:
         advertised_bw = bst_bw
 
+    family = relay.family
+    assert(family is not None)
+    # Ensure own fingerprint is in family
+    family.add(f'${relay.fingerprint}')
+    assert(f'${relay.fingerprint}' in family)
+
     result = {
         'type': 'serverdesc',
+        'family': family,
         'pub_dt': relay.published,
         'fprint': relay.fingerprint,
         'address': relay.address,
@@ -384,6 +453,26 @@ def parse_serverdesc(args):
 
     return result
 
+def families_from_serverdescs(serverdescs):
+    family_sets = {}
+
+    for sd in serverdescs:
+        if sd is None:
+            continue
+
+        if sd['type'] != 'serverdesc':
+            continue
+
+        # Each relay's family is the union of all the families it has published.
+        family_sets.setdefault(sd['fprint'], set()).update(sd['family'])
+
+    # Convert to normalized string
+    families = {}
+    for fp, family_set in family_sets.items():
+        families[fp] = str(sorted(list(family_set)))
+
+    return families
+
 def bandwidths_from_serverdescs(serverdescs):
     bandwidths = {}
 
@@ -394,7 +483,7 @@ def bandwidths_from_serverdescs(serverdescs):
         if sd['type'] != 'serverdesc':
             continue
 
-        bandwidths.setdefault(sd['fprint'], Bandwidths(sd['fprint']))
+        bandwidths.setdefault(sd['fprint'], Bandwidths())
 
         b = bandwidths[sd['fprint']]
 
