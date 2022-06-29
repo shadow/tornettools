@@ -433,11 +433,13 @@ def parse_serverdesc(args):
     if bst_bw is not None and bst_bw < advertised_bw:
         advertised_bw = bst_bw
 
-    family = relay.family
+    # Convert fingerprints in family to match fingerprints we use everywhere else.
+    # i.e. remove the $ prefix and ensure upper-case.
+    family = set([fp[1:].upper() for fp in relay.family])
+
     assert(family is not None)
     # Ensure own fingerprint is in family
-    family.add(f'${relay.fingerprint}')
-    assert(f'${relay.fingerprint}' in family)
+    family.add(relay.fingerprint)
 
     result = {
         'type': 'serverdesc',
@@ -465,6 +467,35 @@ def families_from_serverdescs(serverdescs):
 
         # Each relay's family is the union of all the families it has published.
         family_sets.setdefault(sd['fprint'], set()).update(sd['family'])
+
+    # Remove non-mutuals
+    for fp, family in family_sets.items():
+        mutuals = set()
+        for other_fp in family:
+            other_family = family_sets.get(other_fp)
+            if other_family is not None and fp in other_family:
+                mutuals.add(other_fp)
+        # Mutate `family` to contain only mutuals; don't reassign since we're iterating through the dict.
+        if len(family) != len(mutuals):
+            logging.info(f"XXX Dropping non-mutuals shrunk family from {len(family)} to {len(mutuals)}")
+        family.clear()
+        family.update(mutuals)
+
+    # Add transitives
+    for fp, family in family_sets.items():
+        transitives = set()
+        to_process = family_sets[fp].copy()
+        while len(to_process) > 0:
+            other_fp = to_process.pop()
+            if other_fp in transitives:
+                # Already processed
+                continue
+            transitives.add(other_fp)
+            to_process.update(family_sets[other_fp])
+        if len(family) != len(transitives):
+            logging.info(f"XXX Adding transitives grew family from {len(family)} to {len(transitives)}")
+        family.clear()
+        family.update(transitives)
 
     # Convert to normalized string
     families = {}
