@@ -111,7 +111,13 @@ def stage_relays(args):
 
     consensus_paths = get_file_list(args.consensus_path)
     logging.info("Processing {} consensus files from {}...".format(len(consensus_paths), args.consensus_path))
-    relays, min_unix_time, max_unix_time, network_stats = process(num_processes, consensus_paths, parse_consensus, combine_parsed_consensus_results)
+    consensuses = process(num_processes, consensus_paths, parse_consensus, lambda x: x)
+    relays = relays_from_consensuses(consensuses)
+    network_stats = network_stats_from_consensuses(consensuses)
+    min_unix_time = min([c['pub_dt'] for c in consensuses])
+    max_unix_time = max([c['pub_dt'] for c in consensuses])
+    timestr = get_time_suffix(min_unix_time, max_unix_time)
+    logging.info("Found {} total unique relays during {} with a median network size of {} relays".format(len(relays), timestr, network_stats['med_count_total']))
 
     servdesc_paths = get_file_list(args.server_descriptor_path)
     logging.info("Processing {} server descriptor files from {}...".format(len(servdesc_paths), args.server_descriptor_path))
@@ -266,9 +272,13 @@ def parse_consensus(path):
             continue
         weights[position_type] /= weights["total"]
 
+    # valid_after is for V3 descriptors, V2 use net_status.published
+    pub_dt = net_status.valid_after.replace(tzinfo=timezone.utc).timestamp()
+    assert(pub_dt is not None)
+
     result = {
         'type': 'consensus',
-        'pub_dt': net_status.valid_after, # valid_after is for V3 descriptors, V2 use net_status.published
+        'pub_dt': pub_dt,
         'relays': relays,
         'weights': weights,
         'counts': counts,
@@ -276,51 +286,47 @@ def parse_consensus(path):
 
     return result
 
-def combine_parsed_consensus_results(results):
+def relays_from_consensuses(consensuses):
     relays = {}
+
+    for consensus in consensuses:
+        assert(consensus is not None)
+        assert(consensus['type'] == 'consensus')
+        for fingerprint in consensus['relays']:
+            relays.setdefault(fingerprint, Relay(fingerprint, consensus['relays'][fingerprint]['address']))
+
+            r = relays[fingerprint]
+
+            r.weights.append(consensus['relays'][fingerprint]['weight'])
+
+            if consensus['relays'][fingerprint]['is_exit']:
+                r.num_exit += 1
+            if consensus['relays'][fingerprint]['is_guard']:
+                r.num_guard += 1
+
+    return relays
+
+def network_stats_from_consensuses(consensuses):
     network_stats = {}
-    min_unix_time, max_unix_time = None, None
 
     counts_t, counts_eg, counts_e, counts_g, counts_m = [], [], [], [], []
     weights_t, weights_eg, weights_e, weights_g, weights_m = [], [], [], [], []
 
-    for result in results:
-        if result is None:
-            continue
+    for consensus in consensuses:
+        assert(consensus is not None)
+        assert(consensus['type'] == 'consensus')
 
-        if result['type'] != 'consensus':
-            continue
+        weights_t.append(consensus['weights']['total'])
+        weights_eg.append(consensus['weights']['exitguard'])
+        weights_g.append(consensus['weights']['guard'])
+        weights_e.append(consensus['weights']['exit'])
+        weights_m.append(consensus['weights']['middle'])
 
-        if result['pub_dt'] is not None:
-            unix_time = result['pub_dt'].replace(tzinfo=timezone.utc).timestamp()
-            if min_unix_time is None or unix_time < min_unix_time:
-                min_unix_time = unix_time
-            if max_unix_time is None or unix_time > max_unix_time:
-                max_unix_time = unix_time
-
-        weights_t.append(result['weights']['total'])
-        weights_eg.append(result['weights']['exitguard'])
-        weights_g.append(result['weights']['guard'])
-        weights_e.append(result['weights']['exit'])
-        weights_m.append(result['weights']['middle'])
-
-        counts_t.append(result['counts']['total'])
-        counts_eg.append(result['counts']['exitguard'])
-        counts_g.append(result['counts']['guard'])
-        counts_e.append(result['counts']['exit'])
-        counts_m.append(result['counts']['middle'])
-
-        for fingerprint in result['relays']:
-            relays.setdefault(fingerprint, Relay(fingerprint, result['relays'][fingerprint]['address']))
-
-            r = relays[fingerprint]
-
-            r.weights.append(result['relays'][fingerprint]['weight'])
-
-            if result['relays'][fingerprint]['is_exit']:
-                r.num_exit += 1
-            if result['relays'][fingerprint]['is_guard']:
-                r.num_guard += 1
+        counts_t.append(consensus['counts']['total'])
+        counts_eg.append(consensus['counts']['exitguard'])
+        counts_g.append(consensus['counts']['guard'])
+        counts_e.append(consensus['counts']['exit'])
+        counts_m.append(consensus['counts']['middle'])
 
     network_stats = {
         # the counts are whole numbers
@@ -337,10 +343,7 @@ def combine_parsed_consensus_results(results):
         'med_weight_total': 1.0, # for completeness
     }
 
-    timestr = get_time_suffix(min_unix_time, max_unix_time)
-    logging.info("Found {} total unique relays during {} with a median network size of {} relays".format(len(relays), timestr, network_stats['med_count_total']))
-
-    return relays, min_unix_time, max_unix_time, network_stats
+    return network_stats
 
 # this func is run by helper processes in process pool
 def parse_serverdesc(args):
