@@ -122,7 +122,8 @@ def stage_relays(args):
     servdesc_paths = get_file_list(args.server_descriptor_path)
     logging.info("Processing {} server descriptor files from {}...".format(len(servdesc_paths), args.server_descriptor_path))
     sdesc_args = [[p, min_unix_time, max_unix_time] for p in servdesc_paths]
-    bandwidths = process(num_processes, sdesc_args, parse_serverdesc, combine_parsed_serverdesc_results)
+    serverdescs = process(num_processes, sdesc_args, parse_serverdesc, lambda x: x)
+    bandwidths = bandwidths_from_serverdescs(serverdescs)
 
     found_bandwidths = 0
     for fingerprint in relays:
@@ -383,23 +384,23 @@ def parse_serverdesc(args):
 
     return result
 
-def combine_parsed_serverdesc_results(results):
+def bandwidths_from_serverdescs(serverdescs):
     bandwidths = {}
 
-    for result in results:
-        if result is None:
+    for sd in serverdescs:
+        if sd is None:
             continue
 
-        if result['type'] != 'serverdesc':
+        if sd['type'] != 'serverdesc':
             continue
 
-        bandwidths.setdefault(result['fprint'], Bandwidths(result['fprint']))
+        bandwidths.setdefault(sd['fprint'], Bandwidths(sd['fprint']))
 
-        b = bandwidths[result['fprint']]
+        b = bandwidths[sd['fprint']]
 
-        b.max_obs_bw = max(b.max_obs_bw, result['bw_obs'])
-        b.bw_rates.append(result['bw_rate'])
-        b.bw_bursts.append(result['bw_burst'])
+        b.max_obs_bw = max(b.max_obs_bw, sd['bw_obs'])
+        b.bw_rates.append(sd['bw_rate'])
+        b.bw_bursts.append(sd['bw_burst'])
 
     return bandwidths
 
