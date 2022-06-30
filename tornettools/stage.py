@@ -287,7 +287,7 @@ def get_cluster_key(families, geo, fingerprint, address):
     # hosts that we know to be in different countries.
     country = geo.ip_to_country_code(address) if geo else None
     # family will be missing if we didn't have a descriptor
-    # for the given relay. 
+    # for the given relay.
     family = families.get(fingerprint) or f'<{fingerprint}>'
     return (masked_ip, country, family)
 
@@ -352,7 +352,7 @@ def cluster_consensuses(families, geo, consensuses):
             if position_type == "total":
                 continue
             weights[position_type] /= weights["total"]
-        
+
         c['weights'] = weights
         c['counts'] = counts
 
