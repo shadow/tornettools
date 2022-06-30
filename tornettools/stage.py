@@ -246,8 +246,6 @@ def parse_consensus(path):
     net_status = next(parse_file(path, document_handler='DOCUMENT', validate=False))
 
     relays = {}
-    weights = {"total": 0, "exit": 0, "guard": 0, "exitguard": 0, "middle": 0}
-    counts = {"total": 0, "exit": 0, "guard": 0, "exitguard": 0, "middle": 0}
 
     for (fingerprint, router_entry) in net_status.routers.items():
         if Flag.BADEXIT in router_entry.flags or Flag.RUNNING not in router_entry.flags or Flag.VALID not in router_entry.flags:
