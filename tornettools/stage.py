@@ -122,7 +122,11 @@ def stage_relays(args):
 
     families = families_from_serverdescs(serverdescs)
 
-    cluster_consensuses(families, consensuses)
+    geo = None
+    if args.geoip_path is not None:
+        geo = GeoIP(args.geoip_path)
+
+    cluster_consensuses(families, geo, consensuses)
 
     relays = relays_from_consensuses(consensuses)
     network_stats = network_stats_from_consensuses(consensuses)
@@ -155,10 +159,6 @@ def stage_relays(args):
     logging.info("We found bandwidth information for {} of {} relays".format(found_bandwidths, len(relays)))
     # for (k, v) in sorted(relays.items(), key=lambda kv: kv[1].bandwidths.max_obs_bw):
     #    logging.info("fp={} capacity={}".format(k, v.bandwidths.max_obs_bw))
-
-    geo = None
-    if args.geoip_path is not None:
-        geo = GeoIP(args.geoip_path)
 
     output = {
         'min_unix_time': min_unix_time,
@@ -279,18 +279,21 @@ def parse_consensus(path):
 
     return result
 
-def get_cluster_key(families, fingerprint, address):
+def get_cluster_key(families, geo, fingerprint, address):
     masked_ip = int(IPv4Address(address)) & 0xffff0000
+    # We're using fairly wide IP address ranges; but we can separate
+    # hosts that we know to be in different countries.
+    country = geo.ip_to_country_code(address) if geo else None
     # family will be missing if we didn't have a descriptor
     # for the given relay. 
     family = families.get(fingerprint) or f'<{fingerprint}>'
-    return (masked_ip, family)
+    return (masked_ip, country, family)
 
-def cluster_consensuses(families, consensuses):
+def cluster_consensuses(families, geo, consensuses):
     for c in consensuses:
         clustered_relays = {}
         for fingerprint, relay in c['relays'].items():
-            clustered_relays.setdefault(get_cluster_key(families, fingerprint, relay['address']), []).append((fingerprint, relay))
+            clustered_relays.setdefault(get_cluster_key(families, geo, fingerprint, relay['address']), []).append((fingerprint, relay))
         new_relays = {}
         for pairs in clustered_relays.values():
             fingerprints = [p[0] for p in pairs]
