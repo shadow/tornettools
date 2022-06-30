@@ -172,6 +172,7 @@ def stage_relays(args):
 
         output['relays'][fingerprint] = {
             'fingerprints': r.fingerprints,
+            'nicknames': r.nicknames,
             'address': r.address,
             'running_frequency': float(len(r.weights)) / float(len(consensus_paths)), # frac consensuses in which relay appeared
             'guard_frequency': float(r.num_guard) / float(len(r.weights)), # when running, frac consensuses with exit flag
@@ -256,6 +257,7 @@ def parse_consensus(path):
 
         relays[fingerprint]['address'] = router_entry.address
         relays[fingerprint]['weight'] = router_entry.bandwidth
+        relays[fingerprint]['nickname'] = router_entry.nickname
 
         if Flag.GUARD in router_entry.flags and Flag.FAST in router_entry.flags and Flag.STABLE in router_entry.flags:
             relays[fingerprint]['is_guard'] = True
@@ -306,6 +308,7 @@ def cluster_consensuses(families, geo, consensuses):
                 'is_guard': any([r['is_guard'] for r in relays]),
                 'is_exit': any([r['is_exit'] for r in relays]),
                 'fingerprints': fingerprints,
+                'nicknames': [r['nickname'] for r in relays],
             }
         logging.info("Clustered {} relays into {} relays".format(len(c['relays']), len(new_relays)))
         c['relays'] = new_relays
@@ -364,6 +367,7 @@ def relays_from_consensuses(consensuses):
         assert(consensus['type'] == 'consensus')
         for fingerprint, consensus_relay in consensus['relays'].items():
             r = relays.setdefault(fingerprint, Relay(consensus_relay['fingerprints'], consensus_relay['address']))
+            r.nicknames = consensus_relay['nicknames']
 
             r.weights.append(consensus_relay['weight'])
 
