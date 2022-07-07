@@ -117,8 +117,9 @@ jobs:
       - name: Checkout tgen
         uses: actions/checkout@v2
         with:
-          repository: shadow/tgen
-          ref: ${{ env.TGEN_COMMIT }}
+          # DO NOT MERGE
+          repository: sporksmith/tgen
+          ref: fix-warnings
           path: tgen
 
       - name: Build tgen
