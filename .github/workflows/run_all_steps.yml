@@ -186,7 +186,9 @@ jobs:
           stow -d ~/opt -t ~/.local oniontrace
 
       - name: Stage
-        run: tornettools stage
+        run: tornettools
+          --seed 1
+          stage
           netdata/consensuses-*
           netdata/server-descriptors-*
           netdata/userstats-relay-country.csv
@@ -226,7 +228,7 @@ jobs:
           sed -i 's/stop_time:.*/stop_time: "15m"/' tornet/shadow.config.yaml
           # Install runtime shadow and tor deps, in case we skipped building (and installing build deps)
           sudo apt-get install -y libevent-2.1-7 libssl1.1 zlib1g libglib2.0-0 libigraph0v5 libprocps8 sysstat python3 python3-pip
-          tornettools simulate --args "--parallelism=$(nproc) --seed=1 --template-directory=shadow.data.template --progress=true" tornet
+          tornettools --seed 1 simulate --args "--parallelism=$(nproc) --seed=1 --template-directory=shadow.data.template --progress=true" tornet
 
       - name: Parse
         # We use a relatively low convergence time (-c) since we're only
