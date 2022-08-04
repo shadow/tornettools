@@ -348,6 +348,8 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
     # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
     process["args"] = __format_tor_args(None)
+    # https://shadow.github.io/docs/guide/compatibility_notes.html#libopenblas
+    process["environment"] = "OPENBLAS_NUM_THREADS=1"
     process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS - 60) # start before boostrapping ends
 
     host["processes"].append(process)
