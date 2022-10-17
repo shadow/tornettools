@@ -51,7 +51,10 @@ Here is a bibtex entry for latex users:
     python3 -m venv toolsenv
     source toolsenv/bin/activate
     pip install -r requirements.txt
-    pip install -I .
+    # if you plan to make changes to tornettools, you can add the '--editable' pip install flag
+    # to avoid the need to re-run 'pip install' after every modification:
+    # https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs
+    pip install --ignore-installed .
 
 ### read the help menus
 
