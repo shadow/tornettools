@@ -32,11 +32,13 @@ env:
 
 jobs:
   run-all-steps:
-    runs-on: ubuntu-latest
+    # Keep synchronized with `CONTAINER` below
+    runs-on: ubuntu-22.04
     env:
       CC: gcc
       CXX: g++
-      CONTAINER: ubuntu:20.04
+      # Keep synchronized with `runs-on`, above
+      CONTAINER: ubuntu:22.04
       BUILDTYPE: release
       RUSTPROFILE: minimal
     steps:
