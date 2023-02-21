@@ -16,7 +16,7 @@ on:
 
 env:
   DEBIAN_FRONTEND: noninteractive
-  SHADOW_COMMIT: 4226cf2b8309218376f5db43b9ac739a5592e767
+  SHADOW_COMMIT: v2.4.0
   TOR_REPO: https://git.torproject.org/tor.git
   TOR_BRANCH: release-0.4.6
   TOR_COMMIT: f728e09ebe611d6858e721eaa37637025bfbf259
@@ -32,7 +32,15 @@ env:
 
 jobs:
   run-all-steps:
-    runs-on: ubuntu-latest
+    # Keep synchronized with `CONTAINER` below
+    runs-on: ubuntu-22.04
+    env:
+      CC: gcc
+      CXX: g++
+      # Keep synchronized with `runs-on`, above
+      CONTAINER: ubuntu:22.04
+      BUILDTYPE: release
+      RUSTPROFILE: minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -79,20 +87,21 @@ jobs:
           ref: ${{ env.SHADOW_COMMIT }}
           path: shadow
 
-      - name: Build shadow
-        if: steps.restore-shadow-build-cache.outputs.cache-hit != 'true'
-        env:
-          CC: gcc
-          CXX: g++
-          CONTAINER: ubuntu:20.04
-          BUILDTYPE: release
-          RUSTPROFILE: minimal
+      - name: Install shadow deps
         run: |
           cd shadow
           sudo --preserve-env ci/container_scripts/install_deps.sh
           sudo --preserve-env ci/container_scripts/install_extra_deps.sh
+
+      - name: Build shadow
+        if: steps.restore-shadow-build-cache.outputs.cache-hit != 'true'
+        run: |
+          cd shadow
           ./setup build -j`nproc` -p ~/opt/shadow
           ./setup install
+
+      - name: Install tor deps
+        run: sudo apt-get install -y autoconf automake gcc libevent-dev libssl-dev make
 
       - name: Restore tor build cache
         id: restore-tor-build-cache
@@ -105,7 +114,6 @@ jobs:
       - name: Build tor
         if: steps.restore-tor-build-cache.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install -y autoconf automake gcc libevent-dev libssl-dev make
           git clone --shallow-since=$TOR_SHALLOW_SINCE -b $TOR_BRANCH $TOR_REPO tor
           cd tor
           git checkout $TOR_COMMIT
@@ -121,9 +129,11 @@ jobs:
           ref: ${{ env.TGEN_COMMIT }}
           path: tgen
 
+      - name: Build tgen deps
+        run: sudo apt-get install -y cmake gcc libglib2.0-dev libigraph-dev make
+
       - name: Build tgen
         run: |
-          sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev libigraph0-dev libigraph0v5 make
           cd tgen
           mkdir build
           cd build
@@ -140,9 +150,11 @@ jobs:
           ref: ${{ env.ONIONTRACE_COMMIT }}
           path: oniontrace
 
+      - name: Install oniontrace deps
+        run: sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev make
+
       - name: Build oniontrace
         run: |
-          sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev make
           cd oniontrace
           mkdir build
           cd build
@@ -226,8 +238,6 @@ jobs:
         run: |
           # Use short simulation time
           sed -i 's/stop_time:.*/stop_time: "15m"/' tornet/shadow.config.yaml
-          # Install runtime shadow and tor deps, in case we skipped building (and installing build deps)
-          sudo apt-get install -y libevent-2.1-7 libssl1.1 zlib1g libglib2.0-0 libigraph0v5 libprocps8 sysstat python3 python3-pip
           tornettools --seed 1 simulate --args "--parallelism=$(nproc) --seed=1 --template-directory=shadow.data.template --progress=true" tornet
 
       - name: Parse
