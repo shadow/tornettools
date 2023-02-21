@@ -280,7 +280,7 @@ def parse_consensus(path):
     return result
 
 def get_cluster_key(families, geo, fingerprint, address):
-    masked_ip = int(IPv4Address(address)) & 0xffff0000
+    masked_ip = int(IPv4Address(address)) & 0xffffff00
     # We're using fairly wide IP address ranges; but we can separate
     # hosts that we know to be in different countries.
     country = geo.ip_to_country_code(address) if geo else None
