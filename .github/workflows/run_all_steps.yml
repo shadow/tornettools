@@ -80,7 +80,6 @@ jobs:
           key: shadow-${{ env.SHADOW_COMMIT }}-${{ env.CACHE_VERSION }}
 
       - name: Checkout shadow
-        if: steps.restore-shadow-build-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
           repository: shadow/shadow
