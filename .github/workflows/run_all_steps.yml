@@ -24,7 +24,7 @@ env:
   # older.
   TOR_SHALLOW_SINCE: '2021-08-01'
   TGEN_COMMIT: 8cec86f46c8ca719ff9c023e381363098b99586d
-  ONIONTRACE_COMMIT: bc26be3c4737a8a367a156f12bab2975cd811855
+  ONIONTRACE_COMMIT: c3468a670dc00fa3d2c5245482d0f4357a4d239a
   NETDATA_MONTH: '2020-11'
   NETDATA_LAST_DAY: '30'
   # Increment to invalidate caches
@@ -146,7 +146,7 @@ jobs:
       - name: Checkout oniontrace
         uses: actions/checkout@v2
         with:
-          repository: shadow/oniontrace
+          repository: sporksmith/oniontrace
           ref: ${{ env.ONIONTRACE_COMMIT }}
           path: oniontrace
 
