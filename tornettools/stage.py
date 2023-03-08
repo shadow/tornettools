@@ -136,9 +136,11 @@ def stage_relays(args):
     bandwidths = bandwidths_from_serverdescs(serverdescs)
 
     found_bandwidths = 0
+    # each 'relay' may actually be many relays clustered into one
     for relay in relays.values():
+        # first we want to collect all bandwidth info we have from everyone in the cluster
+        cluster_bandwidths = []
         for fingerprint in relay.fingerprints:
-            cluster_bandwidths = []
             bandwidth = bandwidths.get(fingerprint)
             if bandwidth is not None:
                 cluster_bandwidths.append({
@@ -146,15 +148,16 @@ def stage_relays(args):
                     'bandwidth_rate': int(median(bandwidth.bw_rates)) if len(bandwidth.bw_rates) > 0 else 0,
                     'bandwidth_burst': int(median(bandwidth.bw_bursts)) if len(bandwidth.bw_bursts) > 0 else 0,
                 })
-            if len(cluster_bandwidths) > 0:
-                relay.bandwidth_capacity = max(b['bandwidth_capacity'] for b in cluster_bandwidths)
-                relay.bandwidth_rate = max(b['bandwidth_rate'] for b in cluster_bandwidths)
-                relay.bandwidth_burst = max(b['bandwidth_burst'] for b in cluster_bandwidths)
-                found_bandwidths += 1
-            else:
-                relay.bandwidth_capacity = 0
-                relay.bandwidth_rate = 0
-                relay.bandwidth_burst = 0
+        # now flatten the bandwidth info for the cluster down into a single bandwidth for the cluster representative
+        if len(cluster_bandwidths) > 0:
+            relay.bandwidth_capacity = max(b['bandwidth_capacity'] for b in cluster_bandwidths)
+            relay.bandwidth_rate = max(b['bandwidth_rate'] for b in cluster_bandwidths)
+            relay.bandwidth_burst = max(b['bandwidth_burst'] for b in cluster_bandwidths)
+            found_bandwidths += 1
+        else:
+            relay.bandwidth_capacity = 0
+            relay.bandwidth_rate = 0
+            relay.bandwidth_burst = 0
 
     logging.info("We found bandwidth information for {} of {} relays".format(found_bandwidths, len(relays)))
     # for (k, v) in sorted(relays.items(), key=lambda kv: kv[1].bandwidths.max_obs_bw):
