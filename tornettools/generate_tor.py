@@ -36,17 +36,12 @@ def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
 
     cmd = f"{faketime_exe} {CERT_FAKETIMESTAMP} {torgencertexe} --create-identity-key -m 24 --passphrase-fd 0"
 
-    # capture_output is only added in python 3.7 or later
-    try:
-        with open(pwpath, 'r') as pwin:
-            proc = subprocess.run(shlex.split(cmd), stdin=pwin, capture_output=True)
-    except Exception:
-        with open(pwpath, 'r') as pwin:
-            proc = subprocess.run(shlex.split(cmd), stdin=pwin)
+    with open(pwpath, 'r') as pwin:
+        proc = subprocess.run(shlex.split(cmd), stdin=pwin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     if proc.returncode != 0:
-        err = proc.stderr.decode('utf-8')
-        logging.critical("Error generating authority identity key using command line '{}': {}".format(cmd, err))
+        out = proc.stdout.decode('utf-8')
+        logging.critical("Error generating authority identity key using command line '{}': {}".format(cmd, out))
 
     proc.check_returncode()
 
@@ -65,8 +60,8 @@ def __generate_authority_keys(torgencertexe, datadir, torrc, pwpath):
 def __generate_fingerprint(subproc_args):
     torexe, datadir, nickname, torrc = subproc_args
     listfp_cmd = "{} --list-fingerprint --DataDirectory {} --Nickname {} -f {}".format(torexe, datadir, nickname, torrc)
-    retcode = subprocess.call(shlex.split(listfp_cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return [listfp_cmd, retcode]
+    completed_process = subprocess.run(shlex.split(listfp_cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return completed_process
 
 def __read_fingerprint(datadir):
     with open("{0}/fingerprint".format(datadir), 'r') as f:
@@ -125,10 +120,10 @@ def generate_tor_keys(args, relays):
     # make sure they all succeeded
     logging.info("Generated fingerprints and keys for {} Tor nodes ({} authorities and {} relays)".format(len(results), n_authorities, n_relays))
     for r in results:
-        cmd, retcode = r
-        if retcode != 0:
-            logging.critical("Error generating fingerprint using command line '{}'".format(cmd))
-        assert retcode == 0
+        if r.returncode != 0:
+            logging.critical("Error generating fingerprint using command line '{}': {}".format(
+                r.args, r.stdout.decode('utf-8')))
+        assert r.returncode == 0
 
     # read, parse, and store the resulting fingerprint
     for pos in ['g', 'e', 'ge', 'm']:
