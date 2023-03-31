@@ -65,7 +65,8 @@ def __parse_shadow_rusage(args):
         return False
 
     rusage = {}
-    heartbeat = re.compile("_manager_heartbeat")
+    # shadow's C code didn't capitalize "process", shadow's rust code does
+    heartbeat = re.compile("[Pp]rocess resource usage at simtime")
     with open_readable_file(shadow_filepath) as inf:
         for line in inf:
             if heartbeat.search(line) is not None:
