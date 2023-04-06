@@ -15,11 +15,13 @@ def parse_tgen_logs(args):
         return
 
     # tgentools supports a list of expressions that are used to search for oniontrace log filenames
-    # the first -e expression matches the log file names for Shadow v2.x.x
-    # and the second -e expression matches the log file names for Shadow v1.x.x
+    # the first -e expression matches the log file names for Shadow v3.x.x
+    # the second -e expression matches the log file names for Shadow v2.x.x
+    # and the third -e expression matches the log file names for Shadow v1.x.x
     cmd = [tgentools_exe,
            'parse',
            '-m', str(args.nprocesses),
+           '-e', r'perfclient[0-9]+(exit|onionservice)?/tgen\.[0-9]+\.stdout$',
            '-e', r'perfclient[0-9]+(exit|onionservice)?\.tgen\.[0-9]+\.stdout',
            '-e', r'stdout\.*perfclient[0-9]+\.tgen\.[0-9]+\.log',
            '--complete',
