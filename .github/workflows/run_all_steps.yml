@@ -23,8 +23,8 @@ env:
   # Optimization - this must be older than $TOR_COMMIT, but ideally not much
   # older.
   TOR_SHALLOW_SINCE: '2021-08-01'
-  TGEN_COMMIT: 8cec86f46c8ca719ff9c023e381363098b99586d
-  ONIONTRACE_COMMIT: bc26be3c4737a8a367a156f12bab2975cd811855
+  TGEN_COMMIT: 3d7788bad362b4487d1145da93ab2fdb73c9b639
+  ONIONTRACE_COMMIT: 9e0e83ceb0765bc915a2888bcc02e68a5a9b848f
   NETDATA_MONTH: '2020-11'
   NETDATA_LAST_DAY: '30'
   # Increment to invalidate caches
