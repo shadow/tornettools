@@ -16,7 +16,7 @@ on:
 
 env:
   DEBIAN_FRONTEND: noninteractive
-  SHADOW_COMMIT: d4c9ba6fb50868fcc63b0884d5821a9d04571c21
+  SHADOW_COMMIT: 7ba17fb598d930c1368a6af08bb701ac7d16051d
   TOR_REPO: https://git.torproject.org/tor.git
   TOR_BRANCH: release-0.4.7
   TOR_COMMIT: tor-0.4.7.13

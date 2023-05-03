@@ -261,6 +261,7 @@ def __server(args, network, server):
     process["args"] = get_host_rel_conf_path(TGENRC_SERVER_FILENAME)
     # tgen starts at the end of shadow's "bootstrap" phase
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
+    process["expected_final_state"] = "running"
 
     if server['is_hs_server']:
         # this is an onion service, so tgen should only listen on localhost so that we catch errors if we accidentally
@@ -289,6 +290,7 @@ def __server(args, network, server):
         # clients don't need a nickname, and our client nicknames are longer than the max length supported by tor
         process["args"] = __format_tor_args(None)
         process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS - 60) # start before boostrapping ends
+        process["expected_final_state"] = "running"
 
         host["processes"].append(process)
 
@@ -351,6 +353,7 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
     # https://shadow.github.io/docs/guide/compatibility_notes.html#libopenblas
     process["environment"] = {"OPENBLAS_NUM_THREADS": "1"}
     process["start_time"] = max(1, BOOTSTRAP_LENGTH_SECONDS - 60) # start before boostrapping ends
+    process["expected_final_state"] = "running"
 
     host["processes"].append(process)
 
@@ -362,6 +365,7 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
     process["args"] = tgenrc_fname
     # tgen starts at the end of shadow's "bootstrap" phase, and may have its own startup delay
     process["start_time"] = BOOTSTRAP_LENGTH_SECONDS
+    process["expected_final_state"] = "running"
 
     host["processes"].append(process)
 
@@ -408,6 +412,7 @@ def __tor_relay(args, network, used_addresses, relay, orig_fp, is_authority=Fals
     process["path"] = "{}/bin/tor".format(SHADOW_INSTALL_PREFIX)
     process["args"] = str(__format_tor_args(relay['nickname']))
     process["start_time"] = starttime
+    process["expected_final_state"] = "running"
 
     host['processes'].append(process)
 
@@ -424,6 +429,7 @@ def __oniontrace(args, start_time, name):
         process["path"] = "{}/bin/oniontrace".format(SHADOW_INSTALL_PREFIX)
         process["args"] = "Mode=log TorControlPort={} LogLevel=info Events={}".format(TOR_CONTROL_PORT, args.events_csv)
         process["start_time"] = start_time
+        process["expected_final_state"] = "running"
         processes.append(process)
 
     if args.do_trace:
