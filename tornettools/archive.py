@@ -13,7 +13,10 @@ def run(args):
         logging.critical("Unable to archive with missing tools.")
         return
 
-    shutil.copy2(f"{args.prefix}/shadow.data/hosts/4uthority1/cached-consensus", f"{args.prefix}/consensus")
+    try:
+        shutil.copy2(f"{args.prefix}/shadow.data/hosts/4uthority1/cached-consensus", f"{args.prefix}/consensus")
+    except FileNotFoundError as e:
+        logging.debug("Could not copy 'cached-consensus': %s", e)
 
     logging.info("Compressing consensus.")
     __xz_parallel(args, "consensus")
