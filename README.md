@@ -46,6 +46,17 @@ Here is a bibtex entry for latex users:
 }
 ```
 
+### Note about versioning
+
+Development of tornettools is slow and typically focuses on changes that keep the tool in
+sync with changes being made in Shadow. Thus, you should generally just ignore the tornettools
+version numbers and use the latest version. Sometimes you might want to pin to a specific
+version that is known to be compatible with your version of Shadow, e.g., when building
+container images, and in this case we recommend pinning to a specific commit hash.
+
+We do use version numbers, but they have historically been based on vibes rather than semver
+and we don't want to introduce the overhead of following a more strict policy than that.
+
 ### setup is easy with virtualenv and pip
 
     python3 -m venv toolsenv
