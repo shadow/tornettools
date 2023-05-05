@@ -212,6 +212,11 @@ def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Circuit Build Time\" plot as there's no data available")
+        return
+
     __plot_cdf_figure(args, dbs_to_plot, f'circuit_build_time.{circuittype}',
                       yscale="taillog",
                       xlabel=f"{circuittype} Circuit Build Time (s)")
@@ -228,6 +233,11 @@ def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
         torperf_db['data'] = [torperf_db['dataset']['circuit_rtt']]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
+
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Circuit Round Trip Time\" plot as there's no data available")
+        return
 
     __plot_cdf_figure(args, dbs_to_plot, f'round_trip_time.{circuittype}',
                       yscale="taillog",
@@ -246,6 +256,11 @@ def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Transfer Time: Bytes={bytes_key}\" plot as there's no data available")
+        return
+
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}.{circuittype}",
                       yscale="taillog",
                       xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
@@ -263,6 +278,11 @@ def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, erro
         torperf_db['data'] = [err_rates]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
+
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Transfer Error Rate\" plot as there's no data available")
+        return
 
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_error_rates_{error_key}.{circuittype}",
                       xlabel=f"{circuittype} Transfer Error Rate (%): Type={error_key}")
@@ -288,6 +308,11 @@ def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
 
     dbs_to_plot = torperf_dbs + tornet_dbs
 
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Client Transfer Goodput: 0.5 to 1 MiB\" plot as there's no data available")
+        return
+
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput.{circuittype}',
                       yscale="taillog",
                       xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
@@ -310,6 +335,11 @@ def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
         torperf_db['data'] = [client_gput]
 
     dbs_to_plot = torperf_dbs + tornet_dbs
+
+    if len(dbs_to_plot) == 0:
+        # skip plotting if there's not data
+        logging.info(f"Skipping \"{circuittype} Client Transfer Goodput: 4 to 5 MiB\" plot as there's no data available")
+        return
 
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_5MiB.{circuittype}',
                       yscale="taillog",
