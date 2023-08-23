@@ -200,7 +200,7 @@ def __generate_tor_v3bw_file(args, authorities, relays):
 
         for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
             # authorities are weighted minimially for regular circuits
-            cons_bw_weight = int(round(1.0))
+            cons_bw_weight = int(round(20.0))
             nickname = authority['nickname']
             tornet_fp = authority['tornet_fingerprint']
             v3bwfile.write("node_id=${}\tbw={}\tnick={}\n".format(tornet_fp, cons_bw_weight, nickname))
