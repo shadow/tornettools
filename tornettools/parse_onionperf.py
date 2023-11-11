@@ -11,8 +11,8 @@ from tornettools.util import dump_json_data, open_readable_file, aka_int, tgen_s
 
 def run(args):
     db = {"circuit_rtt": [], "client_goodput": [], "client_goodput_5MiB": [],
-          "circuit_build_times": [], "download_times": {}, "daily_counts": {},
-          "relay_goodput": {}}
+          "client_goodput_10MiB": [], "circuit_build_times": [],
+          "download_times": {}, "daily_counts": {}, "relay_goodput": {}}
 
     if args.bandwidth_data_path is not None:
         logging.info(f"Parsing bandwidth data stored in '{args.bandwidth_data_path}'")
@@ -159,6 +159,11 @@ def __handle_stream(db, stream, day):
         if goodput is not None:
             db['client_goodput_5MiB'].append(goodput)
 
+        goodput = __goodput_bps(
+            stream, aka_int(9437184, 9 * 2**20), aka_int(10485760, 10 * 2**20))
+        if goodput is not None:
+            db['client_goodput_10MiB'].append(goodput)
+
     elif lb > 0 and cmd > 0:
         __store_transfer_time(db, transfer_size_target, ttlb)
 
@@ -187,5 +192,7 @@ def __get_timeout_limit(num_bytes):
         return 60.0
     elif num_bytes == 5242880:
         return 120.0
+    elif num_bytes == 10485760:
+        return 240.0
     else:
         return 3600.0
