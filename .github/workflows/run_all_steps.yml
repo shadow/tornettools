@@ -280,7 +280,7 @@ jobs:
         run: tornettools archive tornet
 
       - name: Upload tornet
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: tornet
@@ -291,7 +291,7 @@ jobs:
       # necessary - e.g. when the output of the tgen or oniontrace parsers
       # changes in some significant way.
       - name: Upload parse_and_plot input
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: parse_and_plot_input
           path: |
@@ -304,7 +304,7 @@ jobs:
       # Typically this is only needed when the output changes in some
       # significant way.
       - name: Upload plot data
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: run_all_steps_output
           path: |
@@ -317,7 +317,7 @@ jobs:
       # the lines from the current run are not expected to be identical to the
       # lines from the previous run.
       - name: Upload plots
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: plots
           path: pdfs/*.pdf
