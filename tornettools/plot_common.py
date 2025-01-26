@@ -113,7 +113,7 @@ def __compute_sample_mean_and_error(bucket_list, confidence):
         resolution_variance = sum([res**2 for res in resolutions]) / 12
 
         m, v = mean(emp_sample), var(emp_sample)
-        assert(k == len(emp_sample))
+        assert k == len(emp_sample)
         s = sqrt(v + resolution_variance / k)
         e = z * s
 

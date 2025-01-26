@@ -49,7 +49,7 @@ def load_json_data(infile_path):
     return data
 
 def find_matching_files_in_dir(search_dir, filepattern):
-    if type(filepattern) == str:
+    if isinstance(filepattern, str):
         # Interpret as a literal string
         logging.info(f"Searching for files containing {filepattern} in directory tree at {search_dir}")
         filepattern = re.compile('.*' + re.escape(filepattern) + '.*')
@@ -72,7 +72,7 @@ def find_matching_files_in_dir(search_dir, filepattern):
 # e.g.:
 #     start_bytes = aka_int(2**20, 1048576)
 def aka_int(x, y):
-    assert(x == y)
+    assert x == y
     return x
 
 # Looks for the given data point, first in
