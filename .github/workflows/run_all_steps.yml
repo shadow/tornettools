@@ -43,7 +43,9 @@ jobs:
       RUSTPROFILE: minimal
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Update packages
         run: sudo apt-get update
@@ -80,11 +82,12 @@ jobs:
           key: shadow-${{ env.SHADOW_COMMIT }}-${{ env.CACHE_VERSION }}
 
       - name: Checkout shadow
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: shadow/shadow
           ref: ${{ env.SHADOW_COMMIT }}
           path: shadow
+          persist-credentials: false
 
       - name: Install shadow deps
         run: |
@@ -122,11 +125,12 @@ jobs:
           make install
 
       - name: Checkout tgen
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: shadow/tgen
           ref: ${{ env.TGEN_COMMIT }}
           path: tgen
+          persist-credentials: false
 
       - name: Build tgen deps
         run: sudo apt-get install -y cmake gcc libglib2.0-dev libigraph-dev make
@@ -143,11 +147,12 @@ jobs:
           pip3 install -I ../tools
 
       - name: Checkout oniontrace
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: shadow/oniontrace
           ref: ${{ env.ONIONTRACE_COMMIT }}
           path: oniontrace
+          persist-credentials: false
 
       - name: Install oniontrace deps
         run: sudo apt-get install -y cmake gcc libglib2.0-0 libglib2.0-dev make
@@ -184,10 +189,11 @@ jobs:
           find consensuses-*/ -type f | tail -n +100 | xargs rm
 
       - name: Checkout tmodel
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: tmodel-ccs2018/tmodel-ccs2018.github.io
           path: tmodel-ccs2018.github.io
+          persist-credentials: false
 
       - name: Install custom deps
         run: |
