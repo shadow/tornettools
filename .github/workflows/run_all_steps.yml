@@ -75,7 +75,7 @@ jobs:
 
       - name: Restore shadow build cache
         id: restore-shadow-build-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/opt/shadow
@@ -107,7 +107,7 @@ jobs:
 
       - name: Restore tor build cache
         id: restore-tor-build-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/opt/tor
@@ -170,7 +170,7 @@ jobs:
 
       - name: Restore net data cache
         id: restore-net-data-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: netdata
           key: netdata-${{ env.NETDATA_MONTH }}-${{ env.NETDATA_LAST_DAY}}-${{ env.CACHE_VERSION }}
