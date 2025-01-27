@@ -20,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Update packages
         run: sudo apt-get update
@@ -85,7 +87,7 @@ jobs:
 
       - name: Upload pdfs
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: pdfs
           path: pdfs
@@ -94,7 +96,7 @@ jobs:
       # .github/workflows/parse_and_plot_output to a new expected output.
       - name: Upload plot data
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: parse_and_plot_output
           path: parse_and_plot_output/tornet.plot.data

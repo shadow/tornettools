@@ -5,6 +5,9 @@
 # instance to run at once per branch, canceling obsolete runs.
 #
 # Based on https://github.com/styfle/cancel-workflow-action#advanced-pull-requests-from-forks
+#
+# TODO: should we replace this with 'cancel-in-progress'?
+# https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
 name: Cancel previous run-all-steps
 permissions: read-all
 on:
