@@ -60,6 +60,8 @@ def stage_users(args, min_unix_time, max_unix_time):
 
             date = str(parts[0]) # like '2019-01-01'
             country_code = str(parts[1]) # like 'us'
+            # At least one float has been observed in the file:
+            # <https://gitlab.torproject.org/tpo/network-health/metrics/website/-/issues/40121>
             user_count = int(float(parts[2])) # like '14714' or '2e+05'
 
             dt = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
