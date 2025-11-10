@@ -249,7 +249,7 @@ def __generate_torrc_common(conf_path, authorities, geoip_path):
     torrc_file.write('SafeLogging 0\n')
     torrc_file.write('LogTimeGranularity 1\n')
     torrc_file.write('HeartbeatPeriod 1\n')
-    torrc_file.write('ContactInfo https://github.com/shadow/shadow-plugin-tor/issues\n')
+    torrc_file.write('ContactInfo https://github.com/shadow/shadow/discussions\n')
     torrc_file.write('DisableDebuggerAttachment 0\n')
     torrc_file.write('CellStatistics 0\n')
     torrc_file.write('PaddingStatistics 0\n')
