@@ -204,13 +204,9 @@ def draw_cdf(axis, data, yscale=None, **kwargs):
     d = [getfirstorself(item) for item in data]
     y = __calc_cdf_bins(yscale, axis.gca().get_yaxis())
 
-    # the 'interpolation' parameter name is deprecated and replaced with
-    # 'method', but this change is recent so we'll stick with the deprecated
-    # name for now
-    # https://numpy.org/doc/stable/reference/generated/numpy.quantile.html
-    # the 'lower' is used to match the behaviour of 'draw_cdf_ci()' above
-    # https://github.com/shadow/tornettools/issues/76
-    x = quantile(d, y, interpolation='lower')
+    # the method 'lower' is used to match the behaviour of 'draw_cdf_ci()'
+    # above. See https://github.com/shadow/tornettools/issues/76
+    x = quantile(d, y, method='lower')
 
     plot_line = axis.plot(x, y, **kwargs)
     return plot_line[0]
