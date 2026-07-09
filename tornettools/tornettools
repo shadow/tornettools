@@ -386,6 +386,12 @@ def main():
         action="store", dest="geoip_path",
         default=None)
 
+    # Optional per-edge bandwidth limiting in generated configs
+    generate_parser.add_argument('--use-edge-bandwidth-limiting',
+        help="Enable per-edge bandwidth limiting. Adds flags to Shadow config.",
+        action="store_true", dest="use_edge_bandwidth_limiting",
+        default=False)
+
     ############
     # simulate #
     ############

@@ -150,6 +150,14 @@ def __generate_shadow_config(args, network, authorities, relays, tgen_servers, p
     config["network"]["graph"]["file"]["path"] = str(args.atlas_path)
     config["network"]["graph"]["file"]["compression"] = "xz"
 
+    # Optional per-edge bandwidth limiting flags (purely opt-in)
+    if getattr(args, "use_edge_bandwidth_limiting", False):
+        logging.info("Enabling edge bandwidth limiting in Shadow config")
+        config.setdefault("experimental", {})
+        config["experimental"]["edge_bandwidth_limiting_enabled"] = True
+        config["experimental"]["edge_bandwidth_algorithm"] = "token-bucket"
+        config["experimental"]["edge_bandwidth_burst_ratio"] = 1.5
+
     used_addresses = set()
 
     for (fp, authority) in sorted(authorities.items(), key=lambda kv: kv[1]['nickname']):
