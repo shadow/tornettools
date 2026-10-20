@@ -178,10 +178,33 @@ def stage_graph(args):
     # create new graph and copy only the nodes
     network = nx.classes.function.create_empty_copy(network)
 
+    if args.remove_nodes_without_country_code:
+        # prune nodes which don't contain the country_code key (occurs once, node "284")
+        network = remove_nodes_without_country_code(network_graph=network)
+
     # it takes networkx a few minutes to read the atlas graph, so we save a smaller graph containing
     # only the atlas graph nodes so that the 'generate' step can read these nodes much quicker
     network_info_path = f"{args.prefix}/networkinfo_staging.gml"
     nx.readwrite.gml.write_gml(network, network_info_path)
+
+def remove_nodes_without_country_code(network_graph, key_to_check = "country_code"):
+    nodes_to_remove = []
+    for node in network_graph.nodes:
+        node_properties_dict = network_graph.nodes[node]
+        try:
+            node_properties_dict[key_to_check]
+        except KeyError:
+            nodes_to_remove.append(node)
+
+    if nodes_to_remove:
+        network_graph.remove_nodes_from(nodes_to_remove)
+        logging.info(
+            f"Removed {len(nodes_to_remove)} nodes missing key {key_to_check}: "
+            f"{nodes_to_remove}"
+        )
+    else:
+        logging.info(f"All nodes in network graph contain the required key {key_to_check}.")
+    return network_graph
 
 def get_file_list(dir_path):
     file_paths = []

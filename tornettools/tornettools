@@ -221,6 +221,14 @@ def main():
         help="""Compress output with xz.""",
         action="store_true", dest="do_compress",
         default=False)
+    
+    stage_parser.add_argument('--remove_nodes_without_country_code',
+        help="""Include only those nodes in the networkinfo_staging.gml
+            network graph that specify a country_code""",
+        action="store_true", 
+        default=False,
+        dest="remove_nodes_without_country_code",
+    )
 
     ############
     # generate #
